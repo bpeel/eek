@@ -1,0 +1,36 @@
+dnl Process this file with autoconf to produce a configure script.
+
+AC_INIT(configure.in)
+AM_INIT_AUTOMAKE(eek, 0.1)
+AM_CONFIG_HEADER(config.h)
+
+AC_ISC_POSIX
+AC_PROG_CC
+AM_PROG_CC_STDC
+AC_HEADER_STDC
+
+dnl FIXME: this is a stub
+if false; then
+ AC_DEFINE(BYTE_ORDER_BIG, 1, [Use big byte first])
+else
+ AC_DEFINE(BYTE_ORDER_SMALL, 1, [Use small byte first])
+fi
+
+AM_PATH_SDL(1.2.0, have_sdl=yes, have_sdl=no)
+if test "x$have_sdl" != "xyes"; then
+  AC_MSG_ERROR(SDL >= 1.2.0 is required. Get it from http://www.libsdl.org/)
+fi
+
+dnl Use -Wall if we have gcc.
+changequote(,)dnl
+if test "x$GCC" = "xyes"; then
+  case " $CFLAGS " in
+  *[\ \	]-Wall[\ \	]*) ;;
+  *) CFLAGS="$CFLAGS -Wall" ;;
+  esac
+fi
+changequote([,])dnl
+
+AC_OUTPUT([
+Makefile
+])
