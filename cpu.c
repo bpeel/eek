@@ -1,6 +1,7 @@
 #include "config.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #include "eek.h"
 #include "cpu.h"

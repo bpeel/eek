@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <SDL/SDL.h>
+#include <string.h>
 
 #include "eek.h"
 #include "video.h"
