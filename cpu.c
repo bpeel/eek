@@ -167,7 +167,7 @@ cpu_fetch_execute (Cpu *cpu, cycles_t target_time)
       /* Disable interrupts */
       CPU_SET_I (TRUE);
       /* Jump to nmi handling routine */
-      cpu_state.pc = CPU_NMI_ADDRESS;
+      cpu_state.pc = CPU_READ_WORD (CPU_NMI_VECTOR);
       /* Clear the nmi flag */
       cpu_state.nmi = FALSE;
     }

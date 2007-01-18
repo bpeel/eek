@@ -28,7 +28,7 @@ typedef void (*CpuMemWriteFunc) (void *data, UWORD address, UBYTE val);
 
 #define CPU_START_VECTOR 0xFFFC
 #define CPU_IRQ_VECTOR   0xFFFE
-#define CPU_NMI_ADDRESS  0x0D00
+#define CPU_NMI_VECTOR   0xFFFA
 
 /* Structure to keep track of the state of the CPU */
 struct _Cpu
