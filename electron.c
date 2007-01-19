@@ -153,7 +153,7 @@ electron_load_os_rom (Electron *electron, FILE *in)
 int
 electron_load_paged_rom (Electron *electron, int page, FILE *in)
 {
-  char *buf;
+  UBYTE *buf;
   page &= 0x0f;
 
   if (electron->paged_roms[page])
