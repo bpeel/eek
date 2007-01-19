@@ -186,6 +186,9 @@ electron_read_from_location (Electron *electron, UWORD location)
       page &= 0x0E;
     if (electron->paged_roms[page])
       return (electron->paged_roms[page])[location - ELECTRON_PAGED_ROM_ADDRESS];
+    else
+    /* Return 0 if there is no rom at this page */
+      return 0x00;
   }
   /* If it's in the sheila page then return from that location */
   else if ((location >> 8) == ELECTRON_SHEILA_PAGE)
