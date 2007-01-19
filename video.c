@@ -187,6 +187,30 @@ video_draw_scanline (int line)
     case 5:
       break;
     case 6:
+      /* the last two out of every 10 lines and the last six lines of
+	 the screen are blank */
+      if (line % 10 >= 8 || line >= 250)
+	memset (p, 0, video.screen->w);
+      else
+      {
+	/* 0x140 bytes per 10 lines */
+	a = (line / 10) * 0x140 + (line % 10) + video.start;
+	if (a >= 0x7f40)
+	  a = 0x6000;
+	for (i = 0; i < 40; i++)
+	{
+	  c = video.memory[a];
+	  for (j = 0; j < 8; j++)
+	  {
+	    /* Double up the pixels along the x-axis */
+	    UBYTE pixel = video_logical_colors[((c <<= 1) & 0x100) ? 1 : 0];
+	    *(p++) = pixel;
+	    *(p++) = pixel;
+	  }
+	  if ((a += 8) >= 0x7f40)
+	    a -= 0x7f40 - 0x6000;
+	}
+      }
       break;
     default:
       /* mode 7 becomes mode 4 */
