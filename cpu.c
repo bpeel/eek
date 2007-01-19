@@ -46,16 +46,29 @@ static Cpu cpu_state;
 #define CPU_WRITE(addr, v) \
                             do { UWORD _taddr = (addr); \
                                  UBYTE _v = (v); \
+                                 if (cpu_state.break_type == CPU_BREAK_WRITE \
+                                     && cpu_state.break_address == _taddr) \
+                                   cpu_state.got_break = 1; \
                                  if (_taddr < CPU_RAM_SIZE) \
                                    cpu_state.memory[_taddr] = _v; \
                                  else cpu_state.write_func (cpu_state.memory_data, \
                                                          _taddr, _v); } while (0)
 /* Zero page macro should be faster because we don't need to test if
    the address is in RAM */
-#define CPU_WRITE_ZERO(addr, v) (cpu_state.memory[(addr)] = (v))
+#define CPU_WRITE_ZERO(addr, v) \
+                            do { UWORD _taddr = (addr); \
+                                 UBYTE _v = (v); \
+                                 if (cpu_state.break_type == CPU_BREAK_WRITE \
+                                     && cpu_state.break_address == _taddr) \
+                                   cpu_state.got_break = 1; \
+                                 cpu_state.memory[_taddr] = _v; } while (0)
 #define CPU_WRITE_WORD(addr, v) \
                             do { UWORD _taddr = (addr); \
                                  UWORD _v = (v); \
+                                 if (cpu_state.break_type == CPU_BREAK_WRITE \
+                                     && (cpu_state.break_address == _taddr \
+                                         || cpu_state.break_address == _taddr + 1)) \
+                                   cpu_state.got_break = 1; \
                                  if (_taddr < CPU_RAM_SIZE - 1) \
                                   (*(UWORD *) (cpu_state.memory + (_taddr))) \
                                    = BO_WORD_TO_LE (_v); \
@@ -65,13 +78,24 @@ static Cpu cpu_state;
                                    _taddr + 1, _v >> 8); \
                                  } } while (0)
 #define CPU_READ(addr)        ({ UWORD _taddr = (addr); \
+                               if (cpu_state.break_type == CPU_BREAK_READ \
+                                   && cpu_state.break_address == _taddr) \
+                                 cpu_state.got_break = 1; \
                                _taddr < CPU_RAM_SIZE ? cpu_state.memory[_taddr] \
                                : cpu_state.read_func (cpu_state.memory_data, _taddr); })
 /* Zero page macro should be faster because we don't need to test if
    the address is in RAM */
-#define CPU_READ_ZERO(addr)   (cpu_state.memory[(addr)])
+#define CPU_READ_ZERO(addr)   ({ UWORD _taddr = (addr); \
+                               if (cpu_state.break_type == CPU_BREAK_READ \
+                                   && cpu_state.break_address == _taddr) \
+                                 cpu_state.got_break = 1; \
+                               cpu_state.memory[_taddr]; })
 #define CPU_READ_WORD(addr) \
                             ({ UWORD _taddr = (addr); \
+                               if (cpu_state.break_type == CPU_BREAK_READ \
+                                   && (cpu_state.break_address == _taddr \
+                                       || cpu_state.break_address == _taddr + 1)) \
+                                 cpu_state.got_break = 1; \
                                (_taddr < CPU_RAM_SIZE - 1) \
                                ? (BO_WORD_FROM_LE (*(UWORD *) (cpu_state.memory + (_taddr)))) \
   			       : (cpu_state.read_func (cpu_state.memory_data, _taddr) \

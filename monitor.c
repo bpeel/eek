@@ -217,9 +217,17 @@ monitor (Electron *electron)
       case 'b':
 	break_type = CPU_BREAK_ADDR;
 	cpu_set_break (&electron->cpu, CPU_BREAK_ADDR, strtoul (p + 1, NULL, 0));
-	electron->cpu.break_type = CPU_BREAK_NONE;
+	break;
+      case 'r':
+	break_type = CPU_BREAK_READ;
+	cpu_set_break (&electron->cpu, CPU_BREAK_READ, strtoul (p + 1, NULL, 0));
+	break;
+      case 'w':
+	break_type = CPU_BREAK_WRITE;
+	cpu_set_break (&electron->cpu, CPU_BREAK_WRITE, strtoul (p + 1, NULL, 0));
 	break;
       case 'B':
+	electron->cpu.break_type = CPU_BREAK_NONE;
 	break_type = CPU_BREAK_NONE;
 	break;
       case 0:

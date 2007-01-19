@@ -67,7 +67,7 @@ struct _Cpu
   int nmi : 1;
 
   int got_break : 1;
-  enum { CPU_BREAK_NONE, CPU_BREAK_ADDR } break_type;
+  enum { CPU_BREAK_NONE, CPU_BREAK_ADDR, CPU_BREAK_WRITE, CPU_BREAK_READ } break_type;
   UWORD break_address;
 };
 
