@@ -247,8 +247,11 @@ electron_write_to_location (Electron *electron, UWORD location, UBYTE v)
 				   | ((electron->sheila[0x2] & 0xe0) << 1));
 	break;
       case 0x5:
-	/* Set the page number */
-	electron->page = v & 0x0f;
+	/* Set the page number. If the keyboard or basic page is
+	   currently selected then only pages 8-15 are actually
+	   honoured */
+	if (electron->page < 8 || electron->page > 11 || (v & 0x0f) >= 8)
+	  electron->page = v & 0x0f;
 	/* Clear interrupts */
 	if (v & ELECTRON_C_HIGH_TONE)
 	  electron->sheila[0x0] &= ~ELECTRON_I_HIGH_TONE;
