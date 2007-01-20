@@ -178,7 +178,7 @@ electron_read_from_location (Electron *electron, UWORD location)
 {
   /* Check if it's in the paged rom location */
   if (location >= ELECTRON_PAGED_ROM_ADDRESS
-      && location < ELECTRON_PAGED_ROM_ADDRESS + ELECTRON_OS_ROM_LENGTH)
+      && location < ELECTRON_PAGED_ROM_ADDRESS + ELECTRON_PAGED_ROM_LENGTH)
   {
     UBYTE page = electron->page;
     /* Basic and keyboard are available in two locations */
