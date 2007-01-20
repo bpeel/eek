@@ -28,19 +28,19 @@ static struct
 
 static SDL_Color video_physical_colors[] =
   {
-    { 0x00, 0x00, 0x00, 0x00 }, /* black */
-    { 0xff, 0x00, 0x00, 0x00 }, /* red */
-    { 0x00, 0xff, 0x00, 0x00 }, /* green */
-    { 0xff, 0xff, 0x00, 0x00 }, /* yellow */
-    { 0x00, 0x00, 0xff, 0x00 }, /* blue */
-    { 0xff, 0x00, 0xff, 0x00 }, /* magenta */
+    { 0xff, 0xff, 0xff, 0x00 }, /* white */
     { 0x00, 0xff, 0xff, 0x00 }, /* cyan */
-    { 0xff, 0xff, 0xff, 0x00 }  /* white */
+    { 0xff, 0x00, 0xff, 0x00 }, /* magenta */
+    { 0x00, 0x00, 0xff, 0x00 }, /* blue */
+    { 0xff, 0xff, 0x00, 0x00 }, /* yellow */
+    { 0x00, 0xff, 0x00, 0x00 }, /* green */
+    { 0xff, 0x00, 0x00, 0x00 }, /* red */
+    { 0x00, 0x00, 0x00, 0x00 }  /* black */
   };
 
 static UBYTE video_logical_colors[VIDEO_LOGICAL_COLOR_COUNT] =
   {
-    0x00, 0x07
+    0x07, 0x00
   };
 
 int
@@ -167,7 +167,7 @@ video_draw_scanline (int line)
     case 3:
       /* the last two out of every 10 lines are blank */
       if (line % 10 >= 8)
-	memset (p, 0, video.screen->w);
+	memset (p, 0x7, video.screen->w);
       else
       {
 	/* 0x240 bytes per 10 lines */
@@ -190,7 +190,7 @@ video_draw_scanline (int line)
       /* the last two out of every 10 lines and the last six lines of
 	 the screen are blank */
       if (line % 10 >= 8 || line >= 250)
-	memset (p, 0, video.screen->w);
+	memset (p, 0x7, video.screen->w);
       else
       {
 	/* 0x140 bytes per 10 lines */
