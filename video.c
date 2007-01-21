@@ -46,7 +46,7 @@ static UBYTE video_logical_colors[VIDEO_LOGICAL_COLOR_COUNT] =
 int
 video_init (UBYTE *memory, int flags)
 {
-  int sdl_flags = SDL_SWSURFACE;
+  int sdl_flags = SDL_HWSURFACE;
 
   if ((flags & VIDEO_FULLSCREEN))
     sdl_flags |= SDL_FULLSCREEN;
@@ -107,8 +107,12 @@ void
 video_draw_scanline (int line)
 {
   int i, j, c, v;
-  unsigned char *p = video.screen->pixels + video.screen->pitch * line * VIDEO_YSCALE;
+  unsigned char *p;
   UWORD a;
+
+  SDL_LockSurface (video.screen);
+
+  p = video.screen->pixels + video.screen->pitch * line * VIDEO_YSCALE;
 
   switch (video.mode)
   {
@@ -224,6 +228,8 @@ video_draw_scanline (int line)
 	    + video.screen->pitch * i,
 	    video.screen->pixels + video.screen->pitch * line * VIDEO_YSCALE,
 	    video.screen->w);
+
+  SDL_UnlockSurface (video.screen);
 }
 
 void
