@@ -289,8 +289,8 @@ void
 cpu_op_sbc (void)
 {
   UBYTE oa = cpu_state.a, ov = CPU_DATA_FOR_OP (cpu_state.instruction);
-  int v = oa + ov;
-  if (CPU_IS_C ())
+  int v = oa - ov;
+  if (!CPU_IS_C ())
     v--;
   if (CPU_IS_D () && (v & 0x0f) > 10)
     v -= 6;
@@ -913,8 +913,8 @@ cpu_get_absolute_indexed_x (void)
 
   if (al >= 0x100)
   {
-    cpu_state.time += 5; /* count an extra cycle when it goes over the page
-		       boundary */
+    /* count an extra cycle when it goes over the page boundary */
+    cpu_state.time += 5; 
     return CPU_READ ((ah << 8) + al);
   }
   else
@@ -961,8 +961,8 @@ cpu_get_post_indexed_y (void)
   int ah = CPU_READ (za);
   if (al >= 0x100)
   {
-    cpu_state.time += 6; /* count an extra cycle when it goes over the page
-		       boundary */
+    /* count an extra cycle when it goes over the page boundary */
+    cpu_state.time += 6;
     return CPU_READ ((ah << 8) + al);
   }
   else
@@ -1003,8 +1003,8 @@ cpu_write_absolute_indexed_x (UBYTE v)
 
   if (al >= 0x100)
   {
-    cpu_state.time += 5; /* count an extra cycle when it goes over the page
-		       boundary */
+    /* count an extra cycle when it goes over the page boundary */
+    cpu_state.time += 5; 
     CPU_WRITE ((ah << 8) + al, v);
   }
   else
@@ -1022,8 +1022,8 @@ cpu_write_absolute_indexed_y (UBYTE v)
 
   if (al >= 0x100)
   {
-    cpu_state.time += 5; /* count an extra cycle when it goes over the page
-		       boundary */
+    /* count an extra cycle when it goes over the page boundary */
+    cpu_state.time += 5;
     CPU_WRITE ((ah << 8) + al, v);
   }
   else
@@ -1051,8 +1051,8 @@ cpu_write_post_indexed_y (UBYTE v)
   int ah = CPU_READ (za);
   if (al >= 0x100)
   {
-    cpu_state.time += 6; /* count an extra cycle when it goes over the page
-		       boundary */
+    /* count an extra cycle when it goes over the page boundary */
+    cpu_state.time += 6;
     CPU_WRITE ((ah << 8) + al, v);
   }
   else
