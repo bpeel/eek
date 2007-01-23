@@ -184,8 +184,8 @@ cpu_fetch_execute (Cpu *cpu, cycles_t target_time)
     if (cpu_state.nmi)
     {
       cpu_state.time += 7;
-      /* Store pc - 1 */
-      CPU_PUSH_WORD (cpu_state.pc - 1);
+      /* Store pc */
+      CPU_PUSH_WORD (cpu_state.pc);
       /* Store flags */
       CPU_PUSH (cpu_state.p);
       /* Disable interrupts */
@@ -200,7 +200,7 @@ cpu_fetch_execute (Cpu *cpu, cycles_t target_time)
       cpu_state.time += 7;
     
       /* Store pc - 1 */
-      CPU_PUSH_WORD (cpu_state.pc - 1);
+      CPU_PUSH_WORD (cpu_state.pc);
       /* Store the flags */
       CPU_PUSH (cpu_state.p);
       /* Disable interrupts */
@@ -758,14 +758,12 @@ cpu_op_jsr (void)
 void
 cpu_op_brk (void)
 {
-  /* Push the program counter */
-  CPU_PUSH_WORD (cpu_state.pc);
+  /* Push the program counter. The byte following the BRK instruction
+     is skipped out */
+  CPU_PUSH_WORD (cpu_state.pc + 1);
 
-  /* Push the flags */
-  CPU_PUSH (cpu_state.p);
-
-  /* Set the break flag */
-  CPU_SET_B (TRUE);
+  /* Push the flags with the break flag set */
+  CPU_PUSH (cpu_state.p | CPU_FLAG_B);
 
   /* Jump to the address in the interrupt vector */
   cpu_state.pc = CPU_READ_WORD (CPU_IRQ_VECTOR);
@@ -788,7 +786,7 @@ cpu_op_rti (void)
   cpu_state.time += 6;
   cpu_state.p = CPU_POP ();
   al = CPU_POP ();
-  cpu_state.pc = ((CPU_POP () << 8) | al) + 1;
+  cpu_state.pc = (CPU_POP () << 8) | al;
 }
 
 void
