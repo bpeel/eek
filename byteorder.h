@@ -1,6 +1,8 @@
 #ifndef _BYTE_ORDER_H
 #define _BYTE_ORDER_H
 
+#include "stypes.h"
+
 #if !defined(BYTE_ORDER_BIG) && !defined(BYTE_ORDER_SMALL)
 #error no byte order defined
 #endif
@@ -8,7 +10,7 @@
 #error both byte orders defined
 #endif
 
-#define BO_SWAP_WORD(x) ({int _x = (x); ((_x & 0xff) << 8) | (_x >> 8);})
+#define BO_SWAP_WORD(x) ({UWORD _x = (x); (_x << 8) | (_x >> 8);})
 
 #ifdef BYTE_ORDER_SMALL
 #define BO_WORD_FROM_LE(x) (x)
