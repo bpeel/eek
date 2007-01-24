@@ -57,6 +57,9 @@ electron_init (Electron *electron)
   video_set_start_address (electron_mode_start_addresses[ELECTRON_MODE (electron)]);
   video_set_mode (ELECTRON_MODE (electron));
 
+  /* No keys are being pressed */
+  memset (electron->keyboard, '\0', 14);
+
   /* Initialise the cpu */
   cpu_init (&electron->cpu, electron->memory,
 	    (CpuMemReadFunc) electron_read_from_location, 
@@ -130,9 +133,11 @@ electron_run (Electron *electron)
       /* Sync to 50Hz video refresh rate */
       if (electron->scanline == 0)
       {
+	unsigned int now;
+
 	then += 20;
-	while (!quit && timer_ticks () < then)
-	  quit = events_check (electron);
+	while ((now = timer_ticks ()) < then)
+	  timer_sleep (then - now);
       }
     }
   }
@@ -173,6 +178,27 @@ electron_load_paged_rom (Electron *electron, int page, FILE *in)
   return 0;
 }
 
+static void
+electron_update_palette (Electron *electron)
+{
+  const UBYTE *palette = electron->sheila + 0x08;
+
+  switch (ELECTRON_MODE (electron))
+  {
+    case 0: case 3: case 4: case 6: case 7:
+      /* 2 colours */
+      video_set_color (0, (palette[1] & 1) | ((palette[1] >> 3) & 2) | ((palette[0] >> 2) & 4));
+      video_set_color (1, ((palette[1] >> 2) & 1) | ((palette[0] >> 1) & 2) | ((palette[0] >> 4) & 4));
+      break;
+    case 1: case 5:
+      /* 4 colours */
+      break;
+    case 2:
+      /* 16 colours */
+      break;
+  }
+}
+
 UBYTE
 electron_read_from_location (Electron *electron, UWORD location)
 {
@@ -184,7 +210,24 @@ electron_read_from_location (Electron *electron, UWORD location)
     /* Basic and keyboard are available in two locations */
     if ((page & 0x0C) == 0x08)
       page &= 0x0E;
-    if (electron->paged_roms[page])
+    if (page == ELECTRON_KEYBOARD_PAGE)
+    {
+      int i, value = 0;
+
+      /* or together all of the locations of the keyboard memory which
+	 have a '0' in the corresponding address bit */
+      for (i = 0; i < 14; i++)
+      {
+	if ((location & 1) == 0)
+	  value |= electron->keyboard[i];
+	location >>= 1;
+      }
+
+      fflush (stdout);
+
+      return value;
+    }
+    else if (electron->paged_roms[page])
       return (electron->paged_roms[page])[location - ELECTRON_PAGED_ROM_ADDRESS];
     else
     /* Return 0 if there is no rom at this page */
@@ -197,9 +240,9 @@ electron_read_from_location (Electron *electron, UWORD location)
       case 0x0:
 	{
 	  /* bit 7 is always set */
-	  int r = electron->sheila[0x0] | 0x80;
+	  int r = (electron->sheila[0x0] | 0x80) & ~ELECTRON_I_MASTER;
 	  /* the master irq bit is set if an enabled interrupt is occuring */
-	  if ((electron->ienabled & electron->sheila[0x0]))
+	  if ((electron->ienabled & electron->sheila[0x0] & ~(ELECTRON_I_MASTER | ELECTRON_I_POWERON | 0x80)))
 	    r |= ELECTRON_I_MASTER;
 	  /* the power on bit is only set the first time it is read */
 	  electron->sheila[0x0] &= ~ELECTRON_I_POWERON;
@@ -234,7 +277,7 @@ electron_write_to_location (Electron *electron, UWORD location, UBYTE v)
     switch (location & 0x0f)
     {
       case 0x0:
-	electron->ienabled = v;
+	electron->ienabled = v & ~ELECTRON_I_POWERON;
 	break;
       case 0x2:
       case 0x3:
@@ -264,11 +307,17 @@ electron_write_to_location (Electron *electron, UWORD location, UBYTE v)
 	  cpu_reset_irq (&electron->cpu);
 	break;
       case 0x7:
-	electron->sheila[location & 0x07] = v;
-	video_set_mode (ELECTRON_MODE (electron));
+	if (electron->sheila[location & 0x0f] != v)
+	{
+	  electron->sheila[location & 0x0f] = v;
+	  video_set_mode (ELECTRON_MODE (electron));
+	  electron_update_palette (electron);
+	}
 	break;
       default:
 	electron->sheila[location & 0x0f] = v;
+	if ((location & 0x0f) >= 0x08)
+	  electron_update_palette (electron);
 	break;
     }
   /* Otherwise if it's in memory use that */
