@@ -20,7 +20,6 @@ Electron main_electron;
 int
 main (int argc, char **argv)
 {
-  unsigned int last_time;
   int do_monitor = TRUE;
   char *os_rom = "roms/os.rom";
 
@@ -28,6 +27,9 @@ main (int argc, char **argv)
 
   if (argc >= 2)
     os_rom = argv[1];
+
+  /* Initialise the timer */
+  timer_init ();
 
   /* Initialise the electron */
   electron_init (&main_electron);
@@ -47,8 +49,6 @@ main (int argc, char **argv)
       exit (-1);
     }
   }
-
-  last_time = timer_ticks ();
 
   cpu_restart (&main_electron.cpu);
 
