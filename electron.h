@@ -42,6 +42,9 @@ struct _Electron
   /* The state of the sheila registers */
   UBYTE sheila[16];
 
+  /* The state of the keyboard */
+  UBYTE keyboard[14];
+
   /* The state of the cpu */
   Cpu cpu;
 };
@@ -56,5 +59,10 @@ void electron_write_to_location (Electron *electron, UWORD location, UBYTE v);
 UBYTE electron_read_from_location (Electron *electron, UWORD location);
 int electron_run (Electron *electron);
 void electron_step (Electron *electron);
+
+#define electron_press_key(electron, line, bit) \
+do { (electron)->keyboard[(line)] |= 1 << (bit); } while (0)
+#define electron_release_key(electron, line, bit) \
+do { (electron)->keyboard[(line)] &= ~(1 << (bit)); } while (0)
 
 #endif /* _ELECTRON_H */
