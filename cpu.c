@@ -311,7 +311,6 @@ cpu_op_cmp (void)
   CPU_SET_C (v >= 0);
   CPU_SET_Z (!na); /* a could be different from v */
   CPU_SET_N (na & 128);
-  CPU_SET_V (((oa & 0x7f) - (ov & 0x7f)) & 128);
 }
 
 void
@@ -325,7 +324,6 @@ cpu_op_cpx_immediate (void)
   CPU_SET_C (v >= 0);
   CPU_SET_Z (!na); /* a could be different from v */
   CPU_SET_N (na & 128);
-  CPU_SET_V (((oa & 0x7f) - (ov & 0x7f)) & 128);
 }
 
 void
@@ -338,7 +336,6 @@ cpu_op_cpx (void)
   CPU_SET_C (v >= 0);
   CPU_SET_Z (!na); /* a could be different from v */
   CPU_SET_N (na & 128);
-  CPU_SET_V (((oa & 0x7f) - (ov & 0x7f)) & 128);
 }
 
 void
@@ -352,7 +349,6 @@ cpu_op_cpy_immediate (void)
   CPU_SET_C (v >= 0);
   CPU_SET_Z (!na); /* a could be different from v */
   CPU_SET_N (na & 128);
-  CPU_SET_V (((oa & 0x7f) - (ov & 0x7f)) & 128);
 }
 
 void
@@ -365,7 +361,6 @@ cpu_op_cpy (void)
   CPU_SET_C (v >= 0);
   CPU_SET_Z (!na); /* a could be different from v */
   CPU_SET_N (na & 128);
-  CPU_SET_V (((oa & 0x7f) - (ov & 0x7f)) & 128);
 }
 
 void
