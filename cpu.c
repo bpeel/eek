@@ -1358,7 +1358,7 @@ static const CpuOpcodeFunc cpu_jumpblock[256] =
     cpu_op_undefined,     /* E7 */
     cpu_op_inx,           /* E8 */
     cpu_op_sbc,           /* E9 */
-    cpu_op_undefined,     /* EA */
+    cpu_op_nop,           /* EA */
     cpu_op_undefined,     /* EB */
     cpu_op_cpx,           /* EC */
     cpu_op_sbc,           /* ED */
