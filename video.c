@@ -117,7 +117,7 @@ video_draw_scanline (int line)
   switch (video.mode)
   {
     case 0:
-      a = (line / 8) * 0x280 + (line % 8) + video.start;
+      a = (line / 8) * 0x280 + (line % 8) + (video.start ? video.start : 0x3000);
       if (a >= 0x8000)
 	a = (a + 0x3000) & 0x7fff;
       for (i = 0; i < 80; i++)
@@ -130,7 +130,7 @@ video_draw_scanline (int line)
       }
       break;
     case 1:
-      a = (line / 8) * 0x280 + (line % 8) + video.start;
+      a = (line / 8) * 0x280 + (line % 8) + (video.start ? video.start : 0x3000);
       if (a >= 0x8000)
 	a = (a + 0x3000) & 0x7fff;
       for (i = 0; i < 80; i++)
@@ -138,7 +138,7 @@ video_draw_scanline (int line)
 	c = video.memory[a];
 	for (j = 0; j < 4; j++)
 	{
-	  *(p++) = v = video_logical_colors[(c >> 6) | ((c >> 3) & 1)];
+	  *(p++) = v = video_logical_colors[((c >> 6) & 2) | ((c >> 3) & 1)];
 	  *(p++) = v;
 	  c <<= 1;
 	}
@@ -147,7 +147,7 @@ video_draw_scanline (int line)
       }
       break;
     case 2:
-      a = (line / 8) * 0x280 + (line % 8) + video.start;
+      a = (line / 8) * 0x280 + (line % 8) + (video.start ? video.start : 0x3000);
       if (a >= 0x8000)
 	a = (a + 0x3000) & 0x7fff;
       for (i = 0; i < 80; i++)
@@ -155,7 +155,7 @@ video_draw_scanline (int line)
 	c = video.memory[a];
 	for (j = 0; j < 2; j++)
 	{
-	  *(p++) = v = video_logical_colors[(c >> 4) 
+	  *(p++) = v = video_logical_colors[((c >> 4) & 8)
 					    | ((c >> 3) & 4)
 					    | ((c >> 2) & 2)
 					    | ((c >> 1) & 1)];
@@ -207,9 +207,8 @@ video_draw_scanline (int line)
 	  for (j = 0; j < 8; j++)
 	  {
 	    /* Double up the pixels along the x-axis */
-	    UBYTE pixel = video_logical_colors[((c <<= 1) & 0x100) ? 1 : 0];
-	    *(p++) = pixel;
-	    *(p++) = pixel;
+	    *(p++) = v = video_logical_colors[((c <<= 1) & 0x100) ? 1 : 0];;
+	    *(p++) = v;
 	  }
 	  if ((a += 8) >= 0x7f40)
 	    a -= 0x7f40 - 0x6000;
