@@ -36,9 +36,6 @@
 UBYTE electron_read_from_location (Electron *electron, UWORD address);
 void electron_write_to_location (Electron *electron, UWORD address, UBYTE val);
 
-static const UWORD electron_mode_start_addresses[] =
-  { 0x3000, 0x3000, 0x3000, 0x4000, 0x5800, 0x5800, 0x6000 };
-
 void
 electron_init (Electron *electron)
 {
@@ -54,7 +51,7 @@ electron_init (Electron *electron)
   electron->scanline = 0;
   electron->ienabled = 0;
   electron->page = ELECTRON_BASIC_PAGE;
-  video_set_start_address (electron_mode_start_addresses[ELECTRON_MODE (electron)]);
+  video_set_start_address (0x0000);
   video_set_mode (ELECTRON_MODE (electron));
 
   /* No keys are being pressed */
@@ -192,9 +189,29 @@ electron_update_palette (Electron *electron)
       break;
     case 1: case 5:
       /* 4 colours */
+      video_set_color (0, (palette[1] & 1) | ((palette[1] >> 3) & 2) | ((palette[0] >> 2) & 4));
+      video_set_color (1, ((palette[1] >> 1) & 1) | ((palette[1] >> 4) & 2) | ((palette[0] >> 3) & 4));
+      video_set_color (2, ((palette[1] >> 2) & 1) | ((palette[0] >> 1) & 2) | ((palette[0] >> 4) & 4));
+      video_set_color (3, ((palette[1] >> 3) & 1) | ((palette[0] >> 2) & 2) | ((palette[0] >> 5) & 4));
       break;
     case 2:
       /* 16 colours */
+      video_set_color (0, (palette[1] & 1) | ((palette[1] >> 3) & 2) | ((palette[0] >> 2) & 4));
+      video_set_color (1, (palette[7] & 1) | ((palette[7] >> 3) & 2) | ((palette[6] >> 2) & 4));
+      video_set_color (2, ((palette[1] >> 1) & 1) | ((palette[1] >> 4) & 2) | ((palette[0] >> 3) & 4));
+      video_set_color (3, ((palette[7] >> 1) & 1) | ((palette[7] >> 4) & 2) | ((palette[6] >> 3) & 4));
+      video_set_color (4, (palette[3] & 1) | ((palette[3] >> 3) & 2) | ((palette[2] >> 2) & 4));
+      video_set_color (5, (palette[5] & 1) | ((palette[5] >> 3) & 2) | ((palette[4] >> 2) & 4));
+      video_set_color (6, ((palette[3] >> 1) & 1) | ((palette[3] >> 4) & 2) | ((palette[2] >> 3) & 4));
+      video_set_color (7, ((palette[5] >> 1) & 1) | ((palette[5] >> 4) & 2) | ((palette[4] >> 3) & 4));
+      video_set_color (8, ((palette[1] >> 2) & 1) | ((palette[0] >> 1) & 2) | ((palette[0] >> 4) & 4));
+      video_set_color (9, ((palette[7] >> 2) & 1) | ((palette[6] >> 1) & 2) | ((palette[6] >> 4) & 4));
+      video_set_color (10, ((palette[1] >> 3) & 1) | ((palette[0] >> 2) & 2) | ((palette[0] >> 5) & 4));
+      video_set_color (11, ((palette[7] >> 3) & 1) | ((palette[6] >> 2) & 2) | ((palette[6] >> 5) & 4));
+      video_set_color (12, ((palette[3] >> 2) & 1) | ((palette[2] >> 1) & 2) | ((palette[2] >> 4) & 4));
+      video_set_color (13, ((palette[5] >> 2) & 1) | ((palette[4] >> 1) & 2) | ((palette[4] >> 4) & 4));
+      video_set_color (14, ((palette[3] >> 3) & 1) | ((palette[2] >> 2) & 2) | ((palette[2] >> 5) & 4));
+      video_set_color (15, ((palette[5] >> 3) & 1) | ((palette[4] >> 2) & 2) | ((palette[4] >> 5) & 4));
       break;
   }
 }
@@ -282,12 +299,8 @@ electron_write_to_location (Electron *electron, UWORD location, UBYTE v)
       case 0x2:
       case 0x3:
 	electron->sheila[location & 0x0f] = v;
-	if (electron->sheila[0x3] == 0 && electron->sheila[0x2] == 0)
-	  video_set_start_address (electron_mode_start_addresses
-				   [ELECTRON_MODE (electron)]);
-	else
-	  video_set_start_address (((electron->sheila[0x3] & 0x3f) << 9)
-				   | ((electron->sheila[0x2] & 0xe0) << 1));
+	video_set_start_address (((electron->sheila[0x3] & 0x3f) << 9)
+				 | ((electron->sheila[0x2] & 0xe0) << 1));
 	break;
       case 0x5:
 	/* Set the page number. If the keyboard or basic page is
