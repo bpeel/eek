@@ -84,13 +84,21 @@ electron_next_scanline (Electron *electron)
     electron->scanline = 0;
 
   if (electron->scanline < ELECTRON_END_SCANLINE)
+  {
+    if (electron->scanline == 0)
+      /* The video start address is only recognised at the start of
+	 each frame */
+      video_set_start_address (((electron->sheila[0x3] & 0x3f) << 9)
+			       | ((electron->sheila[0x2] & 0xe0) << 1));
+
     video_draw_scanline (electron->scanline);
 
-  /* If we're on the scanline where the timer interrupt occurs then
-     generate that interrupt */
-  if (electron->scanline == ELECTRON_TIMER_SCANLINE)
-    electron_generate_interrupt (electron, ELECTRON_I_RTC);
-  if (electron->scanline == ELECTRON_END_SCANLINE)
+    /* If we're on the scanline where the timer interrupt occurs then
+       generate that interrupt */
+    if (electron->scanline == ELECTRON_TIMER_SCANLINE)
+      electron_generate_interrupt (electron, ELECTRON_I_RTC);
+  }
+  else if (electron->scanline == ELECTRON_END_SCANLINE)
   {
     electron_generate_interrupt (electron, ELECTRON_I_DISPLAY_END);
     /* We've drawn a whole screen so show it on the display */
@@ -295,12 +303,6 @@ electron_write_to_location (Electron *electron, UWORD location, UBYTE v)
     {
       case 0x0:
 	electron->ienabled = v & ~ELECTRON_I_POWERON;
-	break;
-      case 0x2:
-      case 0x3:
-	electron->sheila[location & 0x0f] = v;
-	video_set_start_address (((electron->sheila[0x3] & 0x3f) << 9)
-				 | ((electron->sheila[0x2] & 0xe0) << 1));
 	break;
       case 0x5:
 	/* Set the page number. If the keyboard or basic page is
