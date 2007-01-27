@@ -117,24 +117,25 @@ video_draw_scanline (int line)
   switch (video.mode)
   {
     case 0:
+      /* 0x280 bytes per 8 lines */
       a = (line / 8) * 0x280 + (line % 8) + (video.start ? video.start : 0x3000);
-      if (a >= 0x8000)
-	a = (a + 0x3000) & 0x7fff;
       for (i = 0; i < 80; i++)
       {
+	if (a >= 0x8000)
+	  a = (a + 0x3000) & 0x7fff;
 	c = video.memory[a];
 	for (j = 0; j < 8; j++)
 	  *(p++) = video_logical_colors[((c <<= 1) & 0x100) ? 1 : 0];
-	if ((a += 8) >= 0x8000)
-	  a = (a + 0x3000) & 0x7fff;
+	a += 8;
       }
       break;
     case 1:
+      /* 0x280 bytes per 8 lines */
       a = (line / 8) * 0x280 + (line % 8) + (video.start ? video.start : 0x3000);
-      if (a >= 0x8000)
-	a = (a + 0x3000) & 0x7fff;
       for (i = 0; i < 80; i++)
       {
+	if (a >= 0x8000)
+	  a = (a + 0x3000) & 0x7fff;
 	c = video.memory[a];
 	for (j = 0; j < 4; j++)
 	{
@@ -142,16 +143,16 @@ video_draw_scanline (int line)
 	  *(p++) = v;
 	  c <<= 1;
 	}
-	if ((a += 8) >= 0x8000)
-	  a = (a + 0x3000) & 0x7fff;
+	a += 8;
       }
       break;
     case 2:
+      /* 0x280 bytes per 8 lines */
       a = (line / 8) * 0x280 + (line % 8) + (video.start ? video.start : 0x3000);
-      if (a >= 0x8000)
-	a = (a + 0x3000) & 0x7fff;
       for (i = 0; i < 80; i++)
       {
+	if (a >= 0x8000)
+	  a = (a + 0x3000) & 0x7fff;
 	c = video.memory[a];
 	for (j = 0; j < 2; j++)
 	{
@@ -164,31 +165,65 @@ video_draw_scanline (int line)
 	  *(p++) = v;
 	  c <<= 1;
 	}
-	if ((a += 8) >= 0x8000)
-	  a = (a + 0x3000) & 0x7fff;
+	a += 8;
       }
       break;
     case 3:
-      /* the last two out of every 10 lines are blank */
-      if (line % 10 >= 8)
+      /* the last two out of every 10 lines and the last six lines of
+	 the screen are blank */
+      if (line % 10 >= 8 || line >= 250)
 	memset (p, 0x7, video.screen->w);
       else
       {
-	/* 0x240 bytes per 10 lines */
-	a = (line / 10) * 0x240 + (line % 10) + video.start;
-	if (a >= 0x7e40)
-	  a = (a % 0x3e40) + 0x4000;
+	/* 0x280 bytes per 10 lines */
+	a = (line / 10) * 0x280 + (line % 10) + (video.start ? video.start : 0x4000);
 	for (i = 0; i < 80; i++)
 	{
+	  if (a >= 0x8000)
+	    a = (a + 0x4000) & 0x7fff;
 	  c = video.memory[a];
 	  for (j = 0; j < 8; j++)
 	    *(p++) = video_logical_colors[((c <<= 1) & 0x100) ? 1 : 0];
-	  if ((a += 8) >= 0x7e40)
-	    a = (a % 0x3e40) + 0x7fff;
+	  a += 8;
 	}
       }
       break;
+    default:
+      /* mode 7 becomes mode 4 */
+    case 4:
+      /* 0x140 bytes per 8 lines */
+      a = (line / 8) * 0x140 + (line % 8) + (video.start ? video.start : 0x5800);
+      for (i = 0; i < 40; i++)
+      {
+	if (a >= 0x8000)
+	  a = (a + 0x5800) & 0x7fff;
+	c = video.memory[a];
+	for (j = 0; j < 8; j++)
+	{
+	  *(p++) = v = video_logical_colors[((c <<= 1) & 0x100) ? 1 : 0];
+	  *(p++) = v;
+	}
+	a += 8;
+      }
+      break;
     case 5:
+      /* 0x140 bytes per 8 lines */
+      a = (line / 8) * 0x140 + (line % 8) + (video.start ? video.start : 0x5800);
+      for (i = 0; i < 80; i++)
+      {
+	if (a >= 0x8000)
+	  a = (a + 0x5800) & 0x7fff;
+	c = video.memory[a];
+	for (j = 0; j < 4; j++)
+	{
+	  *(p++) = v = video_logical_colors[((c >> 6) & 2) | ((c >> 3) & 1)];
+	  *(p++) = v;
+	  *(p++) = v;
+	  *(p++) = v;
+	  c <<= 1;
+	}
+	a += 8;
+      }
       break;
     case 6:
       /* the last two out of every 10 lines and the last six lines of
@@ -198,26 +233,20 @@ video_draw_scanline (int line)
       else
       {
 	/* 0x140 bytes per 10 lines */
-	a = (line / 10) * 0x140 + (line % 10) + video.start;
-	if (a >= 0x7f40)
-	  a = 0x6000;
+	a = (line / 10) * 0x140 + (line % 10) + (video.start ? video.start : 0x6000);
 	for (i = 0; i < 40; i++)
 	{
+	  if (a >= 0x8000)
+	    a = (a + 0x6000) & 0x7fff;
 	  c = video.memory[a];
 	  for (j = 0; j < 8; j++)
 	  {
-	    /* Double up the pixels along the x-axis */
 	    *(p++) = v = video_logical_colors[((c <<= 1) & 0x100) ? 1 : 0];;
 	    *(p++) = v;
 	  }
-	  if ((a += 8) >= 0x7f40)
-	    a -= 0x7f40 - 0x6000;
+	  a += 8;
 	}
       }
-      break;
-    default:
-      /* mode 7 becomes mode 4 */
-    case 4:
       break;
   }
 
