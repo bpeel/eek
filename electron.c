@@ -140,7 +140,7 @@ electron_run (Electron *electron)
       {
 	unsigned int now;
 
-	then += 20;
+	then += ELECTRON_TICKS_PER_FRAME;
 	while ((now = timer_ticks ()) < then)
 	  timer_sleep (then - now);
       }
