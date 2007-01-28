@@ -276,8 +276,13 @@ cpu_op_adc (void)
   int v = ov + oa;
   if (CPU_IS_C ())
     v++;
-  if (CPU_IS_D () && (v & 0x0f) > 10)
-    v += 6;
+  if (CPU_IS_D ())
+  {
+    if ((v & 0xf0) >= 0xa0)
+      v += 0x60;
+    if ((v & 0x0f) >= 0x0a)
+      v += 0x06;
+  }
   cpu_state.a = v;
   CPU_SET_C (v > 255);
   CPU_SET_Z (!cpu_state.a); /* a could be different from v */
@@ -292,8 +297,13 @@ cpu_op_sbc (void)
   int v = oa - ov;
   if (!CPU_IS_C ())
     v--;
-  if (CPU_IS_D () && (v & 0x0f) > 10)
-    v -= 6;
+  if (CPU_IS_D ())
+  {
+    if ((v & 0xf0) >= 0xa0)
+      v -= 0x60;
+    if ((v & 0x0f) >= 0x0a)
+      v -= 0x06;
+  }
   cpu_state.a = v;
   CPU_SET_C (v >= 0);
   CPU_SET_Z (!cpu_state.a); /* a could be different from v */
