@@ -141,8 +141,19 @@ electron_run (Electron *electron)
 	unsigned int now;
 
 	then += ELECTRON_TICKS_PER_FRAME;
-	while ((now = timer_ticks ()) < then)
-	  timer_sleep (then - now);
+
+	do
+	{
+	  now = timer_ticks ();
+	  /* If time has gone backwards or we would wait more then the
+	     time to scan one frame then something has gone wrong so
+	     we should just start the timing again */
+	  if (then < now || then - now > ELECTRON_TICKS_PER_FRAME)
+	    then = now;
+	  else
+	    timer_sleep (then - now);
+	}
+	while (now < then);
       }
     }
   }
