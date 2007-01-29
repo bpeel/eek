@@ -13,4 +13,6 @@ eek_SOURCES = \
 	util.h util.c \
 	monitor.h monitor.c \
 	video.h video.c \
-	events.h events.c
+	events.h events.c \
+	stypes.h \
+	byteorder.h
