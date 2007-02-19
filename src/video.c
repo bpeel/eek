@@ -1,145 +1,74 @@
 #include "config.h"
 
 #include <stdio.h>
-#include <SDL/SDL.h>
 #include <string.h>
 
 #include "eek.h"
 #include "video.h"
 #include "util.h"
 
-#define VIDEO_YSCALE 2
-#define VIDEO_WIDTH  640
-#define VIDEO_HEIGHT (256 * VIDEO_YSCALE)
-
-#define VIDEO_LOGICAL_COLOR_COUNT 16
-
-static struct
+void
+video_init (Video *video, const UBYTE *memory)
 {
-  SDL_Surface *screen;
-  
-  int scan_line;
-  UBYTE *memory;
-
-  UBYTE mode;
-
-  UWORD start;
-} video;
-
-static SDL_Color video_physical_colors[] =
-  {
-    { 0xff, 0xff, 0xff, 0x00 }, /* white */
-    { 0x00, 0xff, 0xff, 0x00 }, /* cyan */
-    { 0xff, 0x00, 0xff, 0x00 }, /* magenta */
-    { 0x00, 0x00, 0xff, 0x00 }, /* blue */
-    { 0xff, 0xff, 0x00, 0x00 }, /* yellow */
-    { 0x00, 0xff, 0x00, 0x00 }, /* green */
-    { 0xff, 0x00, 0x00, 0x00 }, /* red */
-    { 0x00, 0x00, 0x00, 0x00 }  /* black */
-  };
-
-static UBYTE video_logical_colors[VIDEO_LOGICAL_COLOR_COUNT] =
-  {
-    0x07, 0x00
-  };
-
-int
-video_init (UBYTE *memory, int flags)
-{
-  int sdl_flags = SDL_HWSURFACE;
-
-  if ((flags & VIDEO_FULLSCREEN))
-    sdl_flags |= SDL_FULLSCREEN;
-
-  video.scan_line = 0;
-  video.memory = memory;
-  video.mode = 0;
-  video.start = 0x4000;
-
-  if (SDL_Init (SDL_INIT_VIDEO) == -1)
-  {
-    eprintf ("SDL_Init: %s\n", SDL_GetError ());
-    return -1;
-  }
-  
-  if ((video.screen = SDL_SetVideoMode (VIDEO_WIDTH, VIDEO_HEIGHT, 
-					8, sdl_flags)) == NULL)
-  {
-    SDL_Quit ();
-    eprintf ("SDL_SetVideoMode: %s\n", SDL_GetError ());
-    return -1;
-  }
-
-  SDL_WM_SetCaption ("Electron Emulator Kit", "Electron Emulator Kit");
-
-  /* Initialise the palette */
-  SDL_SetColors (video.screen, video_physical_colors, 0, 
-		 sizeof (video_physical_colors) / sizeof (SDL_Color));
-
-  return 0;
+  video->memory = memory;
+  video->mode = 0;
+  video->start_address = 0x4000;
+  memset (video->logical_colors, '\0', VIDEO_LOGICAL_COLOR_COUNT);
 }
 
 void
-video_update (void)
+video_set_mode (Video *video, UBYTE mode)
 {
-  SDL_Flip (video.screen);
+  video->mode = mode & 7;
 }
 
 void
-video_set_mode (UBYTE mode)
+video_set_start_address (Video *video, UWORD start)
 {
-  video.mode = mode & 7;
+  video->start_address = start;
 }
 
 void
-video_set_start_address (UWORD start)
+video_set_color (Video *video, UBYTE logical, UBYTE physical)
 {
-  video.start = start;
+  video->logical_colors[logical] = physical;
 }
 
 void
-video_set_color (UBYTE logical, UBYTE physical)
-{
-  video_logical_colors[logical] = physical;
-}
-
-void
-video_draw_scanline (int line)
+video_draw_scanline (Video *video, int line)
 {
   int i, j, c, v;
   unsigned char *p;
   UWORD a;
 
-  SDL_LockSurface (video.screen);
+  p = video->screen_memory + VIDEO_SCREEN_PITCH * line * VIDEO_YSCALE;
 
-  p = video.screen->pixels + video.screen->pitch * line * VIDEO_YSCALE;
-
-  switch (video.mode)
+  switch (video->mode)
   {
     case 0:
       /* 0x280 bytes per 8 lines */
-      a = (line / 8) * 0x280 + (line % 8) + (video.start ? video.start : 0x3000);
+      a = (line / 8) * 0x280 + (line % 8) + (video->start_address ? video->start_address : 0x3000);
       for (i = 0; i < 80; i++)
       {
 	if (a >= 0x8000)
 	  a = (a + 0x3000) & 0x7fff;
-	c = video.memory[a];
+	c = video->memory[a];
 	for (j = 0; j < 8; j++)
-	  *(p++) = video_logical_colors[((c <<= 1) & 0x100) ? 1 : 0];
+	  *(p++) = video->logical_colors[((c <<= 1) & 0x100) ? 1 : 0];
 	a += 8;
       }
       break;
     case 1:
       /* 0x280 bytes per 8 lines */
-      a = (line / 8) * 0x280 + (line % 8) + (video.start ? video.start : 0x3000);
+      a = (line / 8) * 0x280 + (line % 8) + (video->start_address ? video->start_address : 0x3000);
       for (i = 0; i < 80; i++)
       {
 	if (a >= 0x8000)
 	  a = (a + 0x3000) & 0x7fff;
-	c = video.memory[a];
+	c = video->memory[a];
 	for (j = 0; j < 4; j++)
 	{
-	  *(p++) = v = video_logical_colors[((c >> 6) & 2) | ((c >> 3) & 1)];
+	  *(p++) = v = video->logical_colors[((c >> 6) & 2) | ((c >> 3) & 1)];
 	  *(p++) = v;
 	  c <<= 1;
 	}
@@ -148,15 +77,15 @@ video_draw_scanline (int line)
       break;
     case 2:
       /* 0x280 bytes per 8 lines */
-      a = (line / 8) * 0x280 + (line % 8) + (video.start ? video.start : 0x3000);
+      a = (line / 8) * 0x280 + (line % 8) + (video->start_address ? video->start_address : 0x3000);
       for (i = 0; i < 80; i++)
       {
 	if (a >= 0x8000)
 	  a = (a + 0x3000) & 0x7fff;
-	c = video.memory[a];
+	c = video->memory[a];
 	for (j = 0; j < 2; j++)
 	{
-	  *(p++) = v = video_logical_colors[((c >> 4) & 8)
+	  *(p++) = v = video->logical_colors[((c >> 4) & 8)
 					    | ((c >> 3) & 4)
 					    | ((c >> 2) & 2)
 					    | ((c >> 1) & 1)];
@@ -172,18 +101,18 @@ video_draw_scanline (int line)
       /* the last two out of every 10 lines and the last six lines of
 	 the screen are blank */
       if (line % 10 >= 8 || line >= 250)
-	memset (p, 0x7, video.screen->w);
+	memset (p, 0x7, VIDEO_WIDTH);
       else
       {
 	/* 0x280 bytes per 10 lines */
-	a = (line / 10) * 0x280 + (line % 10) + (video.start ? video.start : 0x4000);
+	a = (line / 10) * 0x280 + (line % 10) + (video->start_address ? video->start_address : 0x4000);
 	for (i = 0; i < 80; i++)
 	{
 	  if (a >= 0x8000)
 	    a = (a + 0x4000) & 0x7fff;
-	  c = video.memory[a];
+	  c = video->memory[a];
 	  for (j = 0; j < 8; j++)
-	    *(p++) = video_logical_colors[((c <<= 1) & 0x100) ? 1 : 0];
+	    *(p++) = video->logical_colors[((c <<= 1) & 0x100) ? 1 : 0];
 	  a += 8;
 	}
       }
@@ -192,15 +121,15 @@ video_draw_scanline (int line)
       /* mode 7 becomes mode 4 */
     case 4:
       /* 0x140 bytes per 8 lines */
-      a = (line / 8) * 0x140 + (line % 8) + (video.start ? video.start : 0x5800);
+      a = (line / 8) * 0x140 + (line % 8) + (video->start_address ? video->start_address : 0x5800);
       for (i = 0; i < 40; i++)
       {
 	if (a >= 0x8000)
 	  a = (a + 0x5800) & 0x7fff;
-	c = video.memory[a];
+	c = video->memory[a];
 	for (j = 0; j < 8; j++)
 	{
-	  *(p++) = v = video_logical_colors[((c <<= 1) & 0x100) ? 1 : 0];
+	  *(p++) = v = video->logical_colors[((c <<= 1) & 0x100) ? 1 : 0];
 	  *(p++) = v;
 	}
 	a += 8;
@@ -208,15 +137,15 @@ video_draw_scanline (int line)
       break;
     case 5:
       /* 0x140 bytes per 8 lines */
-      a = (line / 8) * 0x140 + (line % 8) + (video.start ? video.start : 0x5800);
+      a = (line / 8) * 0x140 + (line % 8) + (video->start_address ? video->start_address : 0x5800);
       for (i = 0; i < 80; i++)
       {
 	if (a >= 0x8000)
 	  a = (a + 0x5800) & 0x7fff;
-	c = video.memory[a];
+	c = video->memory[a];
 	for (j = 0; j < 4; j++)
 	{
-	  *(p++) = v = video_logical_colors[((c >> 6) & 2) | ((c >> 3) & 1)];
+	  *(p++) = v = video->logical_colors[((c >> 6) & 2) | ((c >> 3) & 1)];
 	  *(p++) = v;
 	  *(p++) = v;
 	  *(p++) = v;
@@ -229,19 +158,19 @@ video_draw_scanline (int line)
       /* the last two out of every 10 lines and the last six lines of
 	 the screen are blank */
       if (line % 10 >= 8 || line >= 250)
-	memset (p, 0x7, video.screen->w);
+	memset (p, 0x7, VIDEO_WIDTH);
       else
       {
 	/* 0x140 bytes per 10 lines */
-	a = (line / 10) * 0x140 + (line % 10) + (video.start ? video.start : 0x6000);
+	a = (line / 10) * 0x140 + (line % 10) + (video->start_address ? video->start_address : 0x6000);
 	for (i = 0; i < 40; i++)
 	{
 	  if (a >= 0x8000)
 	    a = (a + 0x6000) & 0x7fff;
-	  c = video.memory[a];
+	  c = video->memory[a];
 	  for (j = 0; j < 8; j++)
 	  {
-	    *(p++) = v = video_logical_colors[((c <<= 1) & 0x100) ? 1 : 0];;
+	    *(p++) = v = video->logical_colors[((c <<= 1) & 0x100) ? 1 : 0];;
 	    *(p++) = v;
 	  }
 	  a += 8;
@@ -252,16 +181,8 @@ video_draw_scanline (int line)
 
   /* Copy the scanline a few times */
   for (i = 1; i < VIDEO_YSCALE; i++)
-    memcpy (video.screen->pixels + video.screen->pitch * line * VIDEO_YSCALE
-	    + video.screen->pitch * i,
-	    video.screen->pixels + video.screen->pitch * line * VIDEO_YSCALE,
-	    video.screen->w);
-
-  SDL_UnlockSurface (video.screen);
-}
-
-void
-video_quit (void)
-{
-  SDL_Quit ();
+    memcpy (video->screen_memory + VIDEO_SCREEN_PITCH * line * VIDEO_YSCALE
+	    + VIDEO_SCREEN_PITCH * i,
+	    video->screen_memory + VIDEO_SCREEN_PITCH * line * VIDEO_YSCALE,
+	    VIDEO_WIDTH);
 }
