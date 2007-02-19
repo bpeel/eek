@@ -1,27 +1,29 @@
 #include "config.h"
 
+#include <gtk/gtkwindow.h>
+#include <gtk/gtkmain.h>
 #include <stdio.h>
-#include <unistd.h>
-#include <signal.h>
 #include <string.h>
 #include <errno.h>
 
 #include "eek.h"
+#include "electronwidget.h"
 #include "cpu.h"
 #include "electron.h"
 #include "timer.h"
 #include "util.h"
-#include "monitor.h"
-#include "video.h"
 
-/* The state of the electron */
-Electron main_electron;
+static void
+main_window_on_destroy (GtkWidget *widget, gpointer data)
+{
+  gtk_main_quit ();
+}
 
 int
 main (int argc, char **argv)
 {
-  int do_monitor = TRUE;
   char *os_rom = "roms/os.rom";
+  GtkWidget *window, *ewidget;
 
   shortname = util_shortname (argv[0]);
 
@@ -31,18 +33,25 @@ main (int argc, char **argv)
   /* Initialise the timer */
   timer_init ();
 
-  /* Initialise the electron */
-  electron_init (&main_electron);
+  /* Initialise GTK */
+  gtk_init (&argc, &argv);
+  /* Create the main window */
+  window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+  g_signal_connect (G_OBJECT (window), "destroy", G_CALLBACK (main_window_on_destroy), NULL);
+  /* Add an electron widget to it */
+  ewidget = electron_widget_new ();
+  gtk_container_add (GTK_CONTAINER (window), ewidget);
+  gtk_widget_show (ewidget);
 
   /* Load the two default roms */
   {
     FILE *file;
 
     if ((file = fopen (os_rom, "rb")) == NULL
-	|| electron_load_os_rom (&main_electron, file) == -1
+	|| electron_load_os_rom (ELECTRON_WIDGET (ewidget)->electron, file) == -1
 	|| fclose (file) == EOF
 	|| (file = fopen ("roms/basic.rom", "rb")) == NULL
-	|| electron_load_paged_rom (&main_electron, ELECTRON_BASIC_PAGE, file)
+	|| electron_load_paged_rom (ELECTRON_WIDGET (ewidget)->electron, ELECTRON_BASIC_PAGE, file)
 	|| fclose (file) == EOF)
     {
       eprintf ("couldn't load rom: %s\n", strerror (errno));
@@ -50,18 +59,10 @@ main (int argc, char **argv)
     }
   }
 
-  cpu_restart (&main_electron.cpu);
+  cpu_restart (&ELECTRON_WIDGET (ewidget)->electron->cpu);
 
-  if (video_init (main_electron.memory, 0) == -1)
-  {
-    eprintf ("couldn't initalise video\n");
-    exit (-1);
-  }
-
-  if (!do_monitor || monitor (&main_electron) == -2)
-    electron_run (&main_electron);
-
-  video_quit ();
+  gtk_widget_show (window);
+  gtk_main ();
 
   return 0;
 }
