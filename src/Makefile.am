@@ -1,10 +1,10 @@
 ## Process this file with automake to produce Makefile.in
 
-INCLUDES = @SDL_CFLAGS@
+INCLUDES = @GTK_CFLAGS@
 
 bin_PROGRAMS = eek
 
-eek_LDADD = @SDL_LIBS@
+eek_LDADD = @GTK_LIBS@
 eek_SOURCES = \
 	eek.h main.c \
 	cpu.h cpu.c \
@@ -13,6 +13,6 @@ eek_SOURCES = \
 	util.h util.c \
 	monitor.h monitor.c \
 	video.h video.c \
-	events.h events.c \
 	stypes.h \
-	byteorder.h
+	byteorder.h \
+	electronwidget.h electronwidget.c
