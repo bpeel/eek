@@ -1,5 +1,5 @@
-#ifndef _BBCE_H
-#define _BBCE_H
+#ifndef _EEK_H
+#define _EEK_H
 
 #ifndef TRUE
 #define TRUE 1
@@ -8,4 +8,4 @@
 #define FALSE 0
 #endif
 
-#endif /* _BBCE_H */
+#endif /* _EEK_H */
