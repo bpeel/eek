@@ -16,10 +16,8 @@ else
  AC_DEFINE(BYTE_ORDER_SMALL, 1, [Use small byte first])
 fi
 
-AM_PATH_SDL(1.2.0, have_sdl=yes, have_sdl=no)
-if test "x$have_sdl" != "xyes"; then
-  AC_MSG_ERROR(SDL >= 1.2.0 is required. Get it from http://www.libsdl.org/)
-fi
+dnl Check for GTK
+AM_PATH_GTK_2_0(2.6.0, , AC_MSG_ERROR([GTK+ version >= 2.6.0 is required]))
 
 dnl Use -Wall if we have gcc.
 changequote(,)dnl
