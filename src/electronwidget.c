@@ -104,6 +104,10 @@ electron_widget_realize (GtkWidget *widget)
 
   GTK_WIDGET_SET_FLAGS (widget, GTK_REALIZED);
 
+  /* There's no point in double buffering this widget because none of
+     the drawing operations overlap so it won't cause flicker */
+  gtk_widget_set_double_buffered (widget, FALSE);
+
   attributes.x = widget->allocation.x;
   attributes.y = widget->allocation.y;
   attributes.width = widget->allocation.width;
@@ -121,7 +125,7 @@ electron_widget_realize (GtkWidget *widget)
   
   gdk_window_set_user_data (widget->window, widget);
 
-  gdk_window_set_background (widget->window, &widget->style->base[GTK_WIDGET_STATE (widget)]);
+  gdk_window_set_background (widget->window, &widget->style->bg[GTK_WIDGET_STATE (widget)]);
 }
 
 static void
@@ -161,14 +165,35 @@ static gboolean
 electron_widget_expose (GtkWidget *widget, GdkEventExpose *event)
 {
   ElectronWidget *ewidget;
+  int xpos, ypos;
 
   g_return_val_if_fail (IS_ELECTRON_WIDGET (widget), FALSE);
 
   ewidget = ELECTRON_WIDGET (widget);
 
+  /* Centre the display on the widget */
+  xpos = widget->allocation.width / 2 - VIDEO_WIDTH / 2;
+  ypos = widget->allocation.height / 2 - VIDEO_HEIGHT / 2;
+
+  /* Clear the area around the display */
+  if (xpos > 0)
+    gdk_window_clear_area (widget->window,
+			   0, 0, xpos, widget->allocation.height);
+  if (xpos + VIDEO_WIDTH < widget->allocation.height)
+    gdk_window_clear_area (widget->window,
+			   xpos + VIDEO_WIDTH, 0, widget->allocation.width - xpos - VIDEO_WIDTH,
+			   widget->allocation.height);
+  if (ypos > 0)
+    gdk_window_clear_area (widget->window,
+			   xpos, 0, VIDEO_WIDTH, ypos);
+  if (ypos + VIDEO_HEIGHT < widget->allocation.height)
+    gdk_window_clear_area (widget->window,
+			   xpos, ypos + VIDEO_HEIGHT, VIDEO_WIDTH,
+			   widget->allocation.height - ypos - VIDEO_HEIGHT);
+			   
   gdk_draw_indexed_image (GDK_DRAWABLE (widget->window),
 			  widget->style->fg_gc[widget->state],
-			  0, 0, VIDEO_WIDTH, VIDEO_HEIGHT,
+			  xpos, ypos, VIDEO_WIDTH, VIDEO_HEIGHT,
 			  GDK_RGB_DITHER_NONE,
 			  ewidget->electron->video.screen_memory,
 			  VIDEO_SCREEN_PITCH,
