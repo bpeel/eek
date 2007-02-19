@@ -8,7 +8,6 @@
 #include "cpu.h"
 #include "util.h"
 #include "timer.h"
-#include "events.h"
 #include "video.h"
 #include "monitor.h"
 
@@ -28,8 +27,6 @@
 #define ELECTRON_C_HIGH_TONE   64
 #define ELECTRON_C_RTC         32
 #define ELECTRON_C_DISPLAY_END 16
-
-#define ELECTRON_TICKS_PER_FRAME 20
 
 #define ELECTRON_MODE(electron) (((electron)->sheila[0x7] >> 3) & 7)
 
@@ -51,8 +48,9 @@ electron_init (Electron *electron)
   electron->scanline = 0;
   electron->ienabled = 0;
   electron->page = ELECTRON_BASIC_PAGE;
-  video_set_start_address (0x0000);
-  video_set_mode (ELECTRON_MODE (electron));
+  video_init (&electron->video, electron->memory);
+  video_set_start_address (&electron->video, 0x0000);
+  video_set_mode (&electron->video, ELECTRON_MODE (electron));
 
   /* No keys are being pressed */
   memset (electron->keyboard, '\0', 14);
@@ -88,10 +86,10 @@ electron_next_scanline (Electron *electron)
     if (electron->scanline == 0)
       /* The video start address is only recognised at the start of
 	 each frame */
-      video_set_start_address (((electron->sheila[0x3] & 0x3f) << 9)
+      video_set_start_address (&electron->video, ((electron->sheila[0x3] & 0x3f) << 9)
 			       | ((electron->sheila[0x2] & 0xe0) << 1));
 
-    video_draw_scanline (electron->scanline);
+    video_draw_scanline (&electron->video, electron->scanline);
 
     /* If we're on the scanline where the timer interrupt occurs then
        generate that interrupt */
@@ -99,11 +97,7 @@ electron_next_scanline (Electron *electron)
       electron_generate_interrupt (electron, ELECTRON_I_RTC);
   }
   else if (electron->scanline == ELECTRON_END_SCANLINE)
-  {
     electron_generate_interrupt (electron, ELECTRON_I_DISPLAY_END);
-    /* We've drawn a whole screen so show it on the display */
-    video_update ();
-  }
 }
 
 void
@@ -132,9 +126,6 @@ electron_run (Electron *electron)
       /* Process the next scanline */
       electron_next_scanline (electron);
 
-      if ((quit = events_check (electron)))
-	break;
-    
       /* Sync to 50Hz video refresh rate */
       if (electron->scanline == 0)
       {
@@ -159,6 +150,18 @@ electron_run (Electron *electron)
   }
 
   return quit;
+}
+
+void
+electron_run_frame (Electron *electron)
+{
+  do
+  {
+    /* Execute instructions until the next scanline */
+    cpu_fetch_execute (&electron->cpu, ELECTRON_CYCLES_PER_SCANLINE);
+    /* Process the next scanline */
+    electron_next_scanline (electron);
+  } while (electron->scanline != ELECTRON_END_SCANLINE);
 }
 
 int
@@ -203,34 +206,34 @@ electron_update_palette (Electron *electron)
   {
     case 0: case 3: case 4: case 6: case 7:
       /* 2 colours */
-      video_set_color (0, (palette[1] & 1) | ((palette[1] >> 3) & 2) | ((palette[0] >> 2) & 4));
-      video_set_color (1, ((palette[1] >> 2) & 1) | ((palette[0] >> 1) & 2) | ((palette[0] >> 4) & 4));
+      video_set_color (&electron->video, 0, (palette[1] & 1) | ((palette[1] >> 3) & 2) | ((palette[0] >> 2) & 4));
+      video_set_color (&electron->video, 1, ((palette[1] >> 2) & 1) | ((palette[0] >> 1) & 2) | ((palette[0] >> 4) & 4));
       break;
     case 1: case 5:
       /* 4 colours */
-      video_set_color (0, (palette[1] & 1) | ((palette[1] >> 3) & 2) | ((palette[0] >> 2) & 4));
-      video_set_color (1, ((palette[1] >> 1) & 1) | ((palette[1] >> 4) & 2) | ((palette[0] >> 3) & 4));
-      video_set_color (2, ((palette[1] >> 2) & 1) | ((palette[0] >> 1) & 2) | ((palette[0] >> 4) & 4));
-      video_set_color (3, ((palette[1] >> 3) & 1) | ((palette[0] >> 2) & 2) | ((palette[0] >> 5) & 4));
+      video_set_color (&electron->video, 0, (palette[1] & 1) | ((palette[1] >> 3) & 2) | ((palette[0] >> 2) & 4));
+      video_set_color (&electron->video, 1, ((palette[1] >> 1) & 1) | ((palette[1] >> 4) & 2) | ((palette[0] >> 3) & 4));
+      video_set_color (&electron->video, 2, ((palette[1] >> 2) & 1) | ((palette[0] >> 1) & 2) | ((palette[0] >> 4) & 4));
+      video_set_color (&electron->video, 3, ((palette[1] >> 3) & 1) | ((palette[0] >> 2) & 2) | ((palette[0] >> 5) & 4));
       break;
     case 2:
       /* 16 colours */
-      video_set_color (0, (palette[1] & 1) | ((palette[1] >> 3) & 2) | ((palette[0] >> 2) & 4));
-      video_set_color (1, (palette[7] & 1) | ((palette[7] >> 3) & 2) | ((palette[6] >> 2) & 4));
-      video_set_color (2, ((palette[1] >> 1) & 1) | ((palette[1] >> 4) & 2) | ((palette[0] >> 3) & 4));
-      video_set_color (3, ((palette[7] >> 1) & 1) | ((palette[7] >> 4) & 2) | ((palette[6] >> 3) & 4));
-      video_set_color (4, (palette[3] & 1) | ((palette[3] >> 3) & 2) | ((palette[2] >> 2) & 4));
-      video_set_color (5, (palette[5] & 1) | ((palette[5] >> 3) & 2) | ((palette[4] >> 2) & 4));
-      video_set_color (6, ((palette[3] >> 1) & 1) | ((palette[3] >> 4) & 2) | ((palette[2] >> 3) & 4));
-      video_set_color (7, ((palette[5] >> 1) & 1) | ((palette[5] >> 4) & 2) | ((palette[4] >> 3) & 4));
-      video_set_color (8, ((palette[1] >> 2) & 1) | ((palette[0] >> 1) & 2) | ((palette[0] >> 4) & 4));
-      video_set_color (9, ((palette[7] >> 2) & 1) | ((palette[6] >> 1) & 2) | ((palette[6] >> 4) & 4));
-      video_set_color (10, ((palette[1] >> 3) & 1) | ((palette[0] >> 2) & 2) | ((palette[0] >> 5) & 4));
-      video_set_color (11, ((palette[7] >> 3) & 1) | ((palette[6] >> 2) & 2) | ((palette[6] >> 5) & 4));
-      video_set_color (12, ((palette[3] >> 2) & 1) | ((palette[2] >> 1) & 2) | ((palette[2] >> 4) & 4));
-      video_set_color (13, ((palette[5] >> 2) & 1) | ((palette[4] >> 1) & 2) | ((palette[4] >> 4) & 4));
-      video_set_color (14, ((palette[3] >> 3) & 1) | ((palette[2] >> 2) & 2) | ((palette[2] >> 5) & 4));
-      video_set_color (15, ((palette[5] >> 3) & 1) | ((palette[4] >> 2) & 2) | ((palette[4] >> 5) & 4));
+      video_set_color (&electron->video, 0, (palette[1] & 1) | ((palette[1] >> 3) & 2) | ((palette[0] >> 2) & 4));
+      video_set_color (&electron->video, 1, (palette[7] & 1) | ((palette[7] >> 3) & 2) | ((palette[6] >> 2) & 4));
+      video_set_color (&electron->video, 2, ((palette[1] >> 1) & 1) | ((palette[1] >> 4) & 2) | ((palette[0] >> 3) & 4));
+      video_set_color (&electron->video, 3, ((palette[7] >> 1) & 1) | ((palette[7] >> 4) & 2) | ((palette[6] >> 3) & 4));
+      video_set_color (&electron->video, 4, (palette[3] & 1) | ((palette[3] >> 3) & 2) | ((palette[2] >> 2) & 4));
+      video_set_color (&electron->video, 5, (palette[5] & 1) | ((palette[5] >> 3) & 2) | ((palette[4] >> 2) & 4));
+      video_set_color (&electron->video, 6, ((palette[3] >> 1) & 1) | ((palette[3] >> 4) & 2) | ((palette[2] >> 3) & 4));
+      video_set_color (&electron->video, 7, ((palette[5] >> 1) & 1) | ((palette[5] >> 4) & 2) | ((palette[4] >> 3) & 4));
+      video_set_color (&electron->video, 8, ((palette[1] >> 2) & 1) | ((palette[0] >> 1) & 2) | ((palette[0] >> 4) & 4));
+      video_set_color (&electron->video, 9, ((palette[7] >> 2) & 1) | ((palette[6] >> 1) & 2) | ((palette[6] >> 4) & 4));
+      video_set_color (&electron->video, 10, ((palette[1] >> 3) & 1) | ((palette[0] >> 2) & 2) | ((palette[0] >> 5) & 4));
+      video_set_color (&electron->video, 11, ((palette[7] >> 3) & 1) | ((palette[6] >> 2) & 2) | ((palette[6] >> 5) & 4));
+      video_set_color (&electron->video, 12, ((palette[3] >> 2) & 1) | ((palette[2] >> 1) & 2) | ((palette[2] >> 4) & 4));
+      video_set_color (&electron->video, 13, ((palette[5] >> 2) & 1) | ((palette[4] >> 1) & 2) | ((palette[4] >> 4) & 4));
+      video_set_color (&electron->video, 14, ((palette[3] >> 3) & 1) | ((palette[2] >> 2) & 2) | ((palette[2] >> 5) & 4));
+      video_set_color (&electron->video, 15, ((palette[5] >> 3) & 1) | ((palette[4] >> 2) & 2) | ((palette[4] >> 5) & 4));
       break;
   }
 }
@@ -336,7 +339,7 @@ electron_write_to_location (Electron *electron, UWORD location, UBYTE v)
 	if (electron->sheila[location & 0x0f] != v)
 	{
 	  electron->sheila[location & 0x0f] = v;
-	  video_set_mode (ELECTRON_MODE (electron));
+	  video_set_mode (&electron->video, ELECTRON_MODE (electron));
 	  electron_update_palette (electron);
 	}
 	break;

@@ -5,6 +5,7 @@
 
 #include "stypes.h"
 #include "cpu.h"
+#include "video.h"
 
 /* Start address of the current paged rom */
 #define ELECTRON_PAGED_ROM_ADDRESS 0x8000
@@ -12,6 +13,8 @@
 /* Start address of the OS rom */
 #define ELECTRON_OS_ROM_ADDRESS    0xC000
 #define ELECTRON_OS_ROM_LENGTH     0x4000
+
+#define ELECTRON_TICKS_PER_FRAME   20
 
 /* Page for the basic rom */
 #define ELECTRON_BASIC_PAGE    10
@@ -47,6 +50,9 @@ struct _Electron
 
   /* The state of the cpu */
   Cpu cpu;
+
+  /* The state of the display */
+  Video video;
 };
 
 /* Which address page represents the sheila */
@@ -58,6 +64,7 @@ int electron_load_paged_rom (Electron *electron, int page, FILE *in);
 void electron_write_to_location (Electron *electron, UWORD location, UBYTE v);
 UBYTE electron_read_from_location (Electron *electron, UWORD location);
 int electron_run (Electron *electron);
+void electron_run_frame (Electron *electron);
 void electron_step (Electron *electron);
 
 #define electron_press_key(electron, line, bit) \
