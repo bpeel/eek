@@ -5,6 +5,7 @@
 #include "electronwidget.h"
 #include "electron.h"
 #include "video.h"
+#include "framesource.h"
 
 static void electron_widget_class_init (ElectronWidgetClass *klass);
 static void electron_widget_init (ElectronWidget *widget);
@@ -12,7 +13,6 @@ static void electron_widget_realize (GtkWidget *widget);
 static void electron_widget_finalize (GObject *obj);
 static void electron_widget_dispose (GObject *obj);
 static gboolean electron_widget_expose (GtkWidget *widget, GdkEventExpose *event);
-
 static void electron_widget_size_request (GtkWidget *widget, GtkRequisition *requisition);
 
 static gboolean electron_widget_timeout (ElectronWidget *ewidget);
@@ -84,8 +84,10 @@ electron_widget_init (ElectronWidget *ewidget)
 
   ewidget->electron = g_malloc (sizeof (Electron));
   electron_init (ewidget->electron);
-  ewidget->timeout = g_timeout_add (ELECTRON_TICKS_PER_FRAME,
-				    (GSourceFunc) electron_widget_timeout, ewidget);
+
+  ewidget->timeout = frame_source_add (ELECTRON_TICKS_PER_FRAME,
+				       (GSourceFunc) electron_widget_timeout,
+				       ewidget, NULL);
 }
 
 GtkWidget *
