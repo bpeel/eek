@@ -19,7 +19,7 @@ struct _ElectronWidget
   GtkWidget parent_object;
 
   Electron *electron;
-  int timeout;
+  guint timeout;
 };
 
 struct _ElectronWidgetClass
