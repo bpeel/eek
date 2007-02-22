@@ -15,4 +15,5 @@ eek_SOURCES = \
 	video.h video.c \
 	stypes.h \
 	byteorder.h \
-	electronwidget.h electronwidget.c
+	electronwidget.h electronwidget.c \
+	framesource.h framesource.c
