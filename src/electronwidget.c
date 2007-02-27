@@ -180,7 +180,7 @@ electron_widget_expose (GtkWidget *widget, GdkEventExpose *event)
   if (xpos > 0)
     gdk_window_clear_area (widget->window,
 			   0, 0, xpos, widget->allocation.height);
-  if (xpos + VIDEO_WIDTH < widget->allocation.height)
+  if (xpos + VIDEO_WIDTH < widget->allocation.width)
     gdk_window_clear_area (widget->window,
 			   xpos + VIDEO_WIDTH, 0, widget->allocation.width - xpos - VIDEO_WIDTH,
 			   widget->allocation.height);
