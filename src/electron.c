@@ -33,9 +33,11 @@
 UBYTE electron_read_from_location (Electron *electron, UWORD address);
 void electron_write_to_location (Electron *electron, UWORD address, UBYTE val);
 
-void
-electron_init (Electron *electron)
+Electron *
+electron_new ()
 {
+  Electron *electron = xmalloc (sizeof (Electron));
+
   /* Initialise the sheila to zeros */
   memset (electron->sheila, 0, sizeof (electron->sheila));
 
@@ -59,6 +61,21 @@ electron_init (Electron *electron)
   cpu_init (&electron->cpu, electron->memory,
 	    (CpuMemReadFunc) electron_read_from_location, 
 	    (CpuMemWriteFunc) electron_write_to_location, electron);
+
+  return electron;
+}
+
+void
+electron_free (Electron *electron)
+{
+  int i;
+
+  /* Free all of the paged rom data */
+  for (i = 0; i < ELECTRON_PAGED_ROM_COUNT; i++)
+    if (electron->paged_roms[i])
+      xfree (electron->paged_roms[i]);
+  /* Free the electron data */
+  xfree (electron);
 }
 
 void

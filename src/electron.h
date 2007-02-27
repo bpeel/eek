@@ -10,6 +10,7 @@
 /* Start address of the current paged rom */
 #define ELECTRON_PAGED_ROM_ADDRESS 0x8000
 #define ELECTRON_PAGED_ROM_LENGTH  0x4000
+#define ELECTRON_PAGED_ROM_COUNT   16
 /* Start address of the OS rom */
 #define ELECTRON_OS_ROM_ADDRESS    0xC000
 #define ELECTRON_OS_ROM_LENGTH     0x4000
@@ -33,7 +34,7 @@ struct _Electron
   /* The current page */
   UBYTE page;
   /* The current paged roms */
-  UBYTE *paged_roms[16];
+  UBYTE *paged_roms[ELECTRON_PAGED_ROM_COUNT];
   /* The number of paged roms loaded */
   UBYTE pagedc;
   /* The enabled interrupts */
@@ -58,7 +59,8 @@ struct _Electron
 /* Which address page represents the sheila */
 #define ELECTRON_SHEILA_PAGE 0xFE
 
-void electron_init (Electron *electron);
+Electron *electron_new ();
+void electron_free (Electron *electron);
 int electron_load_os_rom (Electron *electron, FILE *in);
 int electron_load_paged_rom (Electron *electron, int page, FILE *in);
 void electron_write_to_location (Electron *electron, UWORD location, UBYTE v);

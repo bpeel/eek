@@ -82,8 +82,7 @@ electron_widget_init (ElectronWidget *ewidget)
 {
   GTK_WIDGET_SET_FLAGS (GTK_WIDGET (ewidget), GTK_CAN_FOCUS);
 
-  ewidget->electron = g_malloc (sizeof (Electron));
-  electron_init (ewidget->electron);
+  ewidget->electron = electron_new ();
 
   ewidget->timeout = frame_source_add (ELECTRON_TICKS_PER_FRAME,
 				       (GSourceFunc) electron_widget_timeout,
@@ -139,7 +138,7 @@ electron_widget_finalize (GObject *obj)
   g_return_if_fail (IS_ELECTRON_WIDGET (obj));
 
   ewidget = ELECTRON_WIDGET (obj);
-  g_free (ewidget->electron);
+  electron_free (ewidget->electron);
 
   G_OBJECT_CLASS (parent_class)->finalize (obj);
 }
