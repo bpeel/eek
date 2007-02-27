@@ -1,6 +1,7 @@
 #include "config.h"
 
 #include <gtk/gtkwidget.h>
+#include <gdk/gdkkeysyms.h>
 
 #include "electronwidget.h"
 #include "electron.h"
@@ -14,12 +15,13 @@ static void electron_widget_finalize (GObject *obj);
 static void electron_widget_dispose (GObject *obj);
 static gboolean electron_widget_expose (GtkWidget *widget, GdkEventExpose *event);
 static void electron_widget_size_request (GtkWidget *widget, GtkRequisition *requisition);
+static gboolean electron_widget_key_event (GtkWidget *widget, GdkEventKey *event);
 
 static gboolean electron_widget_timeout (ElectronWidget *ewidget);
 
 static gpointer parent_class;
 
-GdkRgbCmap electron_widget_color_map =
+static GdkRgbCmap electron_widget_color_map =
   {
     {
       0xffffff, /* white */
@@ -31,6 +33,24 @@ GdkRgbCmap electron_widget_color_map =
       0xff0000, /* red */
       0x000000  /* black */
     }, 8
+  };
+
+static const int electron_widget_keymap[14 * 4] =
+  {
+    GDK_Right, GDK_Tab, 0, GDK_space,
+    GDK_Left, GDK_Down, GDK_Return, GDK_BackSpace,
+    GDK_minus, GDK_Up, GDK_apostrophe, 0,
+    GDK_0, GDK_P, GDK_semicolon, GDK_slash,
+    GDK_9, GDK_O, GDK_L, GDK_period,
+    GDK_8, GDK_I, GDK_K, GDK_comma,
+    GDK_7, GDK_U, GDK_J, GDK_M,
+    GDK_6, GDK_Y, GDK_H, GDK_N,
+    GDK_5, GDK_T, GDK_G, GDK_B,
+    GDK_4, GDK_R, GDK_F, GDK_V,
+    GDK_3, GDK_E, GDK_D, GDK_C,
+    GDK_2, GDK_W, GDK_S, GDK_X,
+    GDK_1, GDK_Q, GDK_A, GDK_Z,
+    GDK_Escape, GDK_Alt_L, GDK_Control_L, GDK_Shift_L
   };
 
 GType
@@ -75,6 +95,8 @@ electron_widget_class_init (ElectronWidgetClass *klass)
   widget_class->realize = electron_widget_realize;
   widget_class->expose_event = electron_widget_expose;
   widget_class->size_request = electron_widget_size_request;
+  widget_class->key_press_event = electron_widget_key_event;
+  widget_class->key_release_event = electron_widget_key_event;
 }
 
 static void
@@ -115,8 +137,8 @@ electron_widget_realize (GtkWidget *widget)
   attributes.height = widget->allocation.height;
   attributes.wclass = GDK_INPUT_OUTPUT;
   attributes.window_type = GDK_WINDOW_CHILD;
-  attributes.event_mask = gtk_widget_get_events (widget);
-  attributes.event_mask |= GDK_EXPOSURE_MASK;
+  attributes.event_mask = gtk_widget_get_events (widget)
+    | GDK_EXPOSURE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK;
 
   widget->window = gdk_window_new (gtk_widget_get_parent_window (widget),
 				   &attributes,
@@ -222,4 +244,29 @@ electron_widget_timeout (ElectronWidget *ewidget)
     gdk_window_invalidate_rect (GTK_WIDGET (ewidget)->window, NULL, FALSE);
 
   return TRUE;
+}
+
+static gboolean
+electron_widget_key_event (GtkWidget *widget, GdkEventKey *event)
+{
+  ElectronWidget *ewidget;
+  int i, keyval;
+
+  g_return_val_if_fail (IS_ELECTRON_WIDGET (widget), TRUE);
+
+  ewidget = ELECTRON_WIDGET (widget);
+
+  keyval = gdk_keyval_to_upper (event->keyval);
+
+  for (i = 0; i < 14 * 4; i++)
+    if (electron_widget_keymap[i] == keyval)
+    {
+      if (event->type == GDK_KEY_PRESS)
+	electron_press_key (ewidget->electron, i >> 2, i & 3);
+      else
+	electron_release_key (ewidget->electron, i >> 2, i & 3);
+      return TRUE;
+    }
+
+  return FALSE;
 }
