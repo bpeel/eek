@@ -20,6 +20,9 @@ struct _ElectronWidget
 
   Electron *electron;
   guint timeout;
+
+  unsigned char shift_state, control_state, alt_state;
+  int key_override;
 };
 
 struct _ElectronWidgetClass
