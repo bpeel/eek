@@ -24,6 +24,11 @@
 
 typedef struct _Electron Electron;
 
+#define ELECTRON_MODIFIERS_LINE 13
+#define ELECTRON_FUNC_BIT       1
+#define ELECTRON_CONTROL_BIT    2
+#define ELECTRON_SHIFT_BIT      3
+
 struct _Electron
 {
   /* The entire memory space */
