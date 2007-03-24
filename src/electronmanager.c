@@ -99,8 +99,6 @@ electron_manager_finalize (GObject *obj)
 {
   ElectronManager *eman = ELECTRON_MANAGER (obj);
 
-  printf ("freeing electronmanager\n");
-
   electron_free (eman->data);
 
   /* Chain up */
