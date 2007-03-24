@@ -387,13 +387,14 @@ electron_widget_key_event (GtkWidget *widget, GdkEventKey *event)
 	else
 	  new_override = i;
 
-	if (ewidget->key_override != new_override && ewidget->key_override != -1)
+	if (ewidget->key_override != new_override && ewidget->key_override != -1
+	    && ewidget->electron)
 	  electron_manager_release_key (ewidget->electron,
 					electron_widget_keymap[ewidget->key_override].line,
 					electron_widget_keymap[ewidget->key_override].bit);
 	ewidget->key_override = new_override;
 
-	if (new_override != -1)
+	if (new_override != -1 && ewidget->electron)
 	  electron_manager_press_key (ewidget->electron,
 				      electron_widget_keymap[new_override].line,
 				      electron_widget_keymap[new_override].bit);
@@ -402,35 +403,38 @@ electron_widget_key_event (GtkWidget *widget, GdkEventKey *event)
       }
   }
 
-  if (ewidget->key_override != -1)
+  if (ewidget->electron)
   {
-    if (electron_widget_keymap[ewidget->key_override].modifiers & 4)
-      electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
+    if (ewidget->key_override != -1)
+    {
+      if (electron_widget_keymap[ewidget->key_override].modifiers & 4)
+	electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
+      else
+	electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
+      if (electron_widget_keymap[ewidget->key_override].modifiers & 2)
+	electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
+      else
+	electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
+      if (electron_widget_keymap[ewidget->key_override].modifiers & 1)
+	electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
+      else
+	electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
+    }
     else
-      electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
-    if (electron_widget_keymap[ewidget->key_override].modifiers & 2)
-      electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
-    else
-      electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
-    if (electron_widget_keymap[ewidget->key_override].modifiers & 1)
-      electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
-    else
-      electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
-  }
-  else
-  {
-    if (ewidget->control_state)
-      electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
-    else
-      electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
-    if (ewidget->shift_state)
-      electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
-    else
-      electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
-    if (ewidget->alt_state)
-      electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
-    else
-      electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
+    {
+      if (ewidget->control_state)
+	electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
+      else
+	electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
+      if (ewidget->shift_state)
+	electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
+      else
+	electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
+      if (ewidget->alt_state)
+	electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
+      else
+	electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
+    }
   }
   
   return FALSE;
