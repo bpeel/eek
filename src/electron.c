@@ -7,7 +7,6 @@
 #include "electron.h"
 #include "cpu.h"
 #include "util.h"
-#include "timer.h"
 #include "video.h"
 #include "monitor.h"
 
@@ -125,48 +124,6 @@ electron_step (Electron *electron)
   /* If we've done a whole scanline's worth of cycles then draw the next scanline */
   if (electron->cpu.time >= ELECTRON_CYCLES_PER_SCANLINE)
     electron_next_scanline (electron);
-}
-
-int
-electron_run (Electron *electron)
-{
-  unsigned int then = timer_ticks ();
-  int quit = 0;
-  
-  while (!quit)
-  {
-    /* Execute instructions until the next scanline */
-    if (cpu_fetch_execute (&electron->cpu, ELECTRON_CYCLES_PER_SCANLINE))
-      monitor (electron);
-    else
-    {
-      /* Process the next scanline */
-      electron_next_scanline (electron);
-
-      /* Sync to 50Hz video refresh rate */
-      if (electron->scanline == 0)
-      {
-	unsigned int now;
-
-	then += ELECTRON_TICKS_PER_FRAME;
-
-	do
-	{
-	  now = timer_ticks ();
-	  /* If time has gone backwards or we would wait more then the
-	     time to scan one frame then something has gone wrong so
-	     we should just start the timing again */
-	  if (then < now || then - now > ELECTRON_TICKS_PER_FRAME)
-	    then = now;
-	  else
-	    timer_sleep (then - now);
-	}
-	while (now < then);
-      }
-    }
-  }
-
-  return quit;
 }
 
 void
