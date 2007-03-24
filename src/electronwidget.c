@@ -6,18 +6,15 @@
 #include "electronwidget.h"
 #include "electron.h"
 #include "video.h"
-#include "framesource.h"
 
 static void electron_widget_class_init (ElectronWidgetClass *klass);
 static void electron_widget_init (ElectronWidget *widget);
 static void electron_widget_realize (GtkWidget *widget);
-static void electron_widget_finalize (GObject *obj);
 static void electron_widget_dispose (GObject *obj);
 static gboolean electron_widget_expose (GtkWidget *widget, GdkEventExpose *event);
 static void electron_widget_size_request (GtkWidget *widget, GtkRequisition *requisition);
 static gboolean electron_widget_key_event (GtkWidget *widget, GdkEventKey *event);
-
-static gboolean electron_widget_timeout (ElectronWidget *ewidget);
+static void electron_widget_on_frame_end (ElectronManager *electron, gpointer user_data);
 
 static gpointer parent_class;
 
@@ -186,7 +183,6 @@ electron_widget_class_init (ElectronWidgetClass *klass)
 
   parent_class = g_type_class_peek_parent (klass);
 
-  object_class->finalize = electron_widget_finalize;
   object_class->dispose = electron_widget_dispose;
 
   widget_class->realize = electron_widget_realize;
@@ -201,22 +197,26 @@ electron_widget_init (ElectronWidget *ewidget)
 {
   GTK_WIDGET_SET_FLAGS (GTK_WIDGET (ewidget), GTK_CAN_FOCUS);
 
-  ewidget->electron = electron_new ();
-  
   ewidget->shift_state = 0;
   ewidget->control_state = 0;
   ewidget->alt_state = 0;
   ewidget->key_override = -1;
-
-  ewidget->timeout = frame_source_add (ELECTRON_TICKS_PER_FRAME,
-				       (GSourceFunc) electron_widget_timeout,
-				       ewidget, NULL);
 }
 
 GtkWidget *
 electron_widget_new ()
 {
   return g_object_new (TYPE_ELECTRON_WIDGET, NULL);
+}
+
+GtkWidget *
+electron_widget_new_with_electron (ElectronManager *electron)
+{
+  GtkWidget *ret = g_object_new (TYPE_ELECTRON_WIDGET, NULL);
+
+  electron_widget_set_electron (ELECTRON_WIDGET (ret), electron);
+
+  return ret;
 }
 
 static void
@@ -254,20 +254,6 @@ electron_widget_realize (GtkWidget *widget)
 }
 
 static void
-electron_widget_finalize (GObject *obj)
-{
-  ElectronWidget *ewidget;
-
-  g_return_if_fail (obj != NULL);
-  g_return_if_fail (IS_ELECTRON_WIDGET (obj));
-
-  ewidget = ELECTRON_WIDGET (obj);
-  electron_free (ewidget->electron);
-
-  G_OBJECT_CLASS (parent_class)->finalize (obj);
-}
-
-static void
 electron_widget_dispose (GObject *obj)
 {
   ElectronWidget *ewidget;
@@ -277,11 +263,7 @@ electron_widget_dispose (GObject *obj)
 
   ewidget = ELECTRON_WIDGET (obj);
 
-  if (ewidget->timeout)
-  {
-    g_source_remove (ewidget->timeout);
-    ewidget->timeout = 0;
-  }
+  electron_widget_set_electron (ewidget, NULL);
 
   G_OBJECT_CLASS (parent_class)->dispose (obj);
 }
@@ -290,39 +272,44 @@ static gboolean
 electron_widget_expose (GtkWidget *widget, GdkEventExpose *event)
 {
   ElectronWidget *ewidget;
-  int xpos, ypos;
 
   g_return_val_if_fail (IS_ELECTRON_WIDGET (widget), FALSE);
 
   ewidget = ELECTRON_WIDGET (widget);
 
-  /* Centre the display on the widget */
-  xpos = widget->allocation.width / 2 - VIDEO_WIDTH / 2;
-  ypos = widget->allocation.height / 2 - VIDEO_HEIGHT / 2;
+  /* If we don't have an electron object to display then just draw the background */
+  if (ewidget->electron == NULL)
+    gdk_window_clear (widget->window);
+  else
+  {
+    /* Centre the display on the widget */
+    int xpos = widget->allocation.width / 2 - VIDEO_WIDTH / 2;
+    int ypos = widget->allocation.height / 2 - VIDEO_HEIGHT / 2;
 
-  /* Clear the area around the display */
-  if (xpos > 0)
-    gdk_window_clear_area (widget->window,
-			   0, 0, xpos, widget->allocation.height);
-  if (xpos + VIDEO_WIDTH < widget->allocation.width)
-    gdk_window_clear_area (widget->window,
-			   xpos + VIDEO_WIDTH, 0, widget->allocation.width - xpos - VIDEO_WIDTH,
-			   widget->allocation.height);
-  if (ypos > 0)
-    gdk_window_clear_area (widget->window,
-			   xpos, 0, VIDEO_WIDTH, ypos);
-  if (ypos + VIDEO_HEIGHT < widget->allocation.height)
-    gdk_window_clear_area (widget->window,
-			   xpos, ypos + VIDEO_HEIGHT, VIDEO_WIDTH,
-			   widget->allocation.height - ypos - VIDEO_HEIGHT);
+    /* Clear the area around the display */
+    if (xpos > 0)
+      gdk_window_clear_area (widget->window,
+			     0, 0, xpos, widget->allocation.height);
+    if (xpos + VIDEO_WIDTH < widget->allocation.width)
+      gdk_window_clear_area (widget->window,
+			     xpos + VIDEO_WIDTH, 0, widget->allocation.width - xpos - VIDEO_WIDTH,
+			     widget->allocation.height);
+    if (ypos > 0)
+      gdk_window_clear_area (widget->window,
+			     xpos, 0, VIDEO_WIDTH, ypos);
+    if (ypos + VIDEO_HEIGHT < widget->allocation.height)
+      gdk_window_clear_area (widget->window,
+			     xpos, ypos + VIDEO_HEIGHT, VIDEO_WIDTH,
+			     widget->allocation.height - ypos - VIDEO_HEIGHT);
 			   
-  gdk_draw_indexed_image (GDK_DRAWABLE (widget->window),
-			  widget->style->fg_gc[widget->state],
-			  xpos, ypos, VIDEO_WIDTH, VIDEO_HEIGHT,
-			  GDK_RGB_DITHER_NONE,
-			  ewidget->electron->video.screen_memory,
-			  VIDEO_SCREEN_PITCH,
-			  &electron_widget_color_map);
+    gdk_draw_indexed_image (GDK_DRAWABLE (widget->window),
+			    widget->style->fg_gc[widget->state],
+			    xpos, ypos, VIDEO_WIDTH, VIDEO_HEIGHT,
+			    GDK_RGB_DITHER_NONE,
+			    ewidget->electron->data->video.screen_memory,
+			    VIDEO_SCREEN_PITCH,
+			    &electron_widget_color_map);
+  }
 
   return FALSE;
 }
@@ -334,18 +321,6 @@ electron_widget_size_request (GtkWidget *widget, GtkRequisition *requisition)
 
   requisition->width = VIDEO_WIDTH;
   requisition->height = VIDEO_HEIGHT;
-}
-
-static gboolean
-electron_widget_timeout (ElectronWidget *ewidget)
-{
-  g_return_val_if_fail (IS_ELECTRON_WIDGET (ewidget), FALSE);
-
-  electron_run_frame (ewidget->electron);
-  if (GTK_WIDGET_REALIZED (GTK_WIDGET (ewidget)))
-    gdk_window_invalidate_rect (GTK_WIDGET (ewidget)->window, NULL, FALSE);
-
-  return TRUE;
 }
 
 static gboolean
@@ -413,15 +388,15 @@ electron_widget_key_event (GtkWidget *widget, GdkEventKey *event)
 	  new_override = i;
 
 	if (ewidget->key_override != new_override && ewidget->key_override != -1)
-	  electron_release_key (ewidget->electron,
-				electron_widget_keymap[ewidget->key_override].line,
-				electron_widget_keymap[ewidget->key_override].bit);
+	  electron_manager_release_key (ewidget->electron,
+					electron_widget_keymap[ewidget->key_override].line,
+					electron_widget_keymap[ewidget->key_override].bit);
 	ewidget->key_override = new_override;
 
 	if (new_override != -1)
-	  electron_press_key (ewidget->electron,
-			      electron_widget_keymap[new_override].line,
-			      electron_widget_keymap[new_override].bit);
+	  electron_manager_press_key (ewidget->electron,
+				      electron_widget_keymap[new_override].line,
+				      electron_widget_keymap[new_override].bit);
 
 	break;
       }
@@ -430,33 +405,77 @@ electron_widget_key_event (GtkWidget *widget, GdkEventKey *event)
   if (ewidget->key_override != -1)
   {
     if (electron_widget_keymap[ewidget->key_override].modifiers & 4)
-      electron_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
+      electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
     else
-      electron_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
+      electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
     if (electron_widget_keymap[ewidget->key_override].modifiers & 2)
-      electron_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
+      electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
     else
-      electron_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
+      electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
     if (electron_widget_keymap[ewidget->key_override].modifiers & 1)
-      electron_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
+      electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
     else
-      electron_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
+      electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
   }
   else
   {
     if (ewidget->control_state)
-      electron_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
+      electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
     else
-      electron_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
+      electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
     if (ewidget->shift_state)
-      electron_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
+      electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
     else
-      electron_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
+      electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
     if (ewidget->alt_state)
-      electron_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
+      electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
     else
-      electron_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
+      electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
   }
   
   return FALSE;
+}
+
+void
+electron_widget_set_electron (ElectronWidget *ewidget, ElectronManager *electron)
+{
+  ElectronManager *oldelectron;
+
+  g_return_if_fail (ewidget != NULL);
+  g_return_if_fail (IS_ELECTRON_WIDGET (ewidget));
+
+  if ((oldelectron = ewidget->electron))
+  {
+    g_signal_handler_disconnect (oldelectron, ewidget->frame_end_handler);
+
+    ewidget->electron = NULL;
+
+    g_object_unref (oldelectron);
+  }
+
+  if (electron)
+  {
+    g_return_if_fail (IS_ELECTRON_MANAGER (electron));
+    
+    g_object_ref (electron);
+
+    ewidget->electron = electron;
+
+    ewidget->frame_end_handler
+      = g_signal_connect (electron, "frame-end",
+			  G_CALLBACK (electron_widget_on_frame_end), ewidget);
+  }
+}
+
+static void
+electron_widget_on_frame_end (ElectronManager *electron, gpointer user_data)
+{
+  ElectronWidget *ewidget;
+
+  g_return_if_fail (IS_ELECTRON_WIDGET (user_data));
+  ewidget = ELECTRON_WIDGET (user_data);
+  g_return_if_fail (ewidget->electron == electron);
+
+  if (GTK_WIDGET_REALIZED (GTK_WIDGET (ewidget)))
+    gdk_window_invalidate_rect (GTK_WIDGET (ewidget)->window, NULL, FALSE);
 }
