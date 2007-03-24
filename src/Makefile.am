@@ -9,11 +9,11 @@ eek_SOURCES = \
 	eek.h main.c \
 	cpu.h cpu.c \
 	electron.h electron.c \
-	timer.h timer.c \
 	util.h util.c \
 	monitor.h monitor.c \
 	video.h video.c \
 	stypes.h \
 	byteorder.h \
 	electronwidget.h electronwidget.c \
+	electronmanager.h electronmanager.c \
 	framesource.h framesource.c
