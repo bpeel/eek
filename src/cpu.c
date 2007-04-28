@@ -743,7 +743,10 @@ cpu_op_jmp_ind (void)
   int al = CPU_FETCH ();
   int ah = CPU_FETCH ();
   cpu_state.time += 5;
-  cpu_state.pc = CPU_READ_WORD ((ah << 8) | al);
+  ah <<= 8;
+  /* A bug in the 6502 makes it fail to load the high byte of the
+     address from the following page if the low byte is 0xff */
+  cpu_state.pc = CPU_READ (ah | al) | (CPU_READ (ah | ((al + 1) & 0xff)) << 8);
 }
 
 void
