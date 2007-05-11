@@ -186,8 +186,8 @@ cpu_fetch_execute (Cpu *cpu, cycles_t target_time)
       cpu_state.time += 7;
       /* Store pc */
       CPU_PUSH_WORD (cpu_state.pc);
-      /* Store flags */
-      CPU_PUSH (cpu_state.p);
+      /* Store flags, break flag is cleared, unused flag is always one */
+      CPU_PUSH ((cpu_state.p | CPU_FLAG_U) & ~CPU_FLAG_B);
       /* Disable interrupts */
       CPU_SET_I (TRUE);
       /* Jump to nmi handling routine */
@@ -201,8 +201,8 @@ cpu_fetch_execute (Cpu *cpu, cycles_t target_time)
     
       /* Store pc - 1 */
       CPU_PUSH_WORD (cpu_state.pc);
-      /* Store the flags */
-      CPU_PUSH (cpu_state.p);
+      /* Store flags, break flag is cleared, unused flag is always one */
+      CPU_PUSH ((cpu_state.p | CPU_FLAG_U) & ~CPU_FLAG_B);
       /* Disable interrupts */
       CPU_SET_I (TRUE);
       /* Jump to irq handling routine */
@@ -770,8 +770,8 @@ cpu_op_brk (void)
      is skipped out */
   CPU_PUSH_WORD (cpu_state.pc + 1);
 
-  /* Push the flags with the break flag set */
-  CPU_PUSH (cpu_state.p | CPU_FLAG_B);
+  /* Push the flags with the break flag set. The unused flag is always one */
+  CPU_PUSH (cpu_state.p | CPU_FLAG_B | CPU_FLAG_U);
 
   /* Jump to the address in the interrupt vector */
   cpu_state.pc = CPU_READ_WORD (CPU_IRQ_VECTOR);
@@ -808,7 +808,8 @@ void
 cpu_op_php (void)
 {
   cpu_state.time += 3;
-  CPU_PUSH (cpu_state.p);
+  /* The unused flag and the break flag are always one */
+  CPU_PUSH (cpu_state.p | CPU_FLAG_B | CPU_FLAG_U);
 }
 
 void
