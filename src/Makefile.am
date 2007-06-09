@@ -17,4 +17,15 @@ eek_SOURCES = \
 	electronwidget.h electronwidget.c \
 	electronmanager.h electronmanager.c \
 	framesource.h framesource.c \
-	debugger.h debugger.c
+	debugger.h debugger.c \
+	memorydisplay.h memorydisplay.c \
+	memdispcombo.h memdispcombo.c \
+	eekmarshalers.h eekmarshalers.c
+
+EXTRA_DIST = eekmarshalers.list
+
+eekmarshalers.h : eekmarshalers.list
+	glib-genmarshal --header --prefix=eek_marshal $< > $@
+
+eekmarshalers.c : eekmarshalers.list
+	glib-genmarshal --body --prefix=eek_marshal $< > $@
