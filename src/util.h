@@ -7,6 +7,7 @@ extern char *shortname;
 
 void eprintf (const char *template, ...);
 void *xmalloc (size_t size);
+void *xrealloc (void *ptr, size_t size);
 char *util_shortname (char *fullname);
 #define xfree(x) free (x)
  

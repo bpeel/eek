@@ -8,7 +8,7 @@
 #include "eek.h"
 #include "util.h"
 
-char * shortname = "";
+char *shortname = "";
 
 void
 eprintf (const char *template, ...)
@@ -24,9 +24,23 @@ eprintf (const char *template, ...)
 void *
 xmalloc (size_t size)
 {
-  void * ret;
+  void *ret;
 
   if ((ret = malloc (size)) == NULL)
+  {
+    eprintf ("virtual memory exhausted\n");
+    exit (1);
+  } 
+
+  return ret;
+}
+
+void *
+xrealloc (void *buf, size_t size)
+{
+  void *ret;
+
+  if ((ret = realloc (buf, size)) == NULL)
   {
     eprintf ("virtual memory exhausted\n");
     exit (1);
