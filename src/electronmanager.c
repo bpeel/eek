@@ -12,6 +12,8 @@
 enum
   {
     ELECTRON_MANAGER_FRAME_END_SIGNAL,
+    ELECTRON_MANAGER_STARTED_SIGNAL,
+    ELECTRON_MANAGER_STOPPED_SIGNAL,
     ELECTRON_MANAGER_LAST_SIGNAL
   };
 
@@ -42,22 +44,98 @@ electron_manager_class_init (ElectronManagerClass *klass)
 		    NULL, NULL,
 		    g_cclosure_marshal_VOID__VOID,
 		    G_TYPE_NONE, 0);
+  electron_manager_signals[ELECTRON_MANAGER_STARTED_SIGNAL]
+    = g_signal_new ("started",
+		    G_TYPE_FROM_CLASS (klass),
+		    G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
+		    G_STRUCT_OFFSET (ElectronManagerClass, started),
+		    NULL, NULL,
+		    g_cclosure_marshal_VOID__VOID,
+		    G_TYPE_NONE, 0);
+  electron_manager_signals[ELECTRON_MANAGER_STOPPED_SIGNAL]
+    = g_signal_new ("stopped",
+		    G_TYPE_FROM_CLASS (klass),
+		    G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
+		    G_STRUCT_OFFSET (ElectronManagerClass, stopped),
+		    NULL, NULL,
+		    g_cclosure_marshal_VOID__VOID,
+		    G_TYPE_NONE, 0);
 }
 
 static void
 electron_manager_init (ElectronManager *eman)
 {
   eman->data = electron_new ();
+  eman->timeout = 0;
+}
 
-  eman->timeout = frame_source_add (ELECTRON_TICKS_PER_FRAME,
-				    (GSourceFunc) electron_manager_timeout,
-				    eman, NULL);
+gboolean
+electron_manager_is_running (ElectronManager *eman)
+{
+  g_return_val_if_fail (IS_ELECTRON_MANAGER (eman), FALSE);
+
+  return eman->timeout != 0;
+}
+
+void
+electron_manager_start (ElectronManager *eman)
+{
+  g_return_if_fail (IS_ELECTRON_MANAGER (eman));
+
+  if (eman->timeout == 0)
+  {
+    eman->timeout = frame_source_add (ELECTRON_TICKS_PER_FRAME,
+				      (GSourceFunc) electron_manager_timeout,
+				      eman, NULL);
+    g_signal_emit (G_OBJECT (eman),
+		   electron_manager_signals[ELECTRON_MANAGER_STARTED_SIGNAL], 0);
+  }
+}
+
+void
+electron_manager_stop (ElectronManager *eman)
+{
+  g_return_if_fail (IS_ELECTRON_MANAGER (eman));
+
+  if (eman->timeout)
+  {
+    g_source_remove (eman->timeout);
+    eman->timeout = 0;
+
+    g_signal_emit (G_OBJECT (eman),
+		   electron_manager_signals[ELECTRON_MANAGER_STOPPED_SIGNAL], 0);
+  }
+}
+
+void
+electron_manager_step (ElectronManager *eman)
+{
+  int last_scanline;
+
+  g_return_if_fail (IS_ELECTRON_MANAGER (eman));
+
+  electron_manager_stop (eman);
+
+  g_signal_emit (G_OBJECT (eman),
+		 electron_manager_signals[ELECTRON_MANAGER_STARTED_SIGNAL], 0);
+
+  last_scanline = eman->data->scanline;
+  electron_step (eman->data);
+
+  /* Check if we've reached the end of a frame */
+  if (last_scanline != eman->data->scanline && eman->data->scanline == ELECTRON_END_SCANLINE)
+    g_signal_emit (G_OBJECT (eman),
+		   electron_manager_signals[ELECTRON_MANAGER_FRAME_END_SIGNAL], 0);
+
+  g_signal_emit (G_OBJECT (eman),
+		 electron_manager_signals[ELECTRON_MANAGER_STOPPED_SIGNAL], 0);
 }
 
 static gboolean
 electron_manager_timeout (ElectronManager *eman)
 {
   g_return_val_if_fail (IS_ELECTRON_MANAGER (eman), FALSE);
+  g_return_val_if_fail (eman->timeout != 0, FALSE);
 
   electron_run_frame (eman->data);
 
@@ -110,11 +188,7 @@ electron_manager_dispose (GObject *obj)
 {
   ElectronManager *eman = ELECTRON_MANAGER (obj);
 
-  if (eman->timeout)
-  {
-    g_source_remove (eman->timeout);
-    eman->timeout = 0;
-  }
+  electron_manager_stop (eman);
 
   G_OBJECT_CLASS (parent_class)->dispose (obj);
 }
