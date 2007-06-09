@@ -44,7 +44,7 @@ main (int argc, char **argv)
   box = gtk_hbox_new (FALSE, 0);
   /* Add an electron widget to it */
   ewidget = electron_widget_new_with_electron (eman);
-  gtk_box_pack_start (GTK_BOX (box), ewidget, FALSE, TRUE, 0);
+  gtk_box_pack_start (GTK_BOX (box), ewidget, TRUE, TRUE, 0);
   gtk_widget_show (ewidget);
   /* Add a debugger window */
   debugger = debugger_new_with_electron (eman);
