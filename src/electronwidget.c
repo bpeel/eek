@@ -15,6 +15,7 @@ static gboolean electron_widget_expose (GtkWidget *widget, GdkEventExpose *event
 static void electron_widget_size_request (GtkWidget *widget, GtkRequisition *requisition);
 static gboolean electron_widget_key_event (GtkWidget *widget, GdkEventKey *event);
 static void electron_widget_on_frame_end (ElectronManager *electron, gpointer user_data);
+static gboolean electron_widget_button_press (GtkWidget *widget, GdkEventButton *event);
 
 static gpointer parent_class;
 
@@ -190,6 +191,7 @@ electron_widget_class_init (ElectronWidgetClass *klass)
   widget_class->size_request = electron_widget_size_request;
   widget_class->key_press_event = electron_widget_key_event;
   widget_class->key_release_event = electron_widget_key_event;
+  widget_class->button_press_event = electron_widget_button_press;
 }
 
 static void
@@ -240,7 +242,8 @@ electron_widget_realize (GtkWidget *widget)
   attributes.wclass = GDK_INPUT_OUTPUT;
   attributes.window_type = GDK_WINDOW_CHILD;
   attributes.event_mask = gtk_widget_get_events (widget)
-    | GDK_EXPOSURE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK;
+    | GDK_EXPOSURE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK
+    | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK;
 
   widget->window = gdk_window_new (gtk_widget_get_parent_window (widget),
 				   &attributes,
@@ -312,6 +315,14 @@ electron_widget_expose (GtkWidget *widget, GdkEventExpose *event)
   }
 
   return FALSE;
+}
+
+static gboolean
+electron_widget_button_press (GtkWidget *widget, GdkEventButton *event)
+{
+  gtk_widget_grab_focus (widget);
+
+  return TRUE;
 }
 
 static void
