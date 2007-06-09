@@ -10,11 +10,6 @@
 #include "video.h"
 #include "monitor.h"
 
-#define ELECTRON_CYCLES_PER_SCANLINE 128
-#define ELECTRON_SCANLINES_PER_FRAME 312
-#define ELECTRON_TIMER_SCANLINE      100
-#define ELECTRON_END_SCANLINE        256
-
 #define ELECTRON_I_MASTER      1
 #define ELECTRON_I_POWERON     2
 #define ELECTRON_I_DISPLAY_END 4
