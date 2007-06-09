@@ -16,4 +16,5 @@ eek_SOURCES = \
 	byteorder.h \
 	electronwidget.h electronwidget.c \
 	electronmanager.h electronmanager.c \
-	framesource.h framesource.c
+	framesource.h framesource.c \
+	debugger.h debugger.c
