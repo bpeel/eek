@@ -29,6 +29,7 @@ struct _Debugger
   GtkTable parent_object;
 
   GtkWidget *register_widgets[DEBUGGER_REGISTER_COUNT];
+  GtkWidget *mem_disp;
 
   ElectronManager *electron;
 

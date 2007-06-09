@@ -3,16 +3,19 @@
 #include <glib.h>
 #include <gtk/gtktable.h>
 #include <gtk/gtklabel.h>
+#include <gtk/gtkscrolledwindow.h>
 #include <pango/pango-attributes.h>
 
 #include "debugger.h"
 #include "electron.h"
 #include "electronmanager.h"
+#include "memdispcombo.h"
 
 static void debugger_class_init (DebuggerClass *klass);
 static void debugger_init (Debugger *widget);
 static void debugger_dispose (GObject *obj);
 static void debugger_register_notify (gpointer data, GObject *obj);
+static void debugger_mem_disp_notify (gpointer data, GObject *obj);
 static void debugger_update (Debugger *debugger);
 
 static gpointer parent_class;
@@ -63,7 +66,7 @@ static void
 debugger_init (Debugger *debugger)
 {
   int i;
-  GtkWidget *label;
+  GtkWidget *label, *scrolled_win;
   PangoAttrList *attr_list;
   PangoAttribute *attr;
 
@@ -74,7 +77,7 @@ debugger_init (Debugger *debugger)
   attr->end_index = 1000;
   pango_attr_list_insert (attr_list, attr);
 
-  gtk_table_resize (GTK_TABLE (debugger), DEBUGGER_REGISTER_COUNT, 2);
+  gtk_table_resize (GTK_TABLE (debugger), DEBUGGER_REGISTER_COUNT + 1, 2);
   gtk_table_set_homogeneous (GTK_TABLE (debugger), FALSE);
 
   /* Add labels for each of the registers */
@@ -97,6 +100,18 @@ debugger_init (Debugger *debugger)
   }
 
   pango_attr_list_unref (attr_list);
+
+  /* Add a memory display widget */
+  scrolled_win = gtk_scrolled_window_new (NULL, NULL);
+  gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_win),
+				  GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+  debugger->mem_disp = mem_disp_combo_new ();
+  g_object_weak_ref (G_OBJECT (debugger->mem_disp), debugger_mem_disp_notify, debugger);
+  gtk_container_add (GTK_CONTAINER (scrolled_win), debugger->mem_disp);
+  gtk_widget_show (scrolled_win);
+  gtk_table_attach (GTK_TABLE (debugger), scrolled_win, 0, 2, i, i + 1,
+		    GTK_FILL | GTK_EXPAND, GTK_FILL | GTK_EXPAND, 0, 0);
+  gtk_widget_show (debugger->mem_disp);
 }
 
 GtkWidget *
@@ -126,8 +141,6 @@ debugger_dispose (GObject *obj)
 
   debugger = DEBUGGER (obj);
 
-  debugger_set_electron (debugger, NULL);
-
   for (i = 0; i < DEBUGGER_REGISTER_COUNT; i++)
     if (debugger->register_widgets[i])
     {
@@ -135,6 +148,15 @@ debugger_dispose (GObject *obj)
 			   debugger_register_notify, debugger);
       debugger->register_widgets[i] = NULL;
     }
+
+  if (debugger->mem_disp)
+  {
+    g_object_weak_unref (G_OBJECT (debugger->mem_disp),
+			 debugger_mem_disp_notify, debugger);
+    debugger->mem_disp = NULL;
+  }
+  
+  debugger_set_electron (debugger, NULL);
 
   G_OBJECT_CLASS (parent_class)->dispose (obj);
 }
@@ -173,7 +195,10 @@ debugger_set_electron (Debugger *debugger, ElectronManager *electron)
 				  G_CALLBACK (debugger_update), debugger);
   }
 
-  debugger_update (debugger);
+  if (debugger->mem_disp)
+    mem_disp_combo_set_electron (MEM_DISP_COMBO (debugger->mem_disp), electron);
+
+  debugger_update (debugger);  
 }
 
 static void
@@ -195,6 +220,21 @@ debugger_register_notify (gpointer data, GObject *obj)
     }
 
   g_assert_not_reached ();
+}
+
+static void
+debugger_mem_disp_notify (gpointer data, GObject *obj)
+{
+  Debugger *debugger;
+
+  g_return_if_fail (IS_DEBUGGER (data));
+  g_return_if_fail (GTK_IS_WIDGET (obj));
+
+  debugger = DEBUGGER (data);
+  
+  g_return_if_fail (obj == G_OBJECT (debugger->mem_disp));
+
+  debugger->mem_disp = NULL;
 }
 
 static void
