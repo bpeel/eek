@@ -20,6 +20,7 @@ eek_SOURCES = \
 	debugger.h debugger.c \
 	memorydisplay.h memorydisplay.c \
 	memdispcombo.h memdispcombo.c \
+	disassemble.h disassemble.c \
 	eekmarshalers.h eekmarshalers.c
 
 EXTRA_DIST = eekmarshalers.list
