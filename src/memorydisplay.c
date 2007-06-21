@@ -173,7 +173,7 @@ memory_display_init (MemoryDisplay *memdisplay)
   GTK_WIDGET_SET_FLAGS (memdisplay, GTK_CAN_FOCUS);
 
   memdisplay->electron = NULL;
-  memdisplay->bytes_per_row = 16;
+  memdisplay->bytes_per_row = 8;
   memdisplay->row_height = 5;
   memdisplay->disp_type = MEMORY_DISPLAY_TEXT;
   memdisplay->draw_start = 0;
