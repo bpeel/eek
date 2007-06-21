@@ -4,6 +4,7 @@
 #include <gtk/gtktable.h>
 
 #include "electronmanager.h"
+#include "dismodel.h"
 
 #define TYPE_DEBUGGER (debugger_get_type ())
 #define DEBUGGER(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), \
@@ -30,6 +31,7 @@ struct _Debugger
 
   GtkWidget *register_widgets[DEBUGGER_REGISTER_COUNT];
   GtkWidget *mem_disp;
+  DisModel *dis_model;
 
   ElectronManager *electron;
 

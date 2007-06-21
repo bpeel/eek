@@ -4,6 +4,9 @@
 #include <gtk/gtktable.h>
 #include <gtk/gtklabel.h>
 #include <gtk/gtkscrolledwindow.h>
+#include <gtk/gtktreeview.h>
+#include <gtk/gtkcellrenderertext.h>
+#include <gtk/gtkhseparator.h>
 #include <pango/pango-attributes.h>
 
 #include "debugger.h"
@@ -16,6 +19,7 @@ static void debugger_init (Debugger *widget);
 static void debugger_dispose (GObject *obj);
 static void debugger_register_notify (gpointer data, GObject *obj);
 static void debugger_mem_disp_notify (gpointer data, GObject *obj);
+static void debugger_dis_model_notify (gpointer data, GObject *obj);
 static void debugger_update (Debugger *debugger);
 
 static gpointer parent_class;
@@ -65,8 +69,8 @@ debugger_class_init (DebuggerClass *klass)
 static void
 debugger_init (Debugger *debugger)
 {
-  int i;
-  GtkWidget *label, *scrolled_win;
+  int i, n_columns;
+  GtkWidget *label, *scrolled_win, *dis_table, *separator;
   PangoAttrList *attr_list;
   PangoAttribute *attr;
 
@@ -77,7 +81,7 @@ debugger_init (Debugger *debugger)
   attr->end_index = 1000;
   pango_attr_list_insert (attr_list, attr);
 
-  gtk_table_resize (GTK_TABLE (debugger), DEBUGGER_REGISTER_COUNT + 1, 2);
+  gtk_table_resize (GTK_TABLE (debugger), DEBUGGER_REGISTER_COUNT + 4, 2);
   gtk_table_set_homogeneous (GTK_TABLE (debugger), FALSE);
 
   /* Add labels for each of the registers */
@@ -101,17 +105,47 @@ debugger_init (Debugger *debugger)
 
   pango_attr_list_unref (attr_list);
 
+  separator = gtk_hseparator_new ();
+  gtk_widget_show (separator);
+  gtk_table_attach (GTK_TABLE (debugger), separator, 1, 2, DEBUGGER_REGISTER_COUNT,
+		    DEBUGGER_REGISTER_COUNT + 1, 0, 0, 0, 0);
+
+  /* Add a table to show the disassembly */
+  debugger->dis_model = dis_model_new ();
+  g_object_weak_ref (G_OBJECT (debugger->dis_model), debugger_dis_model_notify, debugger);
+  dis_table = gtk_tree_view_new_with_model (GTK_TREE_MODEL (debugger->dis_model));
+  g_object_unref (debugger->dis_model);
+  n_columns = gtk_tree_model_get_n_columns (GTK_TREE_MODEL (debugger->dis_model));
+  for (i = 0; i < n_columns; i++)
+  {
+    gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (dis_table), -1, "",
+						 gtk_cell_renderer_text_new (),
+						 "text", i,
+						 NULL);
+  }
+  gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (dis_table), FALSE);
+  gtk_widget_show (dis_table);
+  gtk_table_attach (GTK_TABLE (debugger), dis_table, 0, 2,
+		    DEBUGGER_REGISTER_COUNT + 1, DEBUGGER_REGISTER_COUNT + 2,
+		    GTK_FILL | GTK_EXPAND, GTK_FILL, 0, 0);
+
+  separator = gtk_hseparator_new ();
+  gtk_widget_show (separator);
+  gtk_table_attach (GTK_TABLE (debugger), separator, 1, 2, DEBUGGER_REGISTER_COUNT + 2,
+		    DEBUGGER_REGISTER_COUNT + 3, 0, 0, 0, 0);
+
   /* Add a memory display widget */
   scrolled_win = gtk_scrolled_window_new (NULL, NULL);
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_win),
 				  GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
   debugger->mem_disp = mem_disp_combo_new ();
   g_object_weak_ref (G_OBJECT (debugger->mem_disp), debugger_mem_disp_notify, debugger);
+  gtk_widget_show (debugger->mem_disp);
   gtk_container_add (GTK_CONTAINER (scrolled_win), debugger->mem_disp);
   gtk_widget_show (scrolled_win);
-  gtk_table_attach (GTK_TABLE (debugger), scrolled_win, 0, 2, i, i + 1,
+  gtk_table_attach (GTK_TABLE (debugger), scrolled_win, 0, 2,
+		    DEBUGGER_REGISTER_COUNT + 3, DEBUGGER_REGISTER_COUNT + 4,
 		    GTK_FILL | GTK_EXPAND, GTK_FILL | GTK_EXPAND, 0, 0);
-  gtk_widget_show (debugger->mem_disp);
 }
 
 GtkWidget *
@@ -154,6 +188,13 @@ debugger_dispose (GObject *obj)
     g_object_weak_unref (G_OBJECT (debugger->mem_disp),
 			 debugger_mem_disp_notify, debugger);
     debugger->mem_disp = NULL;
+  }
+
+  if (debugger->dis_model)
+  {
+    g_object_weak_unref (G_OBJECT (debugger->dis_model),
+			 debugger_dis_model_notify, debugger);
+    debugger->dis_model = NULL;
   }
   
   debugger_set_electron (debugger, NULL);
@@ -198,6 +239,9 @@ debugger_set_electron (Debugger *debugger, ElectronManager *electron)
   if (debugger->mem_disp)
     mem_disp_combo_set_electron (MEM_DISP_COMBO (debugger->mem_disp), electron);
 
+  if (debugger->dis_model)
+    dis_model_set_electron (debugger->dis_model, electron);
+
   debugger_update (debugger);  
 }
 
@@ -235,6 +279,21 @@ debugger_mem_disp_notify (gpointer data, GObject *obj)
   g_return_if_fail (obj == G_OBJECT (debugger->mem_disp));
 
   debugger->mem_disp = NULL;
+}
+
+static void
+debugger_dis_model_notify (gpointer data, GObject *obj)
+{
+  Debugger *debugger;
+
+  g_return_if_fail (IS_DEBUGGER (data));
+  g_return_if_fail (IS_DIS_MODEL (obj));
+
+  debugger = DEBUGGER (data);
+  
+  g_return_if_fail (obj == G_OBJECT (debugger->dis_model));
+
+  debugger->dis_model = NULL;
 }
 
 static void
