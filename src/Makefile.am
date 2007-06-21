@@ -21,6 +21,7 @@ eek_SOURCES = \
 	memorydisplay.h memorydisplay.c \
 	memdispcombo.h memdispcombo.c \
 	disassemble.h disassemble.c \
+	dismodel.h dismodel.c \
 	eekmarshalers.h eekmarshalers.c
 
 EXTRA_DIST = eekmarshalers.list
