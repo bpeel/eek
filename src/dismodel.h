@@ -21,6 +21,16 @@ typedef struct _DisModelRowData DisModelRowData;
 
 #define DIS_MODEL_ROW_COUNT 16
 
+enum
+  {
+    DIS_MODEL_COL_ADDRESS,
+    DIS_MODEL_COL_BYTES,
+    DIS_MODEL_COL_MNEMONIC,
+    DIS_MODEL_COL_OPERANDS,
+    DIS_MODEL_COL_BOLD_IF_CURRENT,
+    DIS_MODEL_COL_COUNT
+  };
+
 struct _DisModelRowData
 {
   UWORD address;
@@ -28,6 +38,7 @@ struct _DisModelRowData
   UBYTE bytes[DISASSEMBLE_MAX_BYTES];
   char mnemonic[DISASSEMBLE_MAX_MNEMONIC + 1];
   char operands[DISASSEMBLE_MAX_OPERANDS + 1];
+  gboolean current : 1;
 };
 
 struct _DisModel

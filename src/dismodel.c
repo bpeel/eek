@@ -6,6 +6,7 @@
 #include <glib-object.h>
 #include <glib/gprintf.h>
 #include <gtk/gtktreemodel.h>
+#include <pango/pango-font.h>
 #include <string.h>
 
 #include "dismodel.h"
@@ -159,11 +160,27 @@ dis_model_set_electron (DisModel *model, ElectronManager *electron)
 static void
 dis_model_on_stopped (ElectronManager *electron, DisModel *model)
 {
+  UWORD pc;
+  int row;
+
   g_return_if_fail (IS_DIS_MODEL (model));
   g_return_if_fail (IS_ELECTRON_MANAGER (electron));
   g_return_if_fail (model->electron == electron);
 
-  model->address = electron->data->cpu.pc;
+  /* Check if we're already displaying the next instruction */
+  pc = electron->data->cpu.pc;
+  for (row = 0; row < DIS_MODEL_ROW_COUNT; row++)
+    if (model->rows[row].address == pc)
+      break;
+  if (row < DIS_MODEL_ROW_COUNT)
+    /* Make sure the current address is in the top quarter of the display */
+    model->address = model->rows[row >= DIS_MODEL_ROW_COUNT / 4
+				 ? row - DIS_MODEL_ROW_COUNT / 4 : 0].address;
+  else
+    /* We aren't already displaying the address so just start from
+       there */
+    model->address = pc;
+
   dis_model_refresh_rows (model);
 }
 
@@ -186,6 +203,7 @@ dis_model_refresh_rows (DisModel *model)
       row.num_bytes = 0;
       row.mnemonic[0] = '\0';
       row.operands[0] = '\0';
+      row.current = FALSE;
     }
     else
     {
@@ -197,12 +215,14 @@ dis_model_refresh_rows (DisModel *model)
       }
       row.address = address;
       row.num_bytes = disassemble_instruction (address, row.bytes, row.mnemonic, row.operands);
+      row.current = model->electron->data->cpu.pc == address ? TRUE : FALSE;
     }
 
     /* Only fire the changed signal if the row is actually different */
     if (row.address != model->rows[row_num].address
 	|| row.num_bytes != model->rows[row_num].num_bytes
-	|| memcmp (row.bytes, model->rows[row_num].bytes, row.num_bytes))
+	|| memcmp (row.bytes, model->rows[row_num].bytes, row.num_bytes)
+	|| row.current != model->rows[row_num].current)
     {
       model->rows[row_num] = row;
       gtk_tree_path_get_indices (path)[0] = row_num;
@@ -244,16 +264,16 @@ dis_model_get_n_columns (GtkTreeModel *tree_model)
 {
   g_return_val_if_fail (IS_DIS_MODEL (tree_model), 0);
 
-  return 4;
+  return DIS_MODEL_COL_COUNT;
 }
 
 static GType
 dis_model_get_column_type (GtkTreeModel *tree_model, gint index)
 {
   g_return_val_if_fail (IS_DIS_MODEL (tree_model), G_TYPE_INVALID);
-  g_return_val_if_fail (index >= 0 && index < 4, G_TYPE_INVALID);
+  g_return_val_if_fail (index >= 0 && index < DIS_MODEL_COL_COUNT, G_TYPE_INVALID);
 
-  return G_TYPE_STRING;
+  return index == DIS_MODEL_COL_BOLD_IF_CURRENT ? G_TYPE_INT : G_TYPE_STRING;
 }
 
 static gboolean
@@ -297,7 +317,6 @@ dis_model_get_value (GtkTreeModel *tree_model, GtkTreeIter *iter,
   DisModel *model;
   int row;
   char buf[DISASSEMBLE_MAX_BYTES * 3 + 1];
-  const char *str = "";
 
   g_return_if_fail (IS_DIS_MODEL (tree_model));
 
@@ -312,12 +331,13 @@ dis_model_get_value (GtkTreeModel *tree_model, GtkTreeIter *iter,
   else
     switch (column)
     {
-      case 0:
+      case DIS_MODEL_COL_ADDRESS:
 	g_sprintf (buf, "%04X", model->rows[row].address);
-	str = buf;
+	g_value_init (value, G_TYPE_STRING);
+	g_value_set_string (value, buf);
 	break;
 
-      case 1:
+      case DIS_MODEL_COL_BYTES:
 	{
 	  char *p = buf;
 	  int i;
@@ -334,24 +354,30 @@ dis_model_get_value (GtkTreeModel *tree_model, GtkTreeIter *iter,
 	    *(p - 1) = '\0';
 	  }
 
-	  str = buf;
+	  g_value_init (value, G_TYPE_STRING);
+	  g_value_set_string (value, buf);
 	}
 	break;
 
-      case 2:
-	str = model->rows[row].mnemonic;
+      case DIS_MODEL_COL_MNEMONIC:
+	g_value_init (value, G_TYPE_STRING);
+	g_value_set_string (value, model->rows[row].mnemonic);
 	break;
 
-      case 3:
-	str = model->rows[row].operands;
+      case DIS_MODEL_COL_OPERANDS:
+	g_value_init (value, G_TYPE_STRING);
+	g_value_set_string (value, model->rows[row].operands);
+	break;
+
+      case DIS_MODEL_COL_BOLD_IF_CURRENT:
+	g_value_init (value, G_TYPE_INT);
+	g_value_set_int (value, model->rows[row].current
+			 ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL);
 	break;
 
       default:
 	g_return_if_reached ();
     }
-
-  g_value_init (value, G_TYPE_STRING);
-  g_value_set_string (value, str);
 }
 
 static gboolean

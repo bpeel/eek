@@ -28,6 +28,10 @@ static const char *const debugger_register_names[DEBUGGER_REGISTER_COUNT] =
   { "A", "X", "Y", "S", "PC", "P" };
 static const char debugger_flag_names[] = "CZIDB-VN";
 
+static const gint debugger_disassembler_columns[] =
+  { DIS_MODEL_COL_ADDRESS, DIS_MODEL_COL_BYTES, DIS_MODEL_COL_MNEMONIC,
+    DIS_MODEL_COL_OPERANDS, -1 };
+
 GType
 debugger_get_type ()
 {
@@ -69,7 +73,7 @@ debugger_class_init (DebuggerClass *klass)
 static void
 debugger_init (Debugger *debugger)
 {
-  int i, n_columns;
+  int i;
   GtkWidget *label, *scrolled_win, *dis_table, *separator;
   PangoAttrList *attr_list;
   PangoAttribute *attr;
@@ -115,12 +119,14 @@ debugger_init (Debugger *debugger)
   g_object_weak_ref (G_OBJECT (debugger->dis_model), debugger_dis_model_notify, debugger);
   dis_table = gtk_tree_view_new_with_model (GTK_TREE_MODEL (debugger->dis_model));
   g_object_unref (debugger->dis_model);
-  n_columns = gtk_tree_model_get_n_columns (GTK_TREE_MODEL (debugger->dis_model));
-  for (i = 0; i < n_columns; i++)
+  for (i = 0; debugger_disassembler_columns[i] != -1; i++)
   {
+    GtkCellRenderer *cell_renderer = gtk_cell_renderer_text_new ();
+    g_object_set (cell_renderer, "weight-set", TRUE, NULL);
     gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (dis_table), -1, "",
-						 gtk_cell_renderer_text_new (),
-						 "text", i,
+						 cell_renderer,
+						 "text", debugger_disassembler_columns[i],
+						 "weight", DIS_MODEL_COL_BOLD_IF_CURRENT,
 						 NULL);
   }
   gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (dis_table), FALSE);
