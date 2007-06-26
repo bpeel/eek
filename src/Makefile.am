@@ -23,7 +23,8 @@ eek_SOURCES = \
 	disassemble.h disassemble.c \
 	dismodel.h dismodel.c \
 	hexspinbutton.h hexspinbutton.c \
-	eekmarshalers.h eekmarshalers.c
+	eekmarshalers.h eekmarshalers.c \
+	intl.h
 
 EXTRA_DIST = eekmarshalers.list
 
