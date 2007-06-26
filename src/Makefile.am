@@ -22,6 +22,7 @@ eek_SOURCES = \
 	memdispcombo.h memdispcombo.c \
 	disassemble.h disassemble.c \
 	dismodel.h dismodel.c \
+	hexspinbutton.h hexspinbutton.c \
 	eekmarshalers.h eekmarshalers.c
 
 EXTRA_DIST = eekmarshalers.list
