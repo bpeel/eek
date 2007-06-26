@@ -116,7 +116,7 @@ dis_model_get_type ()
       };
 
     dis_model_type = g_type_register_static (G_TYPE_OBJECT, "DisModel",
-						    &dis_model_info, 0);
+					     &dis_model_info, 0);
 
     g_type_add_interface_static (dis_model_type,
 				 GTK_TYPE_TREE_MODEL,
