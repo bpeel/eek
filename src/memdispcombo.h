@@ -2,6 +2,7 @@
 #define _MEM_DISP_COMBO_H
 
 #include <gtk/gtkhpaned.h>
+#include <gtk/gtkadjustment.h>
 #include "electronmanager.h"
 
 #define TYPE_MEM_DISP_COMBO (mem_disp_combo_get_type ())
@@ -36,5 +37,7 @@ GType mem_disp_combo_get_type ();
 GtkWidget *mem_disp_combo_new ();
 GtkWidget *mem_disp_combo_new_with_electron (ElectronManager *electron);
 void mem_disp_combo_set_electron (MemDispCombo *hexdisplay, ElectronManager *electron);
+void mem_disp_combo_set_cursor_adjustment (MemDispCombo *memdispcombo,
+					   GtkAdjustment *cur_adjustment);
 
 #endif /* _MEM_DISP_COMBO_H */

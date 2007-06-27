@@ -92,6 +92,15 @@ mem_disp_combo_init (MemDispCombo *memdispcombo)
   gtk_paned_add2 (GTK_PANED (memdispcombo), memdispcombo->text_display);
 
   cur_adjustment = GTK_ADJUSTMENT (gtk_adjustment_new (0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f));
+  mem_disp_combo_set_cursor_adjustment (memdispcombo, cur_adjustment);
+}
+
+void
+mem_disp_combo_set_cursor_adjustment (MemDispCombo *memdispcombo, GtkAdjustment *cur_adjustment)
+{
+  g_return_if_fail (IS_MEM_DISP_COMBO (memdispcombo));
+  g_return_if_fail (cur_adjustment == NULL || GTK_IS_ADJUSTMENT (cur_adjustment));
+
   memory_display_set_cursor_adjustment (MEMORY_DISPLAY (memdispcombo->address_display), cur_adjustment);
   memory_display_set_cursor_adjustment (MEMORY_DISPLAY (memdispcombo->binary_display), cur_adjustment);
   memory_display_set_cursor_adjustment (MEMORY_DISPLAY (memdispcombo->text_display), cur_adjustment);
