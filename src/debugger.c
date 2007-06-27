@@ -7,12 +7,14 @@
 #include <gtk/gtktreeview.h>
 #include <gtk/gtkcellrenderertext.h>
 #include <gtk/gtkhseparator.h>
+#include <gtk/gtkadjustment.h>
 #include <pango/pango-attributes.h>
 
 #include "debugger.h"
 #include "electron.h"
 #include "electronmanager.h"
 #include "memdispcombo.h"
+#include "hexspinbutton.h"
 
 static void debugger_class_init (DebuggerClass *klass);
 static void debugger_init (Debugger *widget);
@@ -74,7 +76,8 @@ static void
 debugger_init (Debugger *debugger)
 {
   int i;
-  GtkWidget *label, *scrolled_win, *dis_table, *separator;
+  GtkWidget *label, *scrolled_win, *dis_table, *separator, *hexspin;
+  GtkAdjustment *addr_adj;
   PangoAttrList *attr_list;
   PangoAttribute *attr;
 
@@ -85,7 +88,7 @@ debugger_init (Debugger *debugger)
   attr->end_index = 1000;
   pango_attr_list_insert (attr_list, attr);
 
-  gtk_table_resize (GTK_TABLE (debugger), DEBUGGER_REGISTER_COUNT + 4, 2);
+  gtk_table_resize (GTK_TABLE (debugger), DEBUGGER_REGISTER_COUNT + 5, 2);
   gtk_table_set_homogeneous (GTK_TABLE (debugger), FALSE);
 
   /* Add labels for each of the registers */
@@ -140,17 +143,28 @@ debugger_init (Debugger *debugger)
   gtk_table_attach (GTK_TABLE (debugger), separator, 1, 2, DEBUGGER_REGISTER_COUNT + 2,
 		    DEBUGGER_REGISTER_COUNT + 3, 0, 0, 0, 0);
 
+  /* Add a hex scroll button to display the address for the memory
+     display widget */
+  addr_adj = GTK_ADJUSTMENT (gtk_adjustment_new (0.0, 0.0, 65535.0, 1.0, 10.0, 10.0));
+  hexspin = hex_spin_button_new ();
+  g_object_set (hexspin, "numeric", TRUE, "adjustment", addr_adj, "hex", TRUE, NULL);
+  gtk_widget_show (hexspin);
+  gtk_table_attach (GTK_TABLE (debugger), hexspin, 0, 2,
+		    DEBUGGER_REGISTER_COUNT + 3, DEBUGGER_REGISTER_COUNT + 4,
+		    GTK_FILL | GTK_EXPAND, GTK_FILL, 0, 0);
+
   /* Add a memory display widget */
   scrolled_win = gtk_scrolled_window_new (NULL, NULL);
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_win),
 				  GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
   debugger->mem_disp = mem_disp_combo_new ();
   g_object_weak_ref (G_OBJECT (debugger->mem_disp), debugger_mem_disp_notify, debugger);
+  mem_disp_combo_set_cursor_adjustment (MEM_DISP_COMBO (DEBUGGER (debugger)->mem_disp), addr_adj);
   gtk_widget_show (debugger->mem_disp);
   gtk_container_add (GTK_CONTAINER (scrolled_win), debugger->mem_disp);
   gtk_widget_show (scrolled_win);
   gtk_table_attach (GTK_TABLE (debugger), scrolled_win, 0, 2,
-		    DEBUGGER_REGISTER_COUNT + 3, DEBUGGER_REGISTER_COUNT + 4,
+		    DEBUGGER_REGISTER_COUNT + 4, DEBUGGER_REGISTER_COUNT + 5,
 		    GTK_FILL | GTK_EXPAND, GTK_FILL | GTK_EXPAND, 0, 0);
 }
 
