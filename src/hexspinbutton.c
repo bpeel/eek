@@ -176,7 +176,8 @@ hex_spin_button_output (GtkSpinButton *spin_button)
 {
   if (HEX_SPIN_BUTTON (spin_button)->hex)
   {
-    gchar *buf = g_strdup_printf ("%x", (unsigned int) spin_button->adjustment->value);
+    gchar *buf = g_strdup_printf ("%0*X", gtk_spin_button_get_digits (spin_button),
+				  (unsigned int) spin_button->adjustment->value);
 
     if (strcmp (buf, gtk_entry_get_text (GTK_ENTRY (spin_button))))
       gtk_entry_set_text (GTK_ENTRY (spin_button), buf);

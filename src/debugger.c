@@ -147,7 +147,8 @@ debugger_init (Debugger *debugger)
      display widget */
   addr_adj = GTK_ADJUSTMENT (gtk_adjustment_new (0.0, 0.0, 65535.0, 1.0, 10.0, 10.0));
   hexspin = hex_spin_button_new ();
-  g_object_set (hexspin, "numeric", TRUE, "adjustment", addr_adj, "hex", TRUE, NULL);
+  g_object_set (hexspin, "numeric", TRUE, "adjustment", addr_adj, "hex", TRUE,
+		"digits", 4, NULL);
   gtk_widget_show (hexspin);
   gtk_table_attach (GTK_TABLE (debugger), hexspin, 0, 2,
 		    DEBUGGER_REGISTER_COUNT + 3, DEBUGGER_REGISTER_COUNT + 4,
