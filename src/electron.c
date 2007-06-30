@@ -10,7 +10,6 @@
 #include "cpu.h"
 #include "util.h"
 #include "video.h"
-#include "monitor.h"
 
 #define ELECTRON_I_MASTER      1
 #define ELECTRON_I_POWERON     2
