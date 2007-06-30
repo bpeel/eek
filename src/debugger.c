@@ -275,7 +275,6 @@ debugger_register_notify (gpointer data, GObject *obj)
   Debugger *debugger;
 
   g_return_if_fail (IS_DEBUGGER (data));
-  g_return_if_fail (GTK_IS_WIDGET (obj));
 
   debugger = DEBUGGER (data);
   
@@ -295,7 +294,6 @@ debugger_mem_disp_notify (gpointer data, GObject *obj)
   Debugger *debugger;
 
   g_return_if_fail (IS_DEBUGGER (data));
-  g_return_if_fail (GTK_IS_WIDGET (obj));
 
   debugger = DEBUGGER (data);
   
@@ -310,7 +308,6 @@ debugger_dis_model_notify (gpointer data, GObject *obj)
   Debugger *debugger;
 
   g_return_if_fail (IS_DEBUGGER (data));
-  g_return_if_fail (IS_DIS_MODEL (obj));
 
   debugger = DEBUGGER (data);
   
