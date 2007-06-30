@@ -24,6 +24,7 @@ eek_SOURCES = \
 	hexspinbutton.h hexspinbutton.c \
 	eekmarshalers.h eekmarshalers.c \
 	mainwindow.h mainwindow.c \
+	aboutdialog.h aboutdialog.c \
 	intl.h
 
 EXTRA_DIST = eekmarshalers.list

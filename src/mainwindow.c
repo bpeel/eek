@@ -15,6 +15,7 @@
 #include "electronmanager.h"
 #include "electronwidget.h"
 #include "debugger.h"
+#include "aboutdialog.h"
 #include "intl.h"
 
 typedef struct _MainWindowAction MainWindowAction;
@@ -292,6 +293,8 @@ static void
 main_window_on_action_about (GtkAction *action, MainWindow *mainwin)
 {
   g_return_if_fail (IS_MAIN_WINDOW (mainwin));
+
+  about_dialog_show ();
 }
 
 static void
