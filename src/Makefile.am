@@ -10,7 +10,6 @@ eek_SOURCES = \
 	cpu.h cpu.c \
 	electron.h electron.c \
 	util.h util.c \
-	monitor.h monitor.c \
 	video.h video.c \
 	stypes.h \
 	byteorder.h \
