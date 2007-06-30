@@ -341,6 +341,7 @@ electron_widget_key_event (GtkWidget *widget, GdkEventKey *event)
 {
   ElectronWidget *ewidget;
   int i;
+  gboolean ret = TRUE;
 
   g_return_val_if_fail (IS_ELECTRON_WIDGET (widget), TRUE);
 
@@ -414,6 +415,10 @@ electron_widget_key_event (GtkWidget *widget, GdkEventKey *event)
 
 	break;
       }
+
+    /* If we don't understand the key event then let it propagate further */
+    if (electron_widget_keymap[i].keysym == -1)
+      ret = FALSE;
   }
 
   if (ewidget->electron)
@@ -450,7 +455,7 @@ electron_widget_key_event (GtkWidget *widget, GdkEventKey *event)
     }
   }
   
-  return FALSE;
+  return ret;
 }
 
 void
