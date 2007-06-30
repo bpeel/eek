@@ -24,6 +24,7 @@ eek_SOURCES = \
 	dismodel.h dismodel.c \
 	hexspinbutton.h hexspinbutton.c \
 	eekmarshalers.h eekmarshalers.c \
+	mainwindow.h mainwindow.c \
 	intl.h
 
 EXTRA_DIST = eekmarshalers.list
