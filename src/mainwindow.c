@@ -213,6 +213,9 @@ main_window_init (MainWindow *mainwin)
 
   gtk_widget_show (vbox);
   gtk_container_add (GTK_CONTAINER (mainwin), vbox);
+
+  /* Give focus to the electron widget to start */
+  gtk_widget_grab_focus (mainwin->ewidget);
 }
 
 GtkWidget *
