@@ -18,6 +18,7 @@
 #include "debugger.h"
 #include "aboutdialog.h"
 #include "intl.h"
+#include "breakpointeditdialog.h"
 
 typedef struct _MainWindowAction MainWindowAction;
 
@@ -36,11 +37,12 @@ static void main_window_dispose (GObject *obj);
 static void main_window_electron_widget_notify (gpointer data, GObject *obj);
 static void main_window_debugger_notify (gpointer data, GObject *obj);
 
-static void main_window_on_action_quit (GtkAction *action, MainWindow *mainwin);
-static void main_window_on_action_about (GtkAction *action, MainWindow *mainwin);
-static void main_window_on_action_run (GtkAction *action, MainWindow *mainwin);
-static void main_window_on_action_step (GtkAction *action, MainWindow *mainwin);
-static void main_window_on_action_break (GtkAction *action, MainWindow *mainwin);
+static void main_window_on_quit (GtkAction *action, MainWindow *mainwin);
+static void main_window_on_about (GtkAction *action, MainWindow *mainwin);
+static void main_window_on_run (GtkAction *action, MainWindow *mainwin);
+static void main_window_on_step (GtkAction *action, MainWindow *mainwin);
+static void main_window_on_break (GtkAction *action, MainWindow *mainwin);
+static void main_window_on_edit_breakpoint (GtkAction *action, MainWindow *mainwin);
 
 static void main_window_update_debug_actions (MainWindow *mainwin);
 
@@ -60,7 +62,7 @@ static const MainWindowAction main_window_actions[] =
     { "ActionHelpMenu", NULL, N_("Menu|_Help"), NULL, NULL,
       NULL, FALSE, NULL },
     { "ActionQuit", GTK_STOCK_QUIT, N_("MenuFile|_Quit"), NULL,
-      "<control>Q", N_("Quit the program"), FALSE, G_CALLBACK (main_window_on_action_quit) },
+      NULL, N_("Quit the program"), FALSE, G_CALLBACK (main_window_on_quit) },
     { "ActionToggleToolbar", NULL, N_("MenuView|_Toolbar"), NULL,
       NULL, N_("Display or hide the toolbar"), TRUE,
       G_CALLBACK (main_window_on_toggle_toolbar) },
@@ -68,13 +70,16 @@ static const MainWindowAction main_window_actions[] =
       NULL, N_("Display or hide the debugger controls"), TRUE,
       G_CALLBACK (main_window_on_toggle_debugger) },
     { "ActionRun", NULL, N_("MenuDebug|_Run"), NULL,
-      "F5", N_("Start the emulator"), FALSE, G_CALLBACK (main_window_on_action_run) },
+      "F5", N_("Start the emulator"), FALSE, G_CALLBACK (main_window_on_run) },
     { "ActionStep", NULL, N_("MenuDebug|_Step"), NULL,
-      "F11", N_("Single-step one instruction"), FALSE, G_CALLBACK (main_window_on_action_step) },
+      "F11", N_("Single-step one instruction"), FALSE, G_CALLBACK (main_window_on_step) },
     { "ActionBreak", NULL, N_("MenuDebug|_Break"), NULL,
-      "F9", N_("Stop the emulator"), FALSE, G_CALLBACK (main_window_on_action_break) },
+      "F9", N_("Stop the emulator"), FALSE, G_CALLBACK (main_window_on_break) },
+    { "ActionEditBreakpoint", NULL, N_("MenuDebug|Edit brea_kpoint..."), NULL,
+      NULL, N_("Set or remove a breakpoint"), FALSE,
+      G_CALLBACK (main_window_on_edit_breakpoint) },
     { "ActionAbout", GTK_STOCK_ABOUT, N_("MenuHelp|_About"), NULL,
-      NULL, N_("Display the about box"), FALSE, G_CALLBACK (main_window_on_action_about) }
+      NULL, N_("Display the about box"), FALSE, G_CALLBACK (main_window_on_about) }
   };
 
 static const char main_window_ui_definition[] =
@@ -93,6 +98,8 @@ static const char main_window_ui_definition[] =
 "   <menuitem name=\"Run\" action=\"ActionRun\" />\n"
 "   <menuitem name=\"Step\" action=\"ActionStep\" />\n"
 "   <menuitem name=\"Break\" action=\"ActionBreak\" />\n"
+"   <separator />\n"
+"   <menuitem name=\"EditBreakpoint\" action=\"ActionEditBreakpoint\" />\n"
 "  </menu>\n"
 "  <menu name=\"HelpMenu\" action=\"ActionHelpMenu\">\n"
 "   <menuitem name=\"About\" action=\"ActionAbout\" />\n"
@@ -321,7 +328,7 @@ main_window_set_electron (MainWindow *mainwin, ElectronManager *electron)
 }
 
 static void
-main_window_on_action_quit (GtkAction *action, MainWindow *mainwin)
+main_window_on_quit (GtkAction *action, MainWindow *mainwin)
 {
   g_return_if_fail (IS_MAIN_WINDOW (mainwin));
   
@@ -356,7 +363,7 @@ main_window_on_toggle_debugger (GtkAction *action, MainWindow *mainwin)
 }
 
 static void
-main_window_on_action_about (GtkAction *action, MainWindow *mainwin)
+main_window_on_about (GtkAction *action, MainWindow *mainwin)
 {
   g_return_if_fail (IS_MAIN_WINDOW (mainwin));
 
@@ -364,7 +371,7 @@ main_window_on_action_about (GtkAction *action, MainWindow *mainwin)
 }
 
 static void
-main_window_on_action_run (GtkAction *action, MainWindow *mainwin)
+main_window_on_run (GtkAction *action, MainWindow *mainwin)
 {
   g_return_if_fail (IS_MAIN_WINDOW (mainwin));
 
@@ -373,7 +380,7 @@ main_window_on_action_run (GtkAction *action, MainWindow *mainwin)
 }
 
 static void
-main_window_on_action_step (GtkAction *action, MainWindow *mainwin)
+main_window_on_step (GtkAction *action, MainWindow *mainwin)
 {
   g_return_if_fail (IS_MAIN_WINDOW (mainwin));
 
@@ -382,12 +389,21 @@ main_window_on_action_step (GtkAction *action, MainWindow *mainwin)
 }
 
 static void
-main_window_on_action_break (GtkAction *action, MainWindow *mainwin)
+main_window_on_break (GtkAction *action, MainWindow *mainwin)
 {
   g_return_if_fail (IS_MAIN_WINDOW (mainwin));
 
   if (mainwin->electron)
     electron_manager_stop (mainwin->electron);
+}
+
+static void
+main_window_on_edit_breakpoint (GtkAction *action, MainWindow *mainwin)
+{
+  g_return_if_fail (IS_MAIN_WINDOW (mainwin));
+
+  if (mainwin->electron)
+    breakpoint_edit_dialog_run (GTK_WINDOW (mainwin), mainwin->electron);
 }
 
 static void
