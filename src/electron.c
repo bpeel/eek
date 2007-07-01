@@ -115,23 +115,33 @@ electron_next_scanline (Electron *electron)
 void
 electron_step (Electron *electron)
 {
+  /* Temporarily disable the breakpoint */
+  int old_break_type = electron->cpu.break_type;
+  electron->cpu.break_type = CPU_BREAK_NONE;
   /* Execute one instruction */
   cpu_fetch_execute (&electron->cpu, electron->cpu.time + 1);
+  /* Restore the breakpoint */
+  electron->cpu.break_type = old_break_type;
   /* If we've done a whole scanline's worth of cycles then draw the next scanline */
   if (electron->cpu.time >= ELECTRON_CYCLES_PER_SCANLINE)
     electron_next_scanline (electron);
 }
 
-void
+int
 electron_run_frame (Electron *electron)
 {
+  int got_break;
+
   do
   {
     /* Execute instructions until the next scanline */
-    cpu_fetch_execute (&electron->cpu, ELECTRON_CYCLES_PER_SCANLINE);
+    got_break = cpu_fetch_execute (&electron->cpu, ELECTRON_CYCLES_PER_SCANLINE);
     /* Process the next scanline */
-    electron_next_scanline (electron);
-  } while (electron->scanline != ELECTRON_END_SCANLINE);
+    if (electron->cpu.time >= ELECTRON_CYCLES_PER_SCANLINE)
+      electron_next_scanline (electron);
+  } while (!got_break && electron->scanline != ELECTRON_END_SCANLINE);
+
+  return got_break;
 }
 
 int

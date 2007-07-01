@@ -75,7 +75,7 @@ int electron_load_os_rom (Electron *electron, FILE *in);
 int electron_load_paged_rom (Electron *electron, int page, FILE *in);
 void electron_write_to_location (Electron *electron, UWORD location, UBYTE v);
 UBYTE electron_read_from_location (Electron *electron, UWORD location);
-void electron_run_frame (Electron *electron);
+int electron_run_frame (Electron *electron);
 void electron_step (Electron *electron);
 
 #define electron_press_key(electron, line, bit) \
