@@ -3,6 +3,8 @@
 
 #include <gtk/gtkwidget.h>
 #include <gtk/gtkwindow.h>
+#include <gtk/gtkactiongroup.h>
+#include <gtk/gtkuimanager.h>
 #include "electronmanager.h"
 
 #define TYPE_MAIN_WINDOW (main_window_get_type ())
@@ -22,6 +24,8 @@ struct _MainWindow
   ElectronManager *electron;
 
   GtkWidget *debugger, *ewidget;
+  GtkActionGroup *action_group;
+  GtkUIManager *ui_manager;
 
   guint started, stopped;
 };

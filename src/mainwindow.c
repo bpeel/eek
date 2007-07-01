@@ -5,6 +5,7 @@
 #include <gtk/gtkwidget.h>
 #include <gtk/gtkwindow.h>
 #include <gtk/gtkactiongroup.h>
+#include <gtk/gtktoggleaction.h>
 #include <gtk/gtkstock.h>
 #include <gtk/gtkuimanager.h>
 #include <gtk/gtkhbox.h>
@@ -25,6 +26,7 @@ typedef struct _MainWindowAction MainWindowAction;
 struct _MainWindowAction
 {
   const gchar *name, *stock_id, *label, *short_label, *accelerator, *tooltip;
+  gboolean toggle;
   GCallback callback;
 };
 
@@ -40,29 +42,39 @@ static void main_window_on_action_run (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_action_step (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_action_break (GtkAction *action, MainWindow *mainwin);
 
-static void main_window_on_stopped (ElectronManager *electron, MainWindow *mainwin);
-static void main_window_on_started (ElectronManager *electron, MainWindow *mainwin);
+static void main_window_update_debug_actions (MainWindow *mainwin);
+
+static void main_window_on_toggle_toolbar (GtkAction *action, MainWindow *mainwin);
+static void main_window_on_toggle_debugger (GtkAction *action, MainWindow *mainwin);
 
 static gpointer parent_class;
 
 static const MainWindowAction main_window_actions[] =
   {
     { "ActionFileMenu", NULL, N_("Menu|_File"), NULL, NULL,
-      NULL, NULL },
+      NULL, FALSE, NULL },
+    { "ActionViewMenu", NULL, N_("Menu|_View"), NULL, NULL,
+      NULL, FALSE, NULL },
     { "ActionDebugMenu", NULL, N_("Menu|_Debug"), NULL, NULL,
-      NULL, NULL },
+      NULL, FALSE, NULL },
     { "ActionHelpMenu", NULL, N_("Menu|_Help"), NULL, NULL,
-      NULL, NULL },
+      NULL, FALSE, NULL },
     { "ActionQuit", GTK_STOCK_QUIT, N_("MenuFile|_Quit"), NULL,
-      "<control>Q", N_("Quit the program"), G_CALLBACK (main_window_on_action_quit) },
+      "<control>Q", N_("Quit the program"), FALSE, G_CALLBACK (main_window_on_action_quit) },
+    { "ActionToggleToolbar", NULL, N_("MenuView|_Toolbar"), NULL,
+      NULL, N_("Display or hide the toolbar"), TRUE,
+      G_CALLBACK (main_window_on_toggle_toolbar) },
+    { "ActionToggleDebugger", NULL, N_("MenuView|_Debugger"), NULL,
+      NULL, N_("Display or hide the debugger controls"), TRUE,
+      G_CALLBACK (main_window_on_toggle_debugger) },
     { "ActionRun", NULL, N_("MenuDebug|_Run"), NULL,
-      "F5", N_("Start the emulator"), G_CALLBACK (main_window_on_action_run) },
+      "F5", N_("Start the emulator"), FALSE, G_CALLBACK (main_window_on_action_run) },
     { "ActionStep", NULL, N_("MenuDebug|_Step"), NULL,
-      "F11", N_("Single-step one instruction"), G_CALLBACK (main_window_on_action_step) },
+      "F11", N_("Single-step one instruction"), FALSE, G_CALLBACK (main_window_on_action_step) },
     { "ActionBreak", NULL, N_("MenuDebug|_Break"), NULL,
-      "F9", N_("Stop the emulator"), G_CALLBACK (main_window_on_action_break) },
+      "F9", N_("Stop the emulator"), FALSE, G_CALLBACK (main_window_on_action_break) },
     { "ActionAbout", GTK_STOCK_ABOUT, N_("MenuHelp|_About"), NULL,
-      NULL, N_("Display the about box"), G_CALLBACK (main_window_on_action_about) }
+      NULL, N_("Display the about box"), FALSE, G_CALLBACK (main_window_on_action_about) }
   };
 
 static const char main_window_ui_definition[] =
@@ -70,6 +82,12 @@ static const char main_window_ui_definition[] =
 " <menubar name=\"MenuBar\">\n"
 "  <menu name=\"FileMenu\" action=\"ActionFileMenu\">\n"
 "   <menuitem name=\"Quit\" action=\"ActionQuit\" />\n"
+"  </menu>\n"
+"  <menu name=\"ViewMenu\" action=\"ActionViewMenu\">\n"
+"   <menuitem name=\"ToggleToolbar\" action=\"ActionToggleToolbar\" />\n"
+"  </menu>\n"
+"  <menu name=\"ViewMenu\" action=\"ActionViewMenu\">\n"
+"   <menuitem name=\"ToggleDebugger\" action=\"ActionToggleDebugger\" />\n"
 "  </menu>\n"
 "  <menu name=\"DebugMenu\" action=\"ActionDebugMenu\">\n"
 "   <menuitem name=\"Run\" action=\"ActionRun\" />\n"
@@ -129,8 +147,6 @@ static void
 main_window_init (MainWindow *mainwin)
 {
   GtkWidget *vbox, *menu_bar, *tool_bar, *hbox;
-  GtkActionGroup *action_group;
-  GtkUIManager *ui_manager;
   GError *ui_error = NULL;
   int i;
   const MainWindowAction *a;
@@ -141,34 +157,54 @@ main_window_init (MainWindow *mainwin)
   vbox = gtk_vbox_new (FALSE, 0);
 
   /* Create the action group for the menu / toolbar actions */
-  action_group = gtk_action_group_new ("MenuActions");
+  mainwin->action_group = gtk_action_group_new ("MenuActions");
   for (a = main_window_actions, i = 0;
        i < sizeof (main_window_actions) / sizeof (MainWindowAction);
        i++, a++)
   {
-    GtkAction *action = gtk_action_new (a->name,
-					a->label
-					? g_strip_context (a->label, gettext (a->label))
-					: NULL,
-					a->tooltip
-					? g_strip_context (a->tooltip, gettext (a->tooltip))
-					: NULL,
-					main_window_actions[i].stock_id);
+    GtkAction *action;
+
+    if (main_window_actions[i].toggle)
+    {
+      action = GTK_ACTION (gtk_toggle_action_new
+			   (a->name,
+			    a->label
+			    ? g_strip_context (a->label, gettext (a->label))
+			    : NULL,
+			    a->tooltip
+			    ? g_strip_context (a->tooltip, gettext (a->tooltip))
+			    : NULL,
+			    main_window_actions[i].stock_id));
+      if (main_window_actions[i].callback)
+	g_signal_connect (G_OBJECT (action), "toggled",
+			  main_window_actions[i].callback, mainwin);
+    }
+    else
+    {
+      action = gtk_action_new (a->name,
+			       a->label
+			       ? g_strip_context (a->label, gettext (a->label))
+			       : NULL,
+			       a->tooltip
+			       ? g_strip_context (a->tooltip, gettext (a->tooltip))
+			       : NULL,
+			       main_window_actions[i].stock_id);
+      if (main_window_actions[i].callback)
+	g_signal_connect (G_OBJECT (action), "activate",
+			  main_window_actions[i].callback, mainwin);
+    }
     if (main_window_actions[i].short_label)
       g_object_set (G_OBJECT (action), "short-label",
 		    g_strip_context (a->short_label, gettext (a->short_label)), NULL);
-    if (main_window_actions[i].callback)
-      g_signal_connect (G_OBJECT (action), "activate",
-			main_window_actions[i].callback, mainwin);
-    gtk_action_group_add_action_with_accel (action_group, action,
+    gtk_action_group_add_action_with_accel (mainwin->action_group, action,
 					    main_window_actions[i].accelerator);
     g_object_unref (action);
   }
 
   /* Create the actual widgets */
-  ui_manager = gtk_ui_manager_new ();
-  gtk_ui_manager_insert_action_group (ui_manager, action_group, 0);
-  if (gtk_ui_manager_add_ui_from_string (ui_manager, main_window_ui_definition,
+  mainwin->ui_manager = gtk_ui_manager_new ();
+  gtk_ui_manager_insert_action_group (mainwin->ui_manager, mainwin->action_group, 0);
+  if (gtk_ui_manager_add_ui_from_string (mainwin->ui_manager, main_window_ui_definition,
 					 sizeof (main_window_ui_definition) - 1,
 					 &ui_error) == 0)
   {
@@ -180,19 +216,18 @@ main_window_init (MainWindow *mainwin)
 
   /* Add the accelerators to this window */
   gtk_window_add_accel_group (GTK_WINDOW (mainwin),
-			      gtk_ui_manager_get_accel_group (ui_manager));
+			      gtk_ui_manager_get_accel_group (mainwin->ui_manager));
 
   /* Add the menu bar to the vbox */
-  if ((menu_bar = gtk_ui_manager_get_widget (ui_manager, "/MenuBar")))
+  if ((menu_bar = gtk_ui_manager_get_widget (mainwin->ui_manager, "/MenuBar")))
     gtk_box_pack_start (GTK_BOX (vbox), menu_bar, FALSE, TRUE, 0);
   
   /* Add the tool bar to the vbox */
-  if ((tool_bar = gtk_ui_manager_get_widget (ui_manager, "/ToolBar")))
+  if ((tool_bar = gtk_ui_manager_get_widget (mainwin->ui_manager, "/ToolBar")))
+  {
+    gtk_widget_hide (tool_bar);
     gtk_box_pack_start (GTK_BOX (vbox), tool_bar, FALSE, TRUE, 0);
-
-  /* We no longer need the UI manager or action group */
-  g_object_unref (ui_manager);
-  g_object_unref (action_group);
+  }
 
   /* Create an hbox for the main widgets */
   hbox = gtk_hbox_new (FALSE, 0);
@@ -206,7 +241,6 @@ main_window_init (MainWindow *mainwin)
   /* Create a debugger widget */
   mainwin->debugger = debugger_new ();
   g_object_weak_ref (G_OBJECT (mainwin->debugger), main_window_debugger_notify, mainwin);
-  gtk_widget_show (mainwin->debugger);
   gtk_box_pack_start (GTK_BOX (hbox), mainwin->debugger, FALSE, TRUE, 0);
 
   gtk_widget_show (hbox);
@@ -217,6 +251,9 @@ main_window_init (MainWindow *mainwin)
 
   /* Give focus to the electron widget to start */
   gtk_widget_grab_focus (mainwin->ewidget);
+
+  /* Update the sensitivity of the debug actions */
+  main_window_update_debug_actions (mainwin);
 }
 
 GtkWidget *
@@ -269,16 +306,18 @@ main_window_set_electron (MainWindow *mainwin, ElectronManager *electron)
 
     mainwin->started
       = g_signal_connect_swapped (electron, "started",
-				  G_CALLBACK (main_window_on_started), mainwin);
+				  G_CALLBACK (main_window_update_debug_actions), mainwin);
     mainwin->stopped
       = g_signal_connect_swapped (electron, "stopped",
-				  G_CALLBACK (main_window_on_stopped), mainwin);
+				  G_CALLBACK (main_window_update_debug_actions), mainwin);
   }
 
   if (mainwin->ewidget)
     electron_widget_set_electron (ELECTRON_WIDGET (mainwin->ewidget), electron);
   if (mainwin->debugger)
     debugger_set_electron (DEBUGGER (mainwin->debugger), electron);
+
+  main_window_update_debug_actions (mainwin);
 }
 
 static void
@@ -287,6 +326,33 @@ main_window_on_action_quit (GtkAction *action, MainWindow *mainwin)
   g_return_if_fail (IS_MAIN_WINDOW (mainwin));
   
   gtk_main_quit ();
+}
+
+static void
+main_window_on_toggle_toolbar (GtkAction *action, MainWindow *mainwin)
+{
+  GtkWidget *toolbar;
+
+  if (mainwin->ui_manager && (toolbar = gtk_ui_manager_get_widget (mainwin->ui_manager,
+								   "/ToolBar")))
+  {
+    if (gtk_toggle_action_get_active (GTK_TOGGLE_ACTION (action)))
+      gtk_widget_show (toolbar);
+    else
+      gtk_widget_hide (toolbar);
+  }
+}
+
+static void
+main_window_on_toggle_debugger (GtkAction *action, MainWindow *mainwin)
+{
+  if (mainwin->debugger)
+  {
+    if (gtk_toggle_action_get_active (GTK_TOGGLE_ACTION (action)))
+      gtk_widget_show (mainwin->debugger);
+    else
+      gtk_widget_hide (mainwin->debugger);
+  }
 }
 
 static void
@@ -325,13 +391,24 @@ main_window_on_action_break (GtkAction *action, MainWindow *mainwin)
 }
 
 static void
-main_window_on_started (ElectronManager *electron, MainWindow *mainwin)
+main_window_update_debug_actions (MainWindow *mainwin)
 {
-}
+  GtkAction *action;
 
-static void
-main_window_on_stopped (ElectronManager *electron, MainWindow *mainwin)
-{
+  if (mainwin->action_group)
+  {
+    gboolean is_running = FALSE;
+
+    if (mainwin->electron)
+      is_running = electron_manager_is_running (mainwin->electron);
+
+    if ((action = gtk_action_group_get_action (mainwin->action_group, "ActionRun")))
+      gtk_action_set_sensitive (action, mainwin->electron ? !is_running : FALSE);
+    if ((action = gtk_action_group_get_action (mainwin->action_group, "ActionBreak")))
+      gtk_action_set_sensitive (action, mainwin->electron ? is_running : FALSE);
+    if ((action = gtk_action_group_get_action (mainwin->action_group, "ActionStep")))
+      gtk_action_set_sensitive (action, mainwin->electron ? !is_running : FALSE);
+  }
 }
 
 static void
@@ -355,6 +432,18 @@ main_window_dispose (GObject *obj)
     g_object_weak_unref (G_OBJECT (mainwin->debugger),
 			 main_window_debugger_notify, mainwin);
     mainwin->debugger = NULL;
+  }
+
+  if (mainwin->ui_manager)
+  {
+    g_object_unref (G_OBJECT (mainwin->ui_manager));
+    mainwin->ui_manager = NULL;
+  }
+
+  if (mainwin->action_group)
+  {
+    g_object_unref (G_OBJECT (mainwin->action_group));
+    mainwin->action_group = NULL;
   }
 
   main_window_set_electron (mainwin, NULL);
