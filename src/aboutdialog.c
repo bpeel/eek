@@ -18,6 +18,7 @@ about_dialog_show ()
 			 "copyright", _("Copyright (C) 2007 Neil Roberts"),
 			 "name", _("Eek"),
 			 "translator-credits", _("translator-credits"),
+			 "website", "http://www.busydoingnothing.co.uk/eek/",
 			 "version", VERSION,
 			 NULL);
 }
