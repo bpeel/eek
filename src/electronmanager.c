@@ -137,10 +137,13 @@ electron_manager_timeout (ElectronManager *eman)
   g_return_val_if_fail (IS_ELECTRON_MANAGER (eman), FALSE);
   g_return_val_if_fail (eman->timeout != 0, FALSE);
 
-  electron_run_frame (eman->data);
-
-  g_signal_emit (G_OBJECT (eman),
-		 electron_manager_signals[ELECTRON_MANAGER_FRAME_END_SIGNAL], 0);
+  if (electron_run_frame (eman->data))
+    /* Breakpoint was hit, so stop the electron */
+    electron_manager_stop (eman);
+  else
+    /* Otherwise we've done a whole frame so emit the frame end signal */
+    g_signal_emit (G_OBJECT (eman),
+		   electron_manager_signals[ELECTRON_MANAGER_FRAME_END_SIGNAL], 0);
 
   return TRUE;
 }
