@@ -19,6 +19,7 @@ static void memory_display_dispose (GObject *obj);
 static gboolean memory_display_expose (GtkWidget *widget, GdkEventExpose *event);
 
 static void memory_display_style_set (GtkWidget *widget, GtkStyle *style);
+static void memory_display_state_changed (GtkWidget *memdisp, GtkStateType state);
 static void memory_display_size_request (GtkWidget *widget, GtkRequisition *requisition);
 static void memory_display_size_allocate (GtkWidget *widget, GtkAllocation *allocation);
 
@@ -111,6 +112,7 @@ memory_display_class_init (MemoryDisplayClass *klass)
   widget_class->size_request = memory_display_size_request;
   widget_class->size_allocate = memory_display_size_allocate;
   widget_class->button_press_event = memory_display_button_press;
+  widget_class->state_changed = memory_display_state_changed;
 
   klass->set_scroll_adjustments = memory_display_set_scroll_adjustments;
   klass->move_cursor = memory_display_move_cursor;
@@ -340,7 +342,7 @@ memory_display_realize (GtkWidget *widget)
   gdk_window_set_user_data (widget->window, widget);
 
   gdk_window_set_background (widget->window, &widget->style->base[GTK_WIDGET_STATE (widget)]);
-  
+
   memory_display_refresh_row_height (memdisplay);
 }
 
@@ -563,6 +565,9 @@ memory_display_style_set (GtkWidget *widget, GtkStyle *style)
   g_return_if_fail (IS_MEMORY_DISPLAY (widget));
 
   GTK_WIDGET_CLASS (parent_class)->style_set (widget, style);
+
+  if (GTK_WIDGET_REALIZED (widget))
+    gdk_window_set_background (widget->window, &widget->style->base[GTK_WIDGET_STATE (widget)]);
 
   memory_display_refresh_row_height (MEMORY_DISPLAY (widget));
 }
@@ -973,3 +978,14 @@ memory_display_button_press (GtkWidget *widget, GdkEventButton *event)
   return TRUE;
 }
 
+static void
+memory_display_state_changed (GtkWidget *widget, GtkStateType state)
+{
+  if (GTK_WIDGET_CLASS (parent_class)->state_changed)
+    (* GTK_WIDGET_CLASS (parent_class)->state_changed) (widget, state);
+
+  if (GTK_WIDGET_REALIZED (widget))
+    gdk_window_set_background (widget->window, &widget->style->base[GTK_WIDGET_STATE (widget)]);
+
+  gtk_widget_queue_draw (widget);
+}
