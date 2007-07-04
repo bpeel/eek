@@ -89,6 +89,12 @@ electron_manager_start (ElectronManager *eman)
 				      eman, NULL);
     g_signal_emit (G_OBJECT (eman),
 		   electron_manager_signals[ELECTRON_MANAGER_STARTED_SIGNAL], 0);
+    /* If we're breaking at the current address then skip over one
+       instruction. Otherwise when the breakpoint is hit continuing
+       the emulation will cause it to break immediatly */
+    if (eman->data->cpu.break_type == CPU_BREAK_ADDR
+	&& eman->data->cpu.break_address == eman->data->cpu.pc)
+      electron_step (eman->data);
   }
 }
 
