@@ -98,7 +98,7 @@ disassemble_pc_relative (UWORD address, const UBYTE *bytes, char *operands)
 static int
 disassemble_indirect (UWORD address, const UBYTE *bytes, char *operands)
 {
-  sprintf (operands, "(&%02X%02x)", bytes[2], bytes[1]);
+  sprintf (operands, "(&%02X%02X)", bytes[2], bytes[1]);
   return 3;
 }
 
