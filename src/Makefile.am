@@ -26,6 +26,7 @@ eek_SOURCES = \
 	mainwindow.h mainwindow.c \
 	aboutdialog.h aboutdialog.c \
 	breakpointeditdialog.h breakpointeditdialog.c \
+	disdialog.h disdialog.c \
 	intl.h
 
 EXTRA_DIST = eekmarshalers.list
