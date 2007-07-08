@@ -19,6 +19,7 @@
 #include "aboutdialog.h"
 #include "intl.h"
 #include "breakpointeditdialog.h"
+#include "disdialog.h"
 
 typedef struct _MainWindowAction MainWindowAction;
 
@@ -43,11 +44,14 @@ static void main_window_on_run (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_step (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_break (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_edit_breakpoint (GtkAction *action, MainWindow *mainwin);
+static void main_window_on_disassembler (GtkAction *action, MainWindow *mainwin);
 
 static void main_window_update_debug_actions (MainWindow *mainwin);
 
 static void main_window_on_toggle_toolbar (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_toggle_debugger (GtkAction *action, MainWindow *mainwin);
+
+static void main_window_forget_dis_dialog (MainWindow *mainwin);
 
 static gpointer parent_class;
 
@@ -78,6 +82,9 @@ static const MainWindowAction main_window_actions[] =
     { "ActionEditBreakpoint", NULL, N_("MenuDebug|Edit brea_kpoint..."), NULL,
       NULL, N_("Set or remove a breakpoint"), FALSE,
       G_CALLBACK (main_window_on_edit_breakpoint) },
+    { "ActionDisassembler", NULL, N_("MenuDebug|_Disassembler..."), NULL,
+      NULL, N_("Show the diassembler dialog"), FALSE,
+      G_CALLBACK (main_window_on_disassembler) },
     { "ActionAbout", GTK_STOCK_ABOUT, N_("MenuHelp|_About"), NULL,
       NULL, N_("Display the about box"), FALSE, G_CALLBACK (main_window_on_about) }
   };
@@ -100,6 +107,7 @@ static const char main_window_ui_definition[] =
 "   <menuitem name=\"Break\" action=\"ActionBreak\" />\n"
 "   <separator />\n"
 "   <menuitem name=\"EditBreakpoint\" action=\"ActionEditBreakpoint\" />\n"
+"   <menuitem name=\"Disassembler\" action=\"ActionDisassembler\" />\n"
 "  </menu>\n"
 "  <menu name=\"HelpMenu\" action=\"ActionHelpMenu\">\n"
 "   <menuitem name=\"About\" action=\"ActionAbout\" />\n"
@@ -159,6 +167,9 @@ main_window_init (MainWindow *mainwin)
   const MainWindowAction *a;
 
   mainwin->electron = NULL;
+
+  /* We haven't created a disassembler dialog yet */
+  mainwin->disdialog = NULL;
   
   /* Create a GtkVBox to hold the menu and the main display widget */
   vbox = gtk_vbox_new (FALSE, 0);
@@ -407,6 +418,41 @@ main_window_on_edit_breakpoint (GtkAction *action, MainWindow *mainwin)
 }
 
 static void
+main_window_on_disassembler (GtkAction *action, MainWindow *mainwin)
+{
+  g_return_if_fail (IS_MAIN_WINDOW (mainwin));
+
+  if (mainwin->disdialog == NULL)
+  {
+    mainwin->disdialog = dis_dialog_new_with_electron (mainwin->electron);
+    g_object_ref_sink (mainwin->disdialog);
+    g_signal_connect (G_OBJECT (mainwin->disdialog), "response",
+		      G_CALLBACK (gtk_widget_destroy), mainwin);
+    mainwin->disdialog_destroy
+      = g_signal_connect_swapped (G_OBJECT (mainwin->disdialog), "destroy",
+				  G_CALLBACK (main_window_forget_dis_dialog), mainwin);
+    gtk_window_set_transient_for (GTK_WINDOW (mainwin->disdialog), GTK_WINDOW (mainwin));
+    gtk_window_set_position (GTK_WINDOW (mainwin->disdialog), GTK_WIN_POS_CENTER_ON_PARENT);
+    gtk_window_set_default_size (GTK_WINDOW (mainwin->disdialog), 1, 500);
+  }
+
+  gtk_window_present (GTK_WINDOW (mainwin->disdialog));
+}
+
+static void
+main_window_forget_dis_dialog (MainWindow *mainwin)
+{
+  g_return_if_fail (IS_MAIN_WINDOW (mainwin));
+
+  if (mainwin->disdialog)
+  {
+    g_signal_handler_disconnect (G_OBJECT (mainwin->disdialog), mainwin->disdialog_destroy);
+    g_object_unref (mainwin->disdialog);
+    mainwin->disdialog = NULL;
+  }
+}
+
+static void
 main_window_update_debug_actions (MainWindow *mainwin)
 {
   GtkAction *action;
@@ -461,6 +507,8 @@ main_window_dispose (GObject *obj)
     g_object_unref (G_OBJECT (mainwin->action_group));
     mainwin->action_group = NULL;
   }
+
+  main_window_forget_dis_dialog (mainwin);
 
   main_window_set_electron (mainwin, NULL);
 

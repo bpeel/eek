@@ -23,11 +23,11 @@ struct _MainWindow
 
   ElectronManager *electron;
 
-  GtkWidget *debugger, *ewidget;
+  GtkWidget *debugger, *ewidget, *disdialog;
   GtkActionGroup *action_group;
   GtkUIManager *ui_manager;
 
-  guint started, stopped;
+  guint started, stopped, disdialog_destroy;
 };
 
 struct _MainWindowClass
