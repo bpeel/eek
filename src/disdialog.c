@@ -107,7 +107,7 @@ dis_dialog_init (DisDialog *disdialog)
 		"digits", 4, NULL);
   g_signal_connect_object (G_OBJECT (address_spin), "activate",
 			   G_CALLBACK (dis_dialog_on_apply),
-			   disdialog, G_CONNECT_SWAPPED);
+			   disdialog, G_CONNECT_SWAPPED | G_CONNECT_AFTER);
 
   gtk_label_set_mnemonic_widget (GTK_LABEL (label), address_spin);
   gtk_widget_show (label);
@@ -124,7 +124,7 @@ dis_dialog_init (DisDialog *disdialog)
   lines_spin = gtk_spin_button_new (disdialog->lines_adj, 1.0, 0);
   g_signal_connect_object (G_OBJECT (lines_spin), "activate",
 			   G_CALLBACK (dis_dialog_on_apply),
-			   disdialog, G_CONNECT_SWAPPED);
+			   disdialog, G_CONNECT_SWAPPED | G_CONNECT_AFTER);
   gtk_spin_button_set_numeric (GTK_SPIN_BUTTON (lines_spin), TRUE);
 
   gtk_label_set_mnemonic_widget (GTK_LABEL (label), lines_spin);
