@@ -64,6 +64,15 @@ struct _Electron
 
   /* The state of the display */
   Video video;
+
+  /* Counter to count scanlines so we know when to read the next byte
+     from the cassette */
+  UBYTE cassette_scanline_counter;
+  /* Buffer for the cassette data */
+  UBYTE *cassette_buffer;
+  int cassette_buffer_length, cassette_buffer_size;
+  /* Index of next byte that will be read */
+  int cassette_buffer_pos;
 };
 
 /* Which address page represents the sheila */
@@ -77,6 +86,7 @@ void electron_write_to_location (Electron *electron, UWORD location, UBYTE v);
 UBYTE electron_read_from_location (Electron *electron, UWORD location);
 int electron_run_frame (Electron *electron);
 void electron_step (Electron *electron);
+void electron_rewind_cassette (Electron *electron);
 
 #define electron_press_key(electron, line, bit) \
 do { (electron)->keyboard[(line)] |= 1 << (bit); } while (0)

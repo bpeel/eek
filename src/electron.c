@@ -23,6 +23,15 @@
 #define ELECTRON_C_RTC         32
 #define ELECTRON_C_DISPLAY_END 16
 
+/* Cassette runs at 1200 baud with 2 stop bits per byte so there is
+   120 bytes per second of actual data. There are 50 frames per second
+   and 312 scanlines per frame so there are 15600 scanlines per
+   second. Therefore there are 15600/120 = 130 scanlines per byte */
+#define ELECTRON_SCANLINES_PER_CASSETTE_BYTE 130
+/* If the electron tries to store more data than this on the cassette
+   then it will be ignored */
+#define ELECTRON_MAX_CASSETTE_WRITE_LENGTH 1048576
+
 #define ELECTRON_MODE(electron) (((electron)->sheila[0x7] >> 3) & 7)
 
 UBYTE electron_read_from_location (Electron *electron, UWORD address);
@@ -52,6 +61,13 @@ electron_new ()
   /* No keys are being pressed */
   memset (electron->keyboard, '\0', 14);
 
+  /* There is no cassette data */
+  electron->cassette_buffer = NULL;
+  electron->cassette_buffer_length = 0;
+  electron->cassette_buffer_size = 0;
+  electron->cassette_buffer_pos = 0;
+  electron->cassette_scanline_counter = 0;
+
   /* Initialise the cpu */
   cpu_init (&electron->cpu, electron->memory,
 	    (CpuMemReadFunc) electron_read_from_location, 
@@ -73,7 +89,7 @@ electron_free (Electron *electron)
   xfree (electron);
 }
 
-void
+static void
 electron_generate_interrupt (Electron *electron, int num)
 {
   /* Set the event occuring flag */
@@ -83,6 +99,15 @@ electron_generate_interrupt (Electron *electron, int num)
   if ((electron->ienabled & num))
     /* If so, fire the interrupt */
     cpu_set_irq (&electron->cpu);
+}
+
+static void
+electron_clear_interrupts (Electron *electron, int mask)
+{
+  electron->sheila[0x0] &= ~mask;
+  /* If no interrupts are on then put the irq line back */
+  if ((electron->sheila[0x0] & electron->ienabled) == 0)
+    cpu_reset_irq (&electron->cpu);
 }
 
 void
@@ -110,6 +135,49 @@ electron_next_scanline (Electron *electron)
   }
   else if (electron->scanline == ELECTRON_END_SCANLINE)
     electron_generate_interrupt (electron, ELECTRON_I_DISPLAY_END);
+
+  /* Is it time for the next byte from the cassette? */
+  if (++electron->cassette_scanline_counter >= ELECTRON_SCANLINES_PER_CASSETTE_BYTE)
+  {
+    electron->cassette_scanline_counter = 0;
+
+    /* Are we in write mode with the cassette motor on? */
+    if ((electron->sheila[0x7] & 0x46) == 0x44)
+    {
+      /* Ignore the byte if too much data has been written */
+      if (electron->cassette_buffer_pos < ELECTRON_MAX_CASSETTE_WRITE_LENGTH)
+      {
+	/* Increase the size of the buffer if necessary */
+	if (electron->cassette_buffer_pos >= electron->cassette_buffer_size)
+	{
+	  if (electron->cassette_buffer == NULL)
+	    electron->cassette_buffer = xmalloc (electron->cassette_buffer_size = 512);
+	  else
+	    electron->cassette_buffer = xrealloc (electron->cassette_buffer,
+						  electron->cassette_buffer_size *= 2);
+	}
+
+	/* Add the byte */
+	electron->cassette_buffer[electron->cassette_buffer_pos++] = electron->sheila[0x4];
+	
+	/* Make the tape longer if we were at the end of it */
+	if (electron->cassette_buffer_pos > electron->cassette_buffer_length)
+	  electron->cassette_buffer_length = electron->cassette_buffer_pos;
+
+	electron_generate_interrupt (electron, ELECTRON_I_TRANSMIT);
+      }
+    }
+    /* Are we in read mode with the cassette motor on? */
+    else if ((electron->sheila[0x7] & 0x46) == 0x40)
+    {
+      /* Is there any data to be read */
+      if (electron->cassette_buffer_pos < electron->cassette_buffer_length)
+      {
+	electron->sheila[0x4] = electron->cassette_buffer[electron->cassette_buffer_pos++];
+	electron_generate_interrupt (electron, ELECTRON_I_RECEIVE);
+      }
+    }
+  }
 }
 
 void
@@ -298,22 +366,28 @@ electron_write_to_location (Electron *electron, UWORD location, UBYTE v)
       case 0x0:
 	electron->ienabled = v & ~ELECTRON_I_POWERON;
 	break;
+      case 0x4:
+	electron->sheila[0x4] = v;
+	/* Writing to the cassette data buffer clears the transmit interrupt */
+	electron_clear_interrupts (electron, ELECTRON_I_TRANSMIT);
+	break;
       case 0x5:
-	/* Set the page number. If the keyboard or basic page is
-	   currently selected then only pages 8-15 are actually
-	   honoured */
-	if (electron->page < 8 || electron->page > 11 || (v & 0x0f) >= 8)
-	  electron->page = v & 0x0f;
-	/* Clear interrupts */
-	if (v & ELECTRON_C_HIGH_TONE)
-	  electron->sheila[0x0] &= ~ELECTRON_I_HIGH_TONE;
-	if (v & ELECTRON_C_RTC)
-	  electron->sheila[0x0] &= ~ELECTRON_I_RTC;
-	if (v & ELECTRON_C_DISPLAY_END)
-	  electron->sheila[0x0] &= ~ELECTRON_I_DISPLAY_END;
-	/* If no interrupts are on then put the irq line back */
-	if ((electron->sheila[0x0] & electron->ienabled) == 0)
-	  cpu_reset_irq (&electron->cpu);
+	{
+	  int clear_mask = 0;
+	  /* Set the page number. If the keyboard or basic page is
+	     currently selected then only pages 8-15 are actually
+	     honoured */
+	  if (electron->page < 8 || electron->page > 11 || (v & 0x0f) >= 8)
+	    electron->page = v & 0x0f;
+	  /* Clear interrupts */
+	  if (v & ELECTRON_C_HIGH_TONE)
+	    clear_mask |= ELECTRON_I_HIGH_TONE;
+	  if (v & ELECTRON_C_RTC)
+	    clear_mask |= ELECTRON_I_RTC;
+	  if (v & ELECTRON_C_DISPLAY_END)
+	    clear_mask |= ELECTRON_I_DISPLAY_END;
+	  electron_clear_interrupts (electron, clear_mask);
+	}
 	break;
       case 0x7:
 	if (electron->sheila[location & 0x0f] != v)
@@ -332,4 +406,10 @@ electron_write_to_location (Electron *electron, UWORD location, UBYTE v)
   /* Otherwise if it's in memory use that */
   else if (location < CPU_RAM_SIZE)
     electron->memory[location] = v;
+}
+
+void
+electron_rewind_cassette (Electron *electron)
+{
+  electron->cassette_buffer_pos = 0;
 }
