@@ -152,6 +152,9 @@ breakpoint_edit_dialog_run (GtkWindow *parent, ElectronManager *electron)
 
   breakpoint_edit_dialog_update_sensitivity (GTK_CHECK_BUTTON (enabled_checkbox), table);
 
+  /* Make the OK button the default button */
+  gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_ACCEPT);
+
   response = gtk_dialog_run (GTK_DIALOG (dialog));
   gtk_widget_destroy (dialog);
 
