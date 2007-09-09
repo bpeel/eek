@@ -55,6 +55,8 @@ struct _Electron
 
   /* The state of the sheila registers */
   UBYTE sheila[16];
+  /* Whether anything has been written to the cassette data shift register */
+  UBYTE data_shift_has_data : 1;
 
   /* The state of the keyboard */
   UBYTE keyboard[14];
@@ -70,8 +72,8 @@ struct _Electron
   UBYTE cassette_scanline_counter;
   /* Buffer for the cassette data */
   UBYTE *cassette_buffer;
-  int cassette_buffer_length, cassette_buffer_size;
-  /* Index of next byte that will be read */
+  int cassette_buffer_size, cassette_buffer_length;
+  /* Index of next byte to read or written to */
   int cassette_buffer_pos;
 };
 
