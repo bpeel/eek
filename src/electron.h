@@ -6,6 +6,7 @@
 #include "stypes.h"
 #include "cpu.h"
 #include "video.h"
+#include "tapebuffer.h"
 
 /* Start address of the current paged rom */
 #define ELECTRON_PAGED_ROM_ADDRESS 0x8000
@@ -70,11 +71,8 @@ struct _Electron
   /* Counter to count scanlines so we know when to read the next byte
      from the cassette */
   UBYTE cassette_scanline_counter;
-  /* Buffer for the cassette data */
-  UBYTE *cassette_buffer;
-  int cassette_buffer_size, cassette_buffer_length;
-  /* Index of next byte to read or written to */
-  int cassette_buffer_pos;
+  /* Buffer for the tape data */
+  TapeBuffer *tape_buffer;
 };
 
 /* Which address page represents the sheila */

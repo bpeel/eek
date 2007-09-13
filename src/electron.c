@@ -10,6 +10,7 @@
 #include "cpu.h"
 #include "util.h"
 #include "video.h"
+#include "tapebuffer.h"
 
 #define ELECTRON_I_MASTER      1
 #define ELECTRON_I_POWERON     2
@@ -23,18 +24,11 @@
 #define ELECTRON_C_RTC         32
 #define ELECTRON_C_DISPLAY_END 16
 
-/* Special bytes in the tape data */
-#define ELECTRON_TAPE_QUOTE     0xfe /* Next byte should not be interpreted as a command */
-#define ELECTRON_TAPE_HIGH_TONE 0xff /* Next byte is a high tone */
-
 /* Cassette runs at 1200 baud with 2 stop bits per byte so there is
    120 bytes per second of actual data. There are 50 frames per second
    and 312 scanlines per frame so there are 15600 scanlines per
    second. Therefore there are 15600/120 = 130 scanlines per byte */
 #define ELECTRON_SCANLINES_PER_CASSETTE_BYTE 130
-/* If the electron tries to store more data than this on the cassette
-   then it will be ignored */
-#define ELECTRON_MAX_CASSETTE_WRITE_LENGTH 1048576
 
 #define ELECTRON_MODE_OF_BYTE(byte) (((byte) >> 3) & 7)
 #define ELECTRON_MODE(electron) ELECTRON_MODE_OF_BYTE((electron)->sheila[0x7])
@@ -66,10 +60,8 @@ electron_new ()
   /* No keys are being pressed */
   memset (electron->keyboard, '\0', 14);
 
-  /* The cassette is initially allocated but empty */
-  electron->cassette_buffer = xmalloc (electron->cassette_buffer_size = 16);
-  electron->cassette_buffer_length = 0;
-  electron->cassette_buffer_pos = 0;
+  /* Allocate tape buffer */
+  electron->tape_buffer = tape_buffer_new ();
   electron->cassette_scanline_counter = 0;
   electron->data_shift_has_data = FALSE;
 
@@ -91,7 +83,7 @@ electron_free (Electron *electron)
     if (electron->paged_roms[i])
       xfree (electron->paged_roms[i]);
   /* Free the cassette buffer */
-  xfree (electron->cassette_buffer);
+  tape_buffer_free (electron->tape_buffer);
   /* Free the electron data */
   xfree (electron);
 }
@@ -115,121 +107,6 @@ electron_clear_interrupts (Electron *electron, int mask)
   /* If no interrupts are on then put the irq line back */
   if ((electron->sheila[0x0] & electron->ienabled) == 0)
     cpu_reset_irq (&electron->cpu);
-}
-
-static void
-electron_ensure_tape_buffer_size (Electron *electron, int size)
-{
-  if (size > electron->cassette_buffer_size)
-  {
-    int nsize = electron->cassette_buffer_size;
-    do
-      nsize *= 2;
-    while (size > nsize);
-    electron->cassette_buffer = xrealloc (electron->cassette_buffer, nsize);
-  }
-}
-
-static int
-electron_get_next_tape_byte (Electron *electron)
-{
-  int ret;
-
-  /* Return the next byte, or -1 for a high tone */
-  if (electron->cassette_buffer_pos >= electron->cassette_buffer_length)
-    ret = -1;
-  else if (electron->cassette_buffer[electron->cassette_buffer_pos] == ELECTRON_TAPE_QUOTE)
-  {
-    ret = electron->cassette_buffer[electron->cassette_buffer_pos + 1];
-    electron->cassette_buffer_pos += 2;
-  }
-  else if (electron->cassette_buffer[electron->cassette_buffer_pos] == ELECTRON_TAPE_HIGH_TONE)
-  {
-    ret = -1;
-    electron->cassette_buffer_pos++;
-  }
-  else
-  {
-    ret = electron->cassette_buffer[electron->cassette_buffer_pos];
-    electron->cassette_buffer_pos++;
-  }
-
-  return ret;
-}
-
-static void
-electron_store_tape_byte (Electron *electron, UBYTE byte)
-{
-  if (electron->cassette_buffer_pos >= electron->cassette_buffer_length)
-  {
-    if (byte >= ELECTRON_TAPE_QUOTE)
-    {
-      electron_ensure_tape_buffer_size (electron, electron->cassette_buffer_pos + 2);
-      electron->cassette_buffer[electron->cassette_buffer_pos++] = ELECTRON_TAPE_QUOTE;
-      electron->cassette_buffer[electron->cassette_buffer_pos++] = byte;
-    }
-    else
-    {
-      electron_ensure_tape_buffer_size (electron, electron->cassette_buffer_pos + 1);
-      electron->cassette_buffer[electron->cassette_buffer_pos++] = byte;
-    }
-    electron->cassette_buffer_length = electron->cassette_buffer_pos;
-  }
-  else if (byte >= ELECTRON_TAPE_QUOTE)
-  {
-    if (electron->cassette_buffer[electron->cassette_buffer_pos] == ELECTRON_TAPE_QUOTE)
-    {
-      electron->cassette_buffer[electron->cassette_buffer_pos + 1] = byte;
-      electron->cassette_buffer_pos += 2;
-    }
-    else
-    {
-      electron_ensure_tape_buffer_size (electron, electron->cassette_buffer_length + 1);
-      electron->cassette_buffer[electron->cassette_buffer_pos++] = ELECTRON_TAPE_QUOTE;
-      memmove (electron->cassette_buffer + electron->cassette_buffer_pos + 1,
-	       electron->cassette_buffer + electron->cassette_buffer_pos,
-	       electron->cassette_buffer_length - electron->cassette_buffer_pos);
-      electron->cassette_buffer[electron->cassette_buffer_pos++] = byte;
-      electron->cassette_buffer_length++;
-    }
-  }
-  else
-  {
-    if (electron->cassette_buffer[electron->cassette_buffer_pos] == ELECTRON_TAPE_QUOTE)
-    {
-      electron->cassette_buffer[electron->cassette_buffer_pos++] = byte;
-      memmove (electron->cassette_buffer + electron->cassette_buffer_pos,
-	       electron->cassette_buffer + electron->cassette_buffer_pos + 1,
-	       electron->cassette_buffer_length - electron->cassette_buffer_pos);
-      electron->cassette_buffer_length--;
-    }
-    else
-      electron->cassette_buffer[electron->cassette_buffer_pos++] = byte;
-  }
-}
-
-static void
-electron_store_tape_high_tone (Electron *electron)
-{
-  if (electron->cassette_buffer_pos >= electron->cassette_buffer_length)
-  {
-    electron_ensure_tape_buffer_size (electron, electron->cassette_buffer_pos + 1);
-    electron->cassette_buffer[electron->cassette_buffer_pos++] = ELECTRON_TAPE_HIGH_TONE;
-    electron->cassette_buffer_length = electron->cassette_buffer_pos;
-  }
-  else
-  {
-    if (electron->cassette_buffer[electron->cassette_buffer_pos] == ELECTRON_TAPE_QUOTE)
-    {
-      electron->cassette_buffer[electron->cassette_buffer_pos++] = ELECTRON_TAPE_HIGH_TONE;
-      memmove (electron->cassette_buffer + electron->cassette_buffer_pos,
-	       electron->cassette_buffer + electron->cassette_buffer_pos + 1,
-	       electron->cassette_buffer_length - electron->cassette_buffer_pos);
-      electron->cassette_buffer_length--;
-    }
-    else
-      electron->cassette_buffer[electron->cassette_buffer_pos++] = ELECTRON_TAPE_HIGH_TONE;
-  }
 }
 
 void
@@ -272,16 +149,16 @@ electron_next_scanline (Electron *electron)
 	/* Add a high tone if the cassette buffer has no data */
 	if (electron->data_shift_has_data)
 	{
-	  electron_store_tape_byte (electron, electron->sheila[0x4]);
+	  tape_buffer_store_byte (electron->tape_buffer, electron->sheila[0x4]);
 	  electron->data_shift_has_data = FALSE;
 	  electron_generate_interrupt (electron, ELECTRON_I_TRANSMIT);
 	}
 	else
-	  electron_store_tape_high_tone (electron);
+	  tape_buffer_store_high_tone (electron->tape_buffer);
       }
       else
       {
-	int next_byte = electron_get_next_tape_byte (electron);
+	int next_byte = tape_buffer_get_next_byte (electron->tape_buffer);
 	
 	/* If it was a high tone then generate the interrupt */
 	if (next_byte == -1)
@@ -553,5 +430,5 @@ electron_write_to_location (Electron *electron, UWORD location, UBYTE v)
 void
 electron_rewind_cassette (Electron *electron)
 {
-  electron->cassette_buffer_pos = 0;
+  tape_buffer_rewind (electron->tape_buffer);
 }
