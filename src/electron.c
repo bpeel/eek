@@ -158,16 +158,26 @@ electron_next_scanline (Electron *electron)
       }
       else
       {
-	int next_byte = tape_buffer_get_next_byte (electron->tape_buffer);
+	int next_byte;
+
+	/* If we've gone past the end of the tape then add silence */
+	if (tape_buffer_is_at_end (electron->tape_buffer))
+	{
+	  tape_buffer_store_silence (electron->tape_buffer);
+	  next_byte = TAPE_BUFFER_SILENCE;
+	}
+	else
+	  next_byte = tape_buffer_get_next_byte (electron->tape_buffer);
 	
 	/* If it was a high tone then generate the interrupt */
-	if (next_byte == -1)
+	if (next_byte == TAPE_BUFFER_HIGH_TONE)
 	  electron_generate_interrupt (electron, ELECTRON_I_HIGH_TONE);
 	else
 	{
 	  electron_clear_interrupts (electron, ELECTRON_I_HIGH_TONE);
-	  /* Put the byte in the buffer if we are in read mode */
-	  if ((electron->sheila[0x7] & 0x06) == 0x00)
+	  /* Put the byte in the buffer if we are in read mode unless
+	     the tape is silent */
+	  if (next_byte >= 0 && (electron->sheila[0x7] & 0x06) == 0x00)
 	  {
 	    electron->sheila[0x4] = next_byte;
 	    electron_generate_interrupt (electron, ELECTRON_I_RECEIVE);
