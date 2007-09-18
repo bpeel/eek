@@ -28,6 +28,7 @@ eek_SOURCES = \
 	breakpointeditdialog.h breakpointeditdialog.c \
 	disdialog.h disdialog.c \
 	tapebuffer.h tapebuffer.c \
+	tapeuef.h tapeuef.c \
 	intl.h
 
 EXTRA_DIST = eekmarshalers.list
