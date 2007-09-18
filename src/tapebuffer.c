@@ -103,6 +103,20 @@ tape_buffer_store_byte_or_command (TapeBuffer *tbuf, UBYTE byte)
   }
 }
 
+static void
+tape_buffer_store_repeated_byte_or_command (TapeBuffer *tbuf, UBYTE byte, int repeat_count)
+{
+  while (tbuf->buf_pos < tbuf->buf_length && repeat_count > 0)
+  {
+    tape_buffer_store_byte_or_command (tbuf, byte);
+    repeat_count--;
+  }
+  tape_buffer_ensure_size (tbuf, tbuf->buf_pos + repeat_count);
+  memset (tbuf->buf + tbuf->buf_pos, byte, repeat_count);
+  tbuf->buf_pos += repeat_count;
+  tbuf->buf_length += repeat_count;
+}
+
 void
 tape_buffer_store_byte (TapeBuffer *tbuf, UBYTE byte)
 {
@@ -145,9 +159,21 @@ tape_buffer_store_high_tone (TapeBuffer *tbuf)
 }
 
 void
+tape_buffer_store_repeated_high_tone (TapeBuffer *tbuf, int repeat_count)
+{
+  tape_buffer_store_repeated_byte_or_command (tbuf, TAPE_BUFFER_CMD_HIGH_TONE, repeat_count);
+}
+
+void
 tape_buffer_store_silence (TapeBuffer *tbuf)
 {
   tape_buffer_store_byte_or_command (tbuf, TAPE_BUFFER_CMD_SILENCE);
+}
+
+void
+tape_buffer_store_repeated_silence (TapeBuffer *tbuf, int repeat_count)
+{
+  tape_buffer_store_repeated_byte_or_command (tbuf, TAPE_BUFFER_CMD_SILENCE, repeat_count);
 }
 
 void
