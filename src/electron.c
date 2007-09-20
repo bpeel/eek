@@ -4,11 +4,10 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <glib.h>
 
-#include "eek.h"
 #include "electron.h"
 #include "cpu.h"
-#include "util.h"
 #include "video.h"
 #include "tapebuffer.h"
 
@@ -33,13 +32,13 @@
 #define ELECTRON_MODE_OF_BYTE(byte) (((byte) >> 3) & 7)
 #define ELECTRON_MODE(electron) ELECTRON_MODE_OF_BYTE((electron)->sheila[0x7])
 
-UBYTE electron_read_from_location (Electron *electron, UWORD address);
-void electron_write_to_location (Electron *electron, UWORD address, UBYTE val);
+guint8 electron_read_from_location (Electron *electron, guint16 address);
+void electron_write_to_location (Electron *electron, guint16 address, guint8 val);
 
 Electron *
 electron_new ()
 {
-  Electron *electron = xmalloc (sizeof (Electron));
+  Electron *electron = g_malloc (sizeof (Electron));
 
   /* Initialise the sheila to zeros */
   memset (electron->sheila, 0, sizeof (electron->sheila));
@@ -81,11 +80,11 @@ electron_free (Electron *electron)
   /* Free all of the paged rom data */
   for (i = 0; i < ELECTRON_PAGED_ROM_COUNT; i++)
     if (electron->paged_roms[i])
-      xfree (electron->paged_roms[i]);
+      g_free (electron->paged_roms[i]);
   /* Free the cassette buffer */
   tape_buffer_free (electron->tape_buffer);
   /* Free the electron data */
-  xfree (electron);
+  g_free (electron);
 }
 
 static void
@@ -223,7 +222,7 @@ electron_run_frame (Electron *electron)
 int
 electron_load_os_rom (Electron *electron, FILE *in)
 {
-  if (fread (electron->os_rom, sizeof (UBYTE), ELECTRON_OS_ROM_LENGTH, in)
+  if (fread (electron->os_rom, sizeof (guint8), ELECTRON_OS_ROM_LENGTH, in)
       < ELECTRON_OS_ROM_LENGTH)
     return -1;
   else
@@ -233,19 +232,19 @@ electron_load_os_rom (Electron *electron, FILE *in)
 int
 electron_load_paged_rom (Electron *electron, int page, FILE *in)
 {
-  UBYTE *buf;
+  guint8 *buf;
   page &= 0x0f;
 
   if (electron->paged_roms[page])
     buf = electron->paged_roms[page];
   else
     electron->paged_roms[page] = buf 
-      = xmalloc (ELECTRON_PAGED_ROM_LENGTH * sizeof (UBYTE));
+      = g_malloc (ELECTRON_PAGED_ROM_LENGTH * sizeof (guint8));
 
-  if (fread (buf, sizeof (UBYTE), ELECTRON_PAGED_ROM_LENGTH, in)
+  if (fread (buf, sizeof (guint8), ELECTRON_PAGED_ROM_LENGTH, in)
       < ELECTRON_PAGED_ROM_LENGTH)
   {
-    xfree (buf);
+    g_free (buf);
     electron->paged_roms[page] = NULL;
     return -1;
   }
@@ -256,7 +255,7 @@ electron_load_paged_rom (Electron *electron, int page, FILE *in)
 static void
 electron_update_palette (Electron *electron)
 {
-  const UBYTE *palette = electron->sheila + 0x08;
+  const guint8 *palette = electron->sheila + 0x08;
 
   switch (ELECTRON_MODE (electron))
   {
@@ -294,14 +293,14 @@ electron_update_palette (Electron *electron)
   }
 }
 
-UBYTE
-electron_read_from_location (Electron *electron, UWORD location)
+guint8
+electron_read_from_location (Electron *electron, guint16 location)
 {
   /* Check if it's in the paged rom location */
   if (location >= ELECTRON_PAGED_ROM_ADDRESS
       && location < ELECTRON_PAGED_ROM_ADDRESS + ELECTRON_PAGED_ROM_LENGTH)
   {
-    UBYTE page = electron->page;
+    guint8 page = electron->page;
     /* Basic and keyboard are available in two locations */
     if ((page & 0x0C) == 0x08)
       page &= 0x0E;
@@ -369,7 +368,7 @@ electron_read_from_location (Electron *electron, UWORD location)
 }
 
 void
-electron_write_to_location (Electron *electron, UWORD location, UBYTE v)
+electron_write_to_location (Electron *electron, guint16 location, guint8 v)
 {
   /* If it's in the sheila page then use that */
   if ((location >> 8) == ELECTRON_SHEILA_PAGE)
@@ -405,7 +404,7 @@ electron_write_to_location (Electron *electron, UWORD location, UBYTE v)
 	break;
       case 0x7:
 	{
-	  UBYTE old_value = electron->sheila[location & 0x0f];
+	  guint8 old_value = electron->sheila[location & 0x0f];
 
 	  electron->sheila[location & 0x0f] = v;
 

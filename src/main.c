@@ -8,12 +8,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <stdlib.h>
 
-#include "eek.h"
 #include "electronmanager.h"
 #include "cpu.h"
 #include "electron.h"
-#include "util.h"
 #include "mainwindow.h"
 
 static void
@@ -28,8 +27,6 @@ main (int argc, char **argv)
   char *os_rom = "roms/os.rom";
   GtkWidget *mainwin;
   ElectronManager *eman;
-
-  shortname = util_shortname (argv[0]);
 
   if (argc >= 2)
     os_rom = argv[1];
@@ -53,7 +50,7 @@ main (int argc, char **argv)
 	|| electron_load_paged_rom (eman->data, ELECTRON_BASIC_PAGE, file)
 	|| fclose (file) == EOF)
     {
-      eprintf ("couldn't load rom: %s\n", strerror (errno));
+      g_error ("couldn't load rom: %s\n", strerror (errno));
       exit (-1);
     }
   }

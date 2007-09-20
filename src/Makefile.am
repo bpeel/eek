@@ -6,13 +6,10 @@ bin_PROGRAMS = eek
 
 eek_LDADD = @GTK_LIBS@
 eek_SOURCES = \
-	eek.h main.c \
+	main.c \
 	cpu.h cpu.c \
 	electron.h electron.c \
-	util.h util.c \
 	video.h video.c \
-	stypes.h \
-	byteorder.h \
 	electronwidget.h electronwidget.c \
 	electronmanager.h electronmanager.c \
 	framesource.h framesource.c \

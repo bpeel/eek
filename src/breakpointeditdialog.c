@@ -169,7 +169,7 @@ breakpoint_edit_dialog_run (GtkWindow *parent, ElectronManager *electron)
       break_type = CPU_BREAK_NONE;
 
     cpu_set_break (&electron->data->cpu, break_type,
-		   (UWORD) gtk_adjustment_get_value (address_adj));
+		   (guint16) gtk_adjustment_get_value (address_adj));
   }
 
   g_object_unref (type_combobox);

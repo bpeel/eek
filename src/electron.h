@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 
-#include "stypes.h"
 #include "cpu.h"
 #include "video.h"
 #include "tapebuffer.h"
@@ -38,29 +37,29 @@ typedef struct _Electron Electron;
 struct _Electron
 {
   /* The entire memory space */
-  UBYTE memory[CPU_RAM_SIZE];
+  guint8 memory[CPU_RAM_SIZE];
 
   /* The OS rom */
-  UBYTE os_rom[ELECTRON_OS_ROM_LENGTH];
+  guint8 os_rom[ELECTRON_OS_ROM_LENGTH];
   /* The current page */
-  UBYTE page;
+  guint8 page;
   /* The current paged roms */
-  UBYTE *paged_roms[ELECTRON_PAGED_ROM_COUNT];
+  guint8 *paged_roms[ELECTRON_PAGED_ROM_COUNT];
   /* The number of paged roms loaded */
-  UBYTE pagedc;
+  guint8 pagedc;
   /* The enabled interrupts */
-  UBYTE ienabled;
+  guint8 ienabled;
 
   /* The current scanline */
-  UWORD scanline;
+  guint16 scanline;
 
   /* The state of the sheila registers */
-  UBYTE sheila[16];
+  guint8 sheila[16];
   /* Whether anything has been written to the cassette data shift register */
-  UBYTE data_shift_has_data : 1;
+  guint8 data_shift_has_data : 1;
 
   /* The state of the keyboard */
-  UBYTE keyboard[14];
+  guint8 keyboard[14];
 
   /* The state of the cpu */
   Cpu cpu;
@@ -70,7 +69,7 @@ struct _Electron
 
   /* Counter to count scanlines so we know when to read the next byte
      from the cassette */
-  UBYTE cassette_scanline_counter;
+  guint8 cassette_scanline_counter;
   /* Buffer for the tape data */
   TapeBuffer *tape_buffer;
 };
@@ -82,8 +81,8 @@ Electron *electron_new ();
 void electron_free (Electron *electron);
 int electron_load_os_rom (Electron *electron, FILE *in);
 int electron_load_paged_rom (Electron *electron, int page, FILE *in);
-void electron_write_to_location (Electron *electron, UWORD location, UBYTE v);
-UBYTE electron_read_from_location (Electron *electron, UWORD location);
+void electron_write_to_location (Electron *electron, guint16 location, guint8 v);
+guint8 electron_read_from_location (Electron *electron, guint16 location);
 int electron_run_frame (Electron *electron);
 void electron_step (Electron *electron);
 void electron_rewind_cassette (Electron *electron);

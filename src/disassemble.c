@@ -6,19 +6,18 @@
 #include <string.h>
 
 #include "disassemble.h"
-#include "stypes.h"
 
-typedef int (* DisassembleModeFunc) (UWORD address, const UBYTE *bytes, char *operands);
+typedef int (* DisassembleModeFunc) (guint16 address, const guint8 *bytes, char *operands);
 
 static int
-disassemble_implied (UWORD address, const UBYTE *bytes, char *operands)
+disassemble_implied (guint16 address, const guint8 *bytes, char *operands)
 {
   *operands = '\0';
   return 1;
 }
 
 static int
-disassemble_accumulator (UWORD address, const UBYTE *bytes, char *operands)
+disassemble_accumulator (guint16 address, const guint8 *bytes, char *operands)
 {
   *(operands++) = 'A';
   *operands = '\0';
@@ -26,84 +25,84 @@ disassemble_accumulator (UWORD address, const UBYTE *bytes, char *operands)
 }
 
 static int
-disassemble_absolute (UWORD address, const UBYTE *bytes, char *operands)
+disassemble_absolute (guint16 address, const guint8 *bytes, char *operands)
 {
   sprintf (operands, "&%02X%02X", bytes[2], bytes[1]);
   return 3;
 }
 
 static int
-disassemble_absolute_x (UWORD address, const UBYTE *bytes, char *operands)
+disassemble_absolute_x (guint16 address, const guint8 *bytes, char *operands)
 {
   sprintf (operands, "&%02X%02X,X", bytes[2], bytes[1]);
   return 3;
 }
 
 static int
-disassemble_absolute_y (UWORD address, const UBYTE *bytes, char *operands)
+disassemble_absolute_y (guint16 address, const guint8 *bytes, char *operands)
 {
   sprintf (operands, "&%02X%02X,Y", bytes[2], bytes[1]);
   return 3;
 }
 
 static int
-disassemble_ind_zero_page_x (UWORD address, const UBYTE *bytes, char *operands)
+disassemble_ind_zero_page_x (guint16 address, const guint8 *bytes, char *operands)
 {
   sprintf (operands, "(&%02X,X)", bytes[1]);
   return 2;
 }
 
 static int
-disassemble_zero_page (UWORD address, const UBYTE *bytes, char *operands)
+disassemble_zero_page (guint16 address, const guint8 *bytes, char *operands)
 {
   sprintf (operands, "&%02X", bytes[1]);
   return 2;
 }
 
 static int
-disassemble_ind_zero_page_y (UWORD address, const UBYTE *bytes, char *operands)
+disassemble_ind_zero_page_y (guint16 address, const guint8 *bytes, char *operands)
 {
   sprintf (operands, "(&%02X),Y", bytes[1]);
   return 2;
 }
 
 static int
-disassemble_zero_page_x (UWORD address, const UBYTE *bytes, char *operands)
+disassemble_zero_page_x (guint16 address, const guint8 *bytes, char *operands)
 {
   sprintf (operands, "&%02X,X", bytes[1]);
   return 2;
 }
 
 static int
-disassemble_zero_page_y (UWORD address, const UBYTE *bytes, char *operands)
+disassemble_zero_page_y (guint16 address, const guint8 *bytes, char *operands)
 {
   sprintf (operands, "&%02X,Y", bytes[1]);
   return 2;
 }
 
 static int
-disassemble_immediate (UWORD address, const UBYTE *bytes, char *operands)
+disassemble_immediate (guint16 address, const guint8 *bytes, char *operands)
 {
   sprintf (operands, "#&%02X", bytes[1]);
   return 2;
 }
 
 static int
-disassemble_pc_relative (UWORD address, const UBYTE *bytes, char *operands)
+disassemble_pc_relative (guint16 address, const guint8 *bytes, char *operands)
 {
-  sprintf (operands, "&%04X", ((int) address + (SBYTE) bytes[1] + 2) & 0xffff);
+  sprintf (operands, "&%04X", ((int) address + (gint8) bytes[1] + 2) & 0xffff);
   return 2;
 }
 
 static int
-disassemble_indirect (UWORD address, const UBYTE *bytes, char *operands)
+disassemble_indirect (guint16 address, const guint8 *bytes, char *operands)
 {
   sprintf (operands, "(&%02X%02X)", bytes[2], bytes[1]);
   return 3;
 }
 
 int
-disassemble_instruction (UWORD address, const UBYTE *bytes, char *mnemonic, char *operands)
+disassemble_instruction (guint16 address, const guint8 *bytes, char *mnemonic, char *operands)
 {
   /* Opcodes with bottom two bits set to 01 */
   if ((bytes[0] & 0x03) == 0x01)

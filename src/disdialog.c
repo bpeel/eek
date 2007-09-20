@@ -18,7 +18,6 @@
 #include "electronmanager.h"
 #include "disassemble.h"
 #include "intl.h"
-#include "stypes.h"
 
 typedef struct _DisDialogAction DisDialogAction;
 
@@ -215,11 +214,11 @@ dis_dialog_on_apply (DisDialog *disdialog)
   if (disdialog->electron && disdialog->address_adj && disdialog->lines_adj
       && disdialog->text_buffer)
   {
-    UWORD address = (UWORD) gtk_adjustment_get_value (disdialog->address_adj);
+    guint16 address = (guint16) gtk_adjustment_get_value (disdialog->address_adj);
     int lines = (int) gtk_adjustment_get_value (disdialog->lines_adj);
     int got_bytes = 0, num_bytes, i;
     GString *strbuf = g_string_new ("");
-    UBYTE bytes[DISASSEMBLE_MAX_BYTES];
+    guint8 bytes[DISASSEMBLE_MAX_BYTES];
     char mnemonic[DISASSEMBLE_MAX_MNEMONIC + 1];
     char operands[DISASSEMBLE_MAX_OPERANDS + 1];
     GtkTextIter start, end;

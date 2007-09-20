@@ -1,7 +1,7 @@
 #ifndef _CPU_H
 #define _CPU_H
 
-#include "stypes.h"
+#include <glib/gtypes.h>
 
 typedef struct _Cpu Cpu;
 
@@ -13,18 +13,18 @@ typedef void (*CpuOpcodeFunc) (void);
 
 /* Defines a type to point to a function that gets data using one of
    the addressing modes */
-typedef UBYTE (*CpuReadFunc) (void);
+typedef guint8 (*CpuReadFunc) (void);
 /* Defines a type to point to a function that writes data using one of
    the addressing modes */
-typedef void (*CpuWriteFunc) (UBYTE v);
+typedef void (*CpuWriteFunc) (guint8 v);
 /* Defines a type to point to a function that gets an address using
    one of the addressing modes */
-typedef UWORD (*CpuAddressFunc) (void);
+typedef guint16 (*CpuAddressFunc) (void);
 
 /* Defines a function that reads from a memory location */
-typedef UBYTE (*CpuMemReadFunc) (void *data, UWORD address);
+typedef guint8 (*CpuMemReadFunc) (void *data, guint16 address);
 /* Defines a function that write to a memory location */
-typedef void (*CpuMemWriteFunc) (void *data, UWORD address, UBYTE val);
+typedef void (*CpuMemWriteFunc) (void *data, guint16 address, guint8 val);
 
 #define CPU_START_VECTOR 0xFFFC
 #define CPU_IRQ_VECTOR   0xFFFE
@@ -34,19 +34,19 @@ typedef void (*CpuMemWriteFunc) (void *data, UWORD address, UBYTE val);
 struct _Cpu
 {
   /* The main registers */
-  UBYTE a, x, y;
+  guint8 a, x, y;
 
   /* The status register */
-  UBYTE p;
+  guint8 p;
 
   /* The stack pointer */
-  UBYTE s;
+  guint8 s;
 
   /* The program counter */
-  UWORD pc;
+  guint16 pc;
 
   /* This should point to 32k of ram */
-  UBYTE *memory;
+  guint8 *memory;
   /* These two functions are used to access other addresses. They are
      pointers so that the code for the 6502 can be completly
      isolated */
@@ -56,7 +56,7 @@ struct _Cpu
   void *memory_data;
 
   /* The current instruction */
-  UBYTE instruction;
+  guint8 instruction;
 
   /* The number of cycles executed since started */
   cycles_t time;
@@ -68,14 +68,14 @@ struct _Cpu
 
   int got_break : 1;
   enum { CPU_BREAK_NONE, CPU_BREAK_ADDR, CPU_BREAK_WRITE, CPU_BREAK_READ } break_type;
-  UWORD break_address;
+  guint16 break_address;
 };
 
 /* Macros that define the accessible memory */
 #define CPU_ADDRESS_SIZE 65536
 #define CPU_RAM_SIZE     32768
 
-void cpu_init (Cpu *cpu, UBYTE *memory, 
+void cpu_init (Cpu *cpu, guint8 *memory, 
 	       CpuMemReadFunc read_func, CpuMemWriteFunc write_func,
 	       void *memory_data);
 int cpu_fetch_execute (Cpu *cpu, cycles_t target_time);
@@ -84,6 +84,6 @@ void cpu_set_irq (Cpu *cpu);
 void cpu_reset_irq (Cpu *cpu);
 void cpu_cause_nmi (Cpu *cpu);
 void cpu_restart (Cpu *cpu);
-void cpu_set_break (Cpu *cpu, int break_type, UWORD address);
+void cpu_set_break (Cpu *cpu, int break_type, guint16 address);
 
 #endif /* _CPU_H */

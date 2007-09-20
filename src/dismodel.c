@@ -160,7 +160,7 @@ dis_model_set_electron (DisModel *model, ElectronManager *electron)
 static void
 dis_model_on_stopped (ElectronManager *electron, DisModel *model)
 {
-  UWORD pc;
+  guint16 pc;
   int row;
 
   g_return_if_fail (IS_DIS_MODEL (model));
@@ -189,7 +189,7 @@ dis_model_refresh_rows (DisModel *model)
 {
   int row_num, got_bytes = 0;
   DisModelRowData row;
-  UWORD address = model->address;
+  guint16 address = model->address;
   GtkTreePath *path;
   GtkTreeIter iter;
 

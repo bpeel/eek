@@ -5,7 +5,6 @@
 #include <glib-object.h>
 
 #include "electronmanager.h"
-#include "stypes.h"
 #include "disassemble.h"
 
 #define TYPE_DIS_MODEL (dis_model_get_type ())
@@ -33,9 +32,9 @@ enum
 
 struct _DisModelRowData
 {
-  UWORD address;
-  UBYTE num_bytes;
-  UBYTE bytes[DISASSEMBLE_MAX_BYTES];
+  guint16 address;
+  guint8 num_bytes;
+  guint8 bytes[DISASSEMBLE_MAX_BYTES];
   char mnemonic[DISASSEMBLE_MAX_MNEMONIC + 1];
   char operands[DISASSEMBLE_MAX_OPERANDS + 1];
   gboolean current : 1;
@@ -45,7 +44,7 @@ struct _DisModel
 {
   GObject parent;
 
-  UWORD address;
+  guint16 address;
   int iter_stamp;
   ElectronManager *electron;
   guint stopped_handler;

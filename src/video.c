@@ -4,13 +4,12 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <glib/gtypes.h>
 
-#include "eek.h"
 #include "video.h"
-#include "util.h"
 
 void
-video_init (Video *video, const UBYTE *memory)
+video_init (Video *video, const guint8 *memory)
 {
   video->memory = memory;
   video->mode = 0;
@@ -19,19 +18,19 @@ video_init (Video *video, const UBYTE *memory)
 }
 
 void
-video_set_mode (Video *video, UBYTE mode)
+video_set_mode (Video *video, guint8 mode)
 {
   video->mode = mode & 7;
 }
 
 void
-video_set_start_address (Video *video, UWORD start)
+video_set_start_address (Video *video, guint16 start)
 {
   video->start_address = start;
 }
 
 void
-video_set_color (Video *video, UBYTE logical, UBYTE physical)
+video_set_color (Video *video, guint8 logical, guint8 physical)
 {
   video->logical_colors[logical] = physical;
 }
@@ -41,7 +40,7 @@ video_draw_scanline (Video *video, int line)
 {
   int i, j, c, v;
   unsigned char *p;
-  UWORD a;
+  guint16 a;
 
   p = video->screen_memory + VIDEO_SCREEN_PITCH * line * VIDEO_YSCALE;
 

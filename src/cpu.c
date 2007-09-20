@@ -4,10 +4,9 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <glib/gtypes.h>
 
-#include "eek.h"
 #include "cpu.h"
-#include "byteorder.h"
 
 /* Macros to check the flags */
 #define CPU_FLAG_N 128
@@ -46,8 +45,8 @@ static Cpu cpu_state;
 
 /* Macros to operate on the cpu's memory */
 #define CPU_WRITE(addr, v) \
-                            do { UWORD _taddr = (addr); \
-                                 UBYTE _v = (v); \
+                            do { guint16 _taddr = (addr); \
+                                 guint8 _v = (v); \
                                  if (cpu_state.break_type == CPU_BREAK_WRITE \
                                      && cpu_state.break_address == _taddr) \
                                    cpu_state.got_break = 1; \
@@ -58,28 +57,28 @@ static Cpu cpu_state;
 /* Zero page macro should be faster because we don't need to test if
    the address is in RAM */
 #define CPU_WRITE_ZERO(addr, v) \
-                            do { UWORD _taddr = (addr); \
-                                 UBYTE _v = (v); \
+                            do { guint16 _taddr = (addr); \
+                                 guint8 _v = (v); \
                                  if (cpu_state.break_type == CPU_BREAK_WRITE \
                                      && cpu_state.break_address == _taddr) \
                                    cpu_state.got_break = 1; \
                                  cpu_state.memory[_taddr] = _v; } while (0)
 #define CPU_WRITE_WORD(addr, v) \
-                            do { UWORD _taddr = (addr); \
-                                 UWORD _v = (v); \
+                            do { guint16 _taddr = (addr); \
+                                 guint16 _v = (v); \
                                  if (cpu_state.break_type == CPU_BREAK_WRITE \
                                      && (cpu_state.break_address == _taddr \
                                          || cpu_state.break_address == _taddr + 1)) \
                                    cpu_state.got_break = 1; \
                                  if (_taddr < CPU_RAM_SIZE - 1) \
-                                  (*(UWORD *) (cpu_state.memory + (_taddr))) \
-                                   = BO_WORD_TO_LE (_v); \
+                                  (*(guint16 *) (cpu_state.memory + (_taddr))) \
+                                   = GUINT16_TO_LE (_v); \
                                  else \
                                  { cpu_state.write_func (cpu_state.memory_data, _taddr, _v); \
                                    cpu_state.write_func (cpu_state.memory_data, \
                                    _taddr + 1, _v >> 8); \
                                  } } while (0)
-#define CPU_READ(addr)        ({ UWORD _taddr = (addr); \
+#define CPU_READ(addr)        ({ guint16 _taddr = (addr); \
                                if (cpu_state.break_type == CPU_BREAK_READ \
                                    && cpu_state.break_address == _taddr) \
                                  cpu_state.got_break = 1; \
@@ -87,26 +86,26 @@ static Cpu cpu_state;
                                : cpu_state.read_func (cpu_state.memory_data, _taddr); })
 /* Zero page macro should be faster because we don't need to test if
    the address is in RAM */
-#define CPU_READ_ZERO(addr)   ({ UWORD _taddr = (addr); \
+#define CPU_READ_ZERO(addr)   ({ guint16 _taddr = (addr); \
                                if (cpu_state.break_type == CPU_BREAK_READ \
                                    && cpu_state.break_address == _taddr) \
                                  cpu_state.got_break = 1; \
                                cpu_state.memory[_taddr]; })
 #define CPU_READ_WORD(addr) \
-                            ({ UWORD _taddr = (addr); \
+                            ({ guint16 _taddr = (addr); \
                                if (cpu_state.break_type == CPU_BREAK_READ \
                                    && (cpu_state.break_address == _taddr \
                                        || cpu_state.break_address == _taddr + 1)) \
                                  cpu_state.got_break = 1; \
                                (_taddr < CPU_RAM_SIZE - 1) \
-                               ? (BO_WORD_FROM_LE (*(UWORD *) (cpu_state.memory + (_taddr)))) \
+                               ? (GUINT16_FROM_LE (*(guint16 *) (cpu_state.memory + (_taddr)))) \
   			       : (cpu_state.read_func (cpu_state.memory_data, _taddr) \
                                   | (cpu_state.read_func (cpu_state.memory_data, \
                                                           _taddr + 1) << 8)); })
 #define CPU_FETCH()        (CPU_READ (cpu_state.pc++))
 #define CPU_PUSH(v)        CPU_WRITE (cpu_state.s-- | 0x100, (v))
 #define CPU_PUSH_WORD(w) \
-                            do { UWORD _w = w; CPU_PUSH (_w >> 8); /* high byte */ \
+                            do { guint16 _w = w; CPU_PUSH (_w >> 8); /* high byte */ \
                                  CPU_PUSH (_w);                   /* low byte */ \
                             } while (0)
 #define CPU_PUSH_PC()       CPU_PUSH_WORD (cpu_state.pc)
@@ -126,7 +125,7 @@ static const CpuAddressFunc cpu_addressing_modes_addresses[];
 
 /* Initialise the cpu struct */
 void
-cpu_init (Cpu *cpu, UBYTE *memory, 
+cpu_init (Cpu *cpu, guint8 *memory, 
 	  CpuMemReadFunc read_func, CpuMemWriteFunc write_func,
 	  void *memory_data)
 {
@@ -235,7 +234,7 @@ cpu_fetch_execute (Cpu *cpu, cycles_t target_time)
 }
 
 void
-cpu_set_break (Cpu *cpu, int break_type, UWORD address)
+cpu_set_break (Cpu *cpu, int break_type, guint16 address)
 {
   cpu->break_address = address;
   cpu->break_type = break_type;
@@ -274,7 +273,7 @@ cpu_op_undefined (void)
 void
 cpu_op_adc (void)
 {
-  UBYTE oa = cpu_state.a, ov = CPU_DATA_FOR_OP (cpu_state.instruction);
+  guint8 oa = cpu_state.a, ov = CPU_DATA_FOR_OP (cpu_state.instruction);
   int v = ov + oa;
   if (CPU_IS_C ())
     v++;
@@ -295,7 +294,7 @@ cpu_op_adc (void)
 void
 cpu_op_sbc (void)
 {
-  UBYTE oa = cpu_state.a, ov = CPU_DATA_FOR_OP (cpu_state.instruction);
+  guint8 oa = cpu_state.a, ov = CPU_DATA_FOR_OP (cpu_state.instruction);
   int v = oa - ov;
   if (!CPU_IS_C ())
     v--;
@@ -316,9 +315,9 @@ cpu_op_sbc (void)
 void
 cpu_op_cmp (void)
 {
-  UBYTE oa = cpu_state.a, ov = CPU_DATA_FOR_OP (cpu_state.instruction);
+  guint8 oa = cpu_state.a, ov = CPU_DATA_FOR_OP (cpu_state.instruction);
   int v = oa - ov;
-  UBYTE na = v;
+  guint8 na = v;
 
   CPU_SET_C (v >= 0);
   CPU_SET_Z (!na); /* a could be different from v */
@@ -328,9 +327,9 @@ cpu_op_cmp (void)
 void
 cpu_op_cpx_immediate (void)
 {
-  UBYTE oa = cpu_state.x, ov = CPU_FETCH ();
+  guint8 oa = cpu_state.x, ov = CPU_FETCH ();
   int v = oa - ov;
-  UBYTE na = v;
+  guint8 na = v;
 
   cpu_state.time += 2;
   CPU_SET_C (v >= 0);
@@ -341,9 +340,9 @@ cpu_op_cpx_immediate (void)
 void
 cpu_op_cpx (void)
 {
-  UBYTE oa = cpu_state.x, ov = CPU_DATA_FOR_OP (cpu_state.instruction);
+  guint8 oa = cpu_state.x, ov = CPU_DATA_FOR_OP (cpu_state.instruction);
   int v = oa - ov;
-  UBYTE na = v;
+  guint8 na = v;
 
   CPU_SET_C (v >= 0);
   CPU_SET_Z (!na); /* a could be different from v */
@@ -353,9 +352,9 @@ cpu_op_cpx (void)
 void
 cpu_op_cpy_immediate (void)
 {
-  UBYTE oa = cpu_state.y, ov = CPU_FETCH ();
+  guint8 oa = cpu_state.y, ov = CPU_FETCH ();
   int v = oa - ov;
-  UBYTE na = v;
+  guint8 na = v;
 
   cpu_state.time += 2;
   CPU_SET_C (v >= 0);
@@ -366,9 +365,9 @@ cpu_op_cpy_immediate (void)
 void
 cpu_op_cpy (void)
 {
-  UBYTE oa = cpu_state.y, ov = CPU_DATA_FOR_OP (cpu_state.instruction);
+  guint8 oa = cpu_state.y, ov = CPU_DATA_FOR_OP (cpu_state.instruction);
   int v = oa - ov;
-  UBYTE na = v;
+  guint8 na = v;
 
   CPU_SET_C (v >= 0);
   CPU_SET_Z (!na); /* a could be different from v */
@@ -378,7 +377,7 @@ cpu_op_cpy (void)
 void
 cpu_op_eor (void)
 {
-  UBYTE v = cpu_state.a ^= CPU_DATA_FOR_OP (cpu_state.instruction);
+  guint8 v = cpu_state.a ^= CPU_DATA_FOR_OP (cpu_state.instruction);
   CPU_SET_Z (!v);
   CPU_SET_N (v & 0x80);
 }
@@ -386,7 +385,7 @@ cpu_op_eor (void)
 void
 cpu_op_ora (void)
 {
-  UBYTE v = cpu_state.a |= CPU_DATA_FOR_OP (cpu_state.instruction);
+  guint8 v = cpu_state.a |= CPU_DATA_FOR_OP (cpu_state.instruction);
   CPU_SET_Z (!v);
   CPU_SET_N (v & 0x80);
 }
@@ -394,7 +393,7 @@ cpu_op_ora (void)
 void
 cpu_op_and (void)
 {
-  UBYTE v = cpu_state.a &= CPU_DATA_FOR_OP (cpu_state.instruction);
+  guint8 v = cpu_state.a &= CPU_DATA_FOR_OP (cpu_state.instruction);
   CPU_SET_Z (!v);
   CPU_SET_N (v & 0x80);
 }
@@ -402,7 +401,7 @@ cpu_op_and (void)
 void
 cpu_op_bit (void)
 {
-  UBYTE v = CPU_DATA_FOR_OP (cpu_state.instruction);
+  guint8 v = CPU_DATA_FOR_OP (cpu_state.instruction);
   CPU_SET_N (v & 0x80);
   CPU_SET_V (v & 0x40);
   CPU_SET_Z (!(v & cpu_state.a));
@@ -411,7 +410,7 @@ cpu_op_bit (void)
 void
 cpu_op_lda (void)
 {
-  UBYTE v = cpu_state.a = CPU_DATA_FOR_OP (cpu_state.instruction);
+  guint8 v = cpu_state.a = CPU_DATA_FOR_OP (cpu_state.instruction);
   CPU_SET_Z (!v);
   CPU_SET_N (v & 0x80);
 }
@@ -421,7 +420,7 @@ cpu_op_ldy_immediate (void)
 {
   /* This instruction doesn't match the addressing mode pattern for
      some reason */
-  UBYTE v = cpu_state.y = CPU_FETCH ();
+  guint8 v = cpu_state.y = CPU_FETCH ();
   cpu_state.time += 2;
   CPU_SET_Z (!v);
   CPU_SET_N (v & 0x80);
@@ -432,7 +431,7 @@ cpu_op_ldx_immediate (void)
 {
   /* This instruction doesn't match the addressing mode pattern for
      some reason */
-  UBYTE v = cpu_state.x = CPU_FETCH ();
+  guint8 v = cpu_state.x = CPU_FETCH ();
   cpu_state.time += 2;
   CPU_SET_Z (!v);
   CPU_SET_N (v & 0x80);
@@ -441,7 +440,7 @@ cpu_op_ldx_immediate (void)
 void
 cpu_op_ldx (void)
 {
-  UBYTE v;
+  guint8 v;
   /* The addressing modes seems to use x instead of y here somehow, so
      we can compensate by copying it across */
   cpu_state.x = cpu_state.y;
@@ -453,7 +452,7 @@ cpu_op_ldx (void)
 void
 cpu_op_ldy (void)
 {
-  UBYTE v = cpu_state.y = CPU_DATA_FOR_OP (cpu_state.instruction);
+  guint8 v = cpu_state.y = CPU_DATA_FOR_OP (cpu_state.instruction);
   CPU_SET_Z (!v);
   CPU_SET_N (v & 0x80);
 }
@@ -470,7 +469,7 @@ cpu_op_stx (void)
   /* According to the datasheet this instruction uses y for zero page
      indexing instead of x which makes sense, but the book says
      otherwise. I trust the datasheet so we have to copy it over */
-  UBYTE t = cpu_state.x;
+  guint8 t = cpu_state.x;
   cpu_state.x = cpu_state.y;
   CPU_WRITE_FOR_OP (cpu_state.instruction, t);
   cpu_state.x = t;
@@ -485,8 +484,8 @@ cpu_op_sty (void)
 void
 cpu_op_inc (void)
 {
-  UBYTE v;
-  UWORD addr = CPU_ADDR_FOR_OP (cpu_state.instruction);
+  guint8 v;
+  guint16 addr = CPU_ADDR_FOR_OP (cpu_state.instruction);
   CPU_WRITE (addr, v = CPU_READ (addr) + 1);
   CPU_SET_Z (!v);
   CPU_SET_N (v & 0x80);
@@ -495,8 +494,8 @@ cpu_op_inc (void)
 void
 cpu_op_dec (void)
 {
-  UBYTE v;
-  UWORD addr = CPU_ADDR_FOR_OP (cpu_state.instruction);
+  guint8 v;
+  guint16 addr = CPU_ADDR_FOR_OP (cpu_state.instruction);
   CPU_WRITE (addr, v = CPU_READ (addr) - 1);
   CPU_SET_Z (!v);
   CPU_SET_N (v & 0x80);
@@ -505,8 +504,8 @@ cpu_op_dec (void)
 void
 cpu_op_asl (void)
 {
-  UWORD addr = CPU_ADDR_FOR_OP (cpu_state.instruction);
-  UBYTE v = CPU_READ (addr);
+  guint16 addr = CPU_ADDR_FOR_OP (cpu_state.instruction);
+  guint8 v = CPU_READ (addr);
   
   CPU_SET_C (v & 0x80);
   v <<= 1;
@@ -529,8 +528,8 @@ cpu_op_asl_a (void)
 void
 cpu_op_lsr (void)
 {
-  UWORD addr = CPU_ADDR_FOR_OP (cpu_state.instruction);
-  UBYTE v = CPU_READ (addr);
+  guint16 addr = CPU_ADDR_FOR_OP (cpu_state.instruction);
+  guint8 v = CPU_READ (addr);
   
   CPU_SET_C (v & 0x01);
   v >>= 1;
@@ -553,8 +552,8 @@ cpu_op_lsr_a (void)
 void
 cpu_op_rol (void)
 {
-  UWORD addr = CPU_ADDR_FOR_OP (cpu_state.instruction);
-  UBYTE v = CPU_READ (addr);
+  guint16 addr = CPU_ADDR_FOR_OP (cpu_state.instruction);
+  guint8 v = CPU_READ (addr);
   int oc = CPU_IS_C ();
   
   CPU_SET_C (v & 0x80);
@@ -583,8 +582,8 @@ cpu_op_rol_a (void)
 void
 cpu_op_ror (void)
 {
-  UWORD addr = CPU_ADDR_FOR_OP (cpu_state.instruction);
-  UBYTE v = CPU_READ (addr);
+  guint16 addr = CPU_ADDR_FOR_OP (cpu_state.instruction);
+  guint8 v = CPU_READ (addr);
   int oc = CPU_IS_C ();
   
   CPU_SET_C (v & 0x01);
@@ -703,8 +702,8 @@ static const int cpu_branch_tests[4] = { CPU_FLAG_N,
 void
 cpu_op_branch (void)
 {
-  SBYTE offset = CPU_FETCH ();
-  UWORD new_addr;
+  gint8 offset = CPU_FETCH ();
+  guint16 new_addr;
   int ins;
   int t = cpu_state.p & cpu_branch_tests[(ins = cpu_state.instruction) >> 6];
   
@@ -885,21 +884,21 @@ cpu_op_tya (void)
 }
 
 /* Functions to get values using the different addressing modes */
-UBYTE
+guint8
 cpu_get_immediate (void)
 {
   cpu_state.time += 2;
   return CPU_FETCH ();
 }
 
-UBYTE
+guint8
 cpu_get_zero_page (void)
 {
   cpu_state.time += 3;
   return CPU_READ_ZERO (CPU_FETCH ());
 }
 
-UBYTE
+guint8
 cpu_get_absolute (void)
 {
   int al = CPU_FETCH ();
@@ -907,14 +906,14 @@ cpu_get_absolute (void)
   return CPU_READ (al | (CPU_FETCH () << 8));
 }
 
-UBYTE
+guint8
 cpu_get_zero_indexed_x (void)
 {
   cpu_state.time += 4;
   return CPU_READ_ZERO ((CPU_FETCH () + cpu_state.x) & 0xff);
 }
 
-UBYTE
+guint8
 cpu_get_absolute_indexed_x (void)
 {
   int al = CPU_FETCH () + cpu_state.x;
@@ -933,7 +932,7 @@ cpu_get_absolute_indexed_x (void)
   }
 }
 
-UBYTE
+guint8
 cpu_get_absolute_indexed_y (void)
 {
   int al = CPU_FETCH () + cpu_state.y;
@@ -952,20 +951,20 @@ cpu_get_absolute_indexed_y (void)
   }
 }
 
-UBYTE
+guint8
 cpu_get_pre_indexed_x (void)
 {
-  UBYTE za = CPU_FETCH () + cpu_state.x;
+  guint8 za = CPU_FETCH () + cpu_state.x;
   int al = CPU_READ (za++);
   int ah = CPU_READ (za);
   cpu_state.time += 6;
   return CPU_READ ((ah << 8) | al);  
 }
 
-UBYTE
+guint8
 cpu_get_post_indexed_y (void)
 {
-  UBYTE za = CPU_FETCH ();
+  guint8 za = CPU_FETCH ();
   int al = CPU_READ (za++) + cpu_state.y;
   int ah = CPU_READ (za);
   if (al >= 0x100)
@@ -983,14 +982,14 @@ cpu_get_post_indexed_y (void)
 
 /* Functions to write using the eight addressing modes */
 void
-cpu_write_zero_page (UBYTE v)
+cpu_write_zero_page (guint8 v)
 {
   cpu_state.time += 3;
   CPU_WRITE_ZERO (CPU_FETCH (), v);
 }
 
 void
-cpu_write_absolute (UBYTE v)
+cpu_write_absolute (guint8 v)
 {
   int al = CPU_FETCH ();
   cpu_state.time += 4;
@@ -998,14 +997,14 @@ cpu_write_absolute (UBYTE v)
 }
 
 void
-cpu_write_zero_indexed_x (UBYTE v)
+cpu_write_zero_indexed_x (guint8 v)
 {
   cpu_state.time += 4;
   CPU_WRITE_ZERO ((CPU_FETCH () + cpu_state.x) & 0xff, v);
 }
 
 void
-cpu_write_absolute_indexed_x (UBYTE v)
+cpu_write_absolute_indexed_x (guint8 v)
 {
   int al = CPU_FETCH () + cpu_state.x;
   int ah = CPU_FETCH ();
@@ -1024,7 +1023,7 @@ cpu_write_absolute_indexed_x (UBYTE v)
 }
 
 void
-cpu_write_absolute_indexed_y (UBYTE v)
+cpu_write_absolute_indexed_y (guint8 v)
 {
   int al = CPU_FETCH () + cpu_state.y;
   int ah = CPU_FETCH ();
@@ -1043,9 +1042,9 @@ cpu_write_absolute_indexed_y (UBYTE v)
 }
 
 void
-cpu_write_pre_indexed_x (UBYTE v)
+cpu_write_pre_indexed_x (guint8 v)
 {
-  UBYTE za = CPU_FETCH () + cpu_state.x;
+  guint8 za = CPU_FETCH () + cpu_state.x;
   int al = CPU_READ (za++);
   int ah = CPU_READ (za);
   cpu_state.time += 6;
@@ -1053,9 +1052,9 @@ cpu_write_pre_indexed_x (UBYTE v)
 }
 
 void
-cpu_write_post_indexed_y (UBYTE v)
+cpu_write_post_indexed_y (guint8 v)
 {
-  UBYTE za = CPU_FETCH ();
+  guint8 za = CPU_FETCH ();
   int al = CPU_READ (za++) + cpu_state.y;
   int ah = CPU_READ (za);
   if (al >= 0x100)
@@ -1074,14 +1073,14 @@ cpu_write_post_indexed_y (UBYTE v)
 /* Functions to calculate an address using the addressing modes.
    Counts the clock cycles for doing some read write operation on the
    address */
-UWORD
+guint16
 cpu_get_zero_page_a (void)
 {
   cpu_state.time += 5;
   return CPU_FETCH ();
 }
 
-UWORD
+guint16
 cpu_get_absolute_a (void)
 {
   int al = CPU_FETCH ();
@@ -1089,14 +1088,14 @@ cpu_get_absolute_a (void)
   return al | (CPU_FETCH () << 8);
 }
 
-UWORD
+guint16
 cpu_get_zero_indexed_x_a (void)
 {
   cpu_state.time += 6;
   return (CPU_FETCH () + cpu_state.x) & 0xff;
 }
 
-UWORD
+guint16
 cpu_get_absolute_indexed_x_a (void)
 {
   int al = CPU_FETCH ();

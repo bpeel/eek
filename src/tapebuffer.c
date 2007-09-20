@@ -3,9 +3,9 @@
 #endif
 
 #include <string.h>
+#include <glib.h>
 
 #include "tapebuffer.h"
-#include "util.h"
 
 /* Special bytes in the tape data */
 #define TAPE_BUFFER_CMD_QUOTE     0xfd /* Next byte should not be interpreted as a command */
@@ -17,9 +17,9 @@
 TapeBuffer *
 tape_buffer_new ()
 {
-  TapeBuffer *ret = xmalloc (sizeof (TapeBuffer));
+  TapeBuffer *ret = g_malloc (sizeof (TapeBuffer));
 
-  ret->buf = xmalloc (ret->buf_size = 16);
+  ret->buf = g_malloc (ret->buf_size = 16);
   ret->buf_length = 0;
   ret->buf_pos = 0;
 
@@ -29,8 +29,8 @@ tape_buffer_new ()
 void
 tape_buffer_free (TapeBuffer *tbuf)
 {
-  xfree (tbuf->buf);
-  xfree (tbuf);
+  g_free (tbuf->buf);
+  g_free (tbuf);
 }
 
 static void
@@ -42,7 +42,7 @@ tape_buffer_ensure_size (TapeBuffer *tbuf, int size)
     do
       nsize *= 2;
     while (size > nsize);
-    tbuf->buf = xrealloc (tbuf->buf, tbuf->buf_size = nsize);
+    tbuf->buf = g_realloc (tbuf->buf, tbuf->buf_size = nsize);
   }
 }
 
@@ -80,7 +80,7 @@ tape_buffer_get_next_byte (TapeBuffer *tbuf)
 }
 
 static void
-tape_buffer_store_byte_or_command (TapeBuffer *tbuf, UBYTE byte)
+tape_buffer_store_byte_or_command (TapeBuffer *tbuf, guint8 byte)
 {
   if (tbuf->buf_pos >= tbuf->buf_length)
   {
@@ -104,7 +104,7 @@ tape_buffer_store_byte_or_command (TapeBuffer *tbuf, UBYTE byte)
 }
 
 static void
-tape_buffer_store_repeated_byte_or_command (TapeBuffer *tbuf, UBYTE byte, int repeat_count)
+tape_buffer_store_repeated_byte_or_command (TapeBuffer *tbuf, guint8 byte, int repeat_count)
 {
   while (tbuf->buf_pos < tbuf->buf_length && repeat_count > 0)
   {
@@ -118,7 +118,7 @@ tape_buffer_store_repeated_byte_or_command (TapeBuffer *tbuf, UBYTE byte, int re
 }
 
 void
-tape_buffer_store_byte (TapeBuffer *tbuf, UBYTE byte)
+tape_buffer_store_byte (TapeBuffer *tbuf, guint8 byte)
 {
   if (byte >= TAPE_BUFFER_CMD_FIRST)
   {
