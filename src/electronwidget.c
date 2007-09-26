@@ -389,29 +389,41 @@ electron_widget_key_event (GtkWidget *widget, GdkEventKey *event)
     else
       ewidget->alt_state &= ~2;
   }
+  else if (event->type == GDK_KEY_RELEASE)
+  {
+    /* The released key may have a different keyval if the shift key
+       state has changed since the key was pressed so we should
+       compare by the hardware keycode instead */
+    if (ewidget->key_override != -1 && ewidget->override_keycode == event->hardware_keycode)
+    {
+      if (ewidget->electron)
+	electron_manager_release_key (ewidget->electron,
+				      electron_widget_keymap[ewidget->key_override].line,
+				      electron_widget_keymap[ewidget->key_override].bit);
+      ewidget->key_override = -1;
+    }
+    else
+      /* If it wasn't the key we are waiting for then pass it on */
+      ret = FALSE;
+  }
   else
   {
     for (i = 0; electron_widget_keymap[i].keysym != -1; i++)
       if (electron_widget_keymap[i].keysym == event->keyval)
       {
-	int new_override;
-
-	if (event->type == GDK_KEY_RELEASE)
-	  new_override = i == ewidget->key_override ? -1 : ewidget->key_override;
-	else
-	  new_override = i;
-
-	if (ewidget->key_override != new_override && ewidget->key_override != -1
-	    && ewidget->electron)
-	  electron_manager_release_key (ewidget->electron,
-					electron_widget_keymap[ewidget->key_override].line,
-					electron_widget_keymap[ewidget->key_override].bit);
-	ewidget->key_override = new_override;
-
-	if (new_override != -1 && ewidget->electron)
+	if (ewidget->electron)
+	{
+	  if (ewidget->key_override != i && ewidget->key_override != -1)
+	    electron_manager_release_key (ewidget->electron,
+					  electron_widget_keymap[ewidget->key_override].line,
+					  electron_widget_keymap[ewidget->key_override].bit);
 	  electron_manager_press_key (ewidget->electron,
-				      electron_widget_keymap[new_override].line,
-				      electron_widget_keymap[new_override].bit);
+				      electron_widget_keymap[i].line,
+				      electron_widget_keymap[i].bit);
+	}
+
+	ewidget->key_override = i;
+	ewidget->override_keycode = event->hardware_keycode;
 
 	break;
       }
