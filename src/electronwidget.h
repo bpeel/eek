@@ -29,6 +29,10 @@ struct _ElectronWidget
   int key_override, override_keycode;
 
   int frame_end_handler;
+
+  /* Position of the main video display. Gets re-centered in the
+     widget whenever the widget's size changes */
+  int xpos, ypos;
 };
 
 struct _ElectronWidgetClass

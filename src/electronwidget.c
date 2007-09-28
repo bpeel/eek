@@ -15,6 +15,7 @@ static void electron_widget_realize (GtkWidget *widget);
 static void electron_widget_dispose (GObject *obj);
 static gboolean electron_widget_expose (GtkWidget *widget, GdkEventExpose *event);
 static void electron_widget_size_request (GtkWidget *widget, GtkRequisition *requisition);
+static void electron_widget_size_allocate (GtkWidget *widget, GtkAllocation *allocation);
 static gboolean electron_widget_key_event (GtkWidget *widget, GdkEventKey *event);
 static void electron_widget_on_frame_end (ElectronManager *electron, gpointer user_data);
 static gboolean electron_widget_button_press (GtkWidget *widget, GdkEventButton *event);
@@ -191,6 +192,7 @@ electron_widget_class_init (ElectronWidgetClass *klass)
   widget_class->realize = electron_widget_realize;
   widget_class->expose_event = electron_widget_expose;
   widget_class->size_request = electron_widget_size_request;
+  widget_class->size_allocate = electron_widget_size_allocate;
   widget_class->key_press_event = electron_widget_key_event;
   widget_class->key_release_event = electron_widget_key_event;
   widget_class->button_press_event = electron_widget_button_press;
@@ -273,6 +275,20 @@ electron_widget_dispose (GObject *obj)
   G_OBJECT_CLASS (parent_class)->dispose (obj);
 }
 
+static void
+electron_widget_paint_video (ElectronWidget *ewidget)
+{
+  GtkWidget *widget = GTK_WIDGET (ewidget);
+
+  gdk_draw_indexed_image (GDK_DRAWABLE (widget->window),
+			  widget->style->fg_gc[widget->state],
+			  ewidget->xpos, ewidget->ypos, VIDEO_WIDTH, VIDEO_HEIGHT,
+			  GDK_RGB_DITHER_NONE,
+			  ewidget->electron->data->video.screen_memory,
+			  VIDEO_SCREEN_PITCH,
+			  &electron_widget_color_map);
+}
+
 static gboolean
 electron_widget_expose (GtkWidget *widget, GdkEventExpose *event)
 {
@@ -287,33 +303,23 @@ electron_widget_expose (GtkWidget *widget, GdkEventExpose *event)
     gdk_window_clear (widget->window);
   else
   {
-    /* Centre the display on the widget */
-    int xpos = widget->allocation.width / 2 - VIDEO_WIDTH / 2;
-    int ypos = widget->allocation.height / 2 - VIDEO_HEIGHT / 2;
-
     /* Clear the area around the display */
-    if (xpos > 0)
+    if (ewidget->xpos > 0)
       gdk_window_clear_area (widget->window,
-			     0, 0, xpos, widget->allocation.height);
-    if (xpos + VIDEO_WIDTH < widget->allocation.width)
+			     0, 0, ewidget->xpos, widget->allocation.height);
+    if (ewidget->xpos + VIDEO_WIDTH < widget->allocation.width)
       gdk_window_clear_area (widget->window,
-			     xpos + VIDEO_WIDTH, 0, widget->allocation.width - xpos - VIDEO_WIDTH,
+			     ewidget->xpos + VIDEO_WIDTH, 0, widget->allocation.width - ewidget->xpos - VIDEO_WIDTH,
 			     widget->allocation.height);
-    if (ypos > 0)
+    if (ewidget->ypos > 0)
       gdk_window_clear_area (widget->window,
-			     xpos, 0, VIDEO_WIDTH, ypos);
-    if (ypos + VIDEO_HEIGHT < widget->allocation.height)
+			     ewidget->xpos, 0, VIDEO_WIDTH, ewidget->ypos);
+    if (ewidget->ypos + VIDEO_HEIGHT < widget->allocation.height)
       gdk_window_clear_area (widget->window,
-			     xpos, ypos + VIDEO_HEIGHT, VIDEO_WIDTH,
-			     widget->allocation.height - ypos - VIDEO_HEIGHT);
-			   
-    gdk_draw_indexed_image (GDK_DRAWABLE (widget->window),
-			    widget->style->fg_gc[widget->state],
-			    xpos, ypos, VIDEO_WIDTH, VIDEO_HEIGHT,
-			    GDK_RGB_DITHER_NONE,
-			    ewidget->electron->data->video.screen_memory,
-			    VIDEO_SCREEN_PITCH,
-			    &electron_widget_color_map);
+			     ewidget->xpos, ewidget->ypos + VIDEO_HEIGHT, VIDEO_WIDTH,
+			     widget->allocation.height - ewidget->ypos - VIDEO_HEIGHT);
+
+    electron_widget_paint_video (ewidget);
   }
 
   return FALSE;
@@ -334,6 +340,23 @@ electron_widget_size_request (GtkWidget *widget, GtkRequisition *requisition)
 
   requisition->width = VIDEO_WIDTH;
   requisition->height = VIDEO_HEIGHT;
+}
+
+static void
+electron_widget_size_allocate (GtkWidget *widget, GtkAllocation *allocation)
+{
+  ElectronWidget *ewidget;
+
+  g_return_if_fail (IS_ELECTRON_WIDGET (widget));
+
+  ewidget = ELECTRON_WIDGET (widget);
+
+  if (GTK_WIDGET_CLASS (parent_class)->size_allocate)
+    GTK_WIDGET_CLASS (parent_class)->size_allocate (widget, allocation);
+
+  /* Centre the display on the widget */
+  ewidget->xpos = widget->allocation.width / 2 - VIDEO_WIDTH / 2;
+  ewidget->ypos = widget->allocation.height / 2 - VIDEO_HEIGHT / 2;
 }
 
 static gboolean
@@ -511,5 +534,5 @@ electron_widget_on_frame_end (ElectronManager *electron, gpointer user_data)
   g_return_if_fail (ewidget->electron == electron);
 
   if (GTK_WIDGET_REALIZED (GTK_WIDGET (ewidget)))
-    gdk_window_invalidate_rect (GTK_WIDGET (ewidget)->window, NULL, FALSE);
+    electron_widget_paint_video (ewidget);
 }
