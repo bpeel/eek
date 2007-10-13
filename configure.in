@@ -9,25 +9,10 @@ AC_PROG_CC
 AM_PROG_CC_STDC
 AC_HEADER_STDC
 
-dnl FIXME: this is a stub
-if false; then
- AC_DEFINE(BYTE_ORDER_BIG, 1, [Use big byte first])
-else
- AC_DEFINE(BYTE_ORDER_SMALL, 1, [Use small byte first])
-fi
-
-dnl Check for GTK
-AM_PATH_GTK_2_0(2.6.0, , AC_MSG_ERROR([GTK+ version >= 2.6.0 is required]))
-
-dnl Use -Wall if we have gcc.
-changequote(,)dnl
-if test "x$GCC" = "xyes"; then
-  case " $CFLAGS " in
-  *[\ \	]-Wall[\ \	]*) ;;
-  *) CFLAGS="$CFLAGS -Wall" ;;
-  esac
-fi
-changequote([,])dnl
+dnl Check for pkg-config dependencies
+PKG_CHECK_MODULES(EEK_DEP, libglade-2.0 gtk+-2.0 >= 2.6.0)
+AC_SUBST(EEK_DEP_CFLAGS)
+AC_SUBST(EEK_DEP_LIBS)
 
 dnl Check for zlib
 have_zlib=yes;
@@ -40,7 +25,23 @@ else
    AC_DEFINE(HAVE_ZLIB, 1, [Defined if zlib is available])
 fi;
 
+dnl Set PACKAGE_SOURCE_DIR in config.h.
+packagesrcdir=`cd $srcdir && pwd`
+AC_DEFINE_UNQUOTED(PACKAGE_SOURCE_DIR, "${packagesrcdir}",
+				       [Define to the source directory])
+
+dnl Use -Wall if we have gcc.
+changequote(,)dnl
+if test "x$GCC" = "xyes"; then
+  case " $CFLAGS " in
+  *[\ \	]-Wall[\ \	]*) ;;
+  *) CFLAGS="$CFLAGS -Wall" ;;
+  esac
+fi
+changequote([,])dnl
+
 AC_OUTPUT([
 Makefile
 src/Makefile
+glade/Makefile
 ])
