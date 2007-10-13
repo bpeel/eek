@@ -1,10 +1,11 @@
 ## Process this file with automake to produce Makefile.in
 
-INCLUDES = @GTK_CFLAGS@
+INCLUDES = @EEK_DEP_CFLAGS@ \
+	-DEEK_GLADE_DIR=\""$(datadir)/eek/glade/"\"
 
 bin_PROGRAMS = eek
 
-eek_LDADD = @GTK_LIBS@
+eek_LDADD = @EEK_DEP_LIBS@
 eek_SOURCES = \
 	main.c \
 	cpu.h cpu.c \
@@ -26,6 +27,8 @@ eek_SOURCES = \
 	disdialog.h disdialog.c \
 	tapebuffer.h tapebuffer.c \
 	tapeuef.h tapeuef.c \
+	preferencesdialog.h preferencesdialog.c \
+	gladeutil.h gladeutil.c \
 	intl.h
 
 EXTRA_DIST = eekmarshalers.list
