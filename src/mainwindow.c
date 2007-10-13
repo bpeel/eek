@@ -20,6 +20,7 @@
 #include "intl.h"
 #include "breakpointeditdialog.h"
 #include "disdialog.h"
+#include "preferencesdialog.h"
 
 typedef struct _MainWindowAction MainWindowAction;
 
@@ -39,6 +40,7 @@ static void main_window_electron_widget_notify (gpointer data, GObject *obj);
 static void main_window_debugger_notify (gpointer data, GObject *obj);
 
 static void main_window_on_quit (GtkAction *action, MainWindow *mainwin);
+static void main_window_on_preferences (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_about (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_run (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_step (GtkAction *action, MainWindow *mainwin);
@@ -59,6 +61,8 @@ static const MainWindowAction main_window_actions[] =
   {
     { "ActionFileMenu", NULL, N_("Menu|_File"), NULL, NULL,
       NULL, FALSE, NULL },
+    { "ActionEditMenu", NULL, N_("Menu|_Edit"), NULL, NULL,
+      NULL, FALSE, NULL },
     { "ActionViewMenu", NULL, N_("Menu|_View"), NULL, NULL,
       NULL, FALSE, NULL },
     { "ActionDebugMenu", NULL, N_("Menu|_Debug"), NULL, NULL,
@@ -67,6 +71,8 @@ static const MainWindowAction main_window_actions[] =
       NULL, FALSE, NULL },
     { "ActionQuit", GTK_STOCK_QUIT, N_("MenuFile|_Quit"), NULL,
       NULL, N_("Quit the program"), FALSE, G_CALLBACK (main_window_on_quit) },
+    { "ActionPreferences", GTK_STOCK_PREFERENCES, N_("MenuEdit|_Preferences"), NULL,
+      NULL, N_("Configure the application"), FALSE, G_CALLBACK (main_window_on_preferences) },
     { "ActionToggleToolbar", NULL, N_("MenuView|_Toolbar"), NULL,
       NULL, N_("Display or hide the toolbar"), TRUE,
       G_CALLBACK (main_window_on_toggle_toolbar) },
@@ -94,6 +100,9 @@ static const char main_window_ui_definition[] =
 " <menubar name=\"MenuBar\">\n"
 "  <menu name=\"FileMenu\" action=\"ActionFileMenu\">\n"
 "   <menuitem name=\"Quit\" action=\"ActionQuit\" />\n"
+"  </menu>\n"
+"  <menu name=\"EditMenu\" action=\"ActionEditMenu\">\n"
+"   <menuitem name=\"Preferences\" action=\"ActionPreferences\" />\n"
 "  </menu>\n"
 "  <menu name=\"ViewMenu\" action=\"ActionViewMenu\">\n"
 "   <menuitem name=\"ToggleToolbar\" action=\"ActionToggleToolbar\" />\n"
@@ -344,6 +353,12 @@ main_window_on_quit (GtkAction *action, MainWindow *mainwin)
   g_return_if_fail (IS_MAIN_WINDOW (mainwin));
   
   gtk_main_quit ();
+}
+
+static void
+main_window_on_preferences (GtkAction *action, MainWindow *mainwin)
+{
+  preferences_dialog_show (GTK_WINDOW (mainwin));
 }
 
 static void
