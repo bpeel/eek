@@ -50,7 +50,7 @@ main (int argc, char **argv)
 	|| electron_load_paged_rom (eman->data, ELECTRON_BASIC_PAGE, file)
 	|| fclose (file) == EOF)
     {
-      g_error ("couldn't load rom: %s\n", strerror (errno));
+      g_error ("couldn't load rom: %s\n", g_strerror (errno));
       exit (-1);
     }
   }

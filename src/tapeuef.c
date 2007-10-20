@@ -88,7 +88,7 @@ tape_uef_stream_read_from_file (TapeUEFStream *stream, gsize length,
       && ferror ((FILE *) stream->data))
   {
     g_set_error (error, TAPE_UEF_ERROR, TAPE_UEF_ERROR_IO,
-		 _("Read error: %s"), strerror (errno));
+		 _("Read error: %s"), g_strerror (errno));
     ret = -1;
   }
   else
