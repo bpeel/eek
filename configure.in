@@ -10,7 +10,7 @@ AM_PROG_CC_STDC
 AC_HEADER_STDC
 
 dnl Check for pkg-config dependencies
-PKG_CHECK_MODULES(EEK_DEP, libglade-2.0 gtk+-2.0 >= 2.6.0)
+PKG_CHECK_MODULES(EEK_DEP, libglade-2.0 gtk+-2.0 >= 2.6.0 gconf-2.0)
 AC_SUBST(EEK_DEP_CFLAGS)
 AC_SUBST(EEK_DEP_LIBS)
 
