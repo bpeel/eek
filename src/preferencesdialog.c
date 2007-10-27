@@ -213,9 +213,16 @@ preferences_dialog_init (PreferencesDialog *prefsdlg)
 
     for (i = 0; i < PREFERENCES_DIALOG_ENTRY_COUNT; i++)
     {
+      gchar *key = g_strconcat (PREFERENCES_DIALOG_PREFIX,
+				preferences_dialog_entries[i].option_name,
+				NULL);
+
       g_object_weak_ref (G_OBJECT (priv->widgets[i]),
 			 (GWeakNotify) preferences_dialog_widget_notify,
 			 prefsdlg);
+
+      if (!gconf_client_key_is_writable (priv->gconf, key, NULL))
+	gtk_widget_set_sensitive (priv->widgets[i], FALSE);
       
       switch (preferences_dialog_entries[i].type)
       {
@@ -223,12 +230,9 @@ preferences_dialog_init (PreferencesDialog *prefsdlg)
 	  if (GTK_IS_FILE_CHOOSER (priv->widgets[i]))
 	  {
 	    GConfValue *value;
-	    gchar *filename, *key;
+	    gchar *filename;
 	    const gchar *filename_utf8;
 
-	    key = g_strconcat (PREFERENCES_DIALOG_PREFIX,
-			       preferences_dialog_entries[i].option_name,
-			       NULL);
 	    if ((value = gconf_client_get (priv->gconf, key, NULL)))
 	    {
 	      if (value->type == GCONF_VALUE_STRING)
@@ -245,7 +249,6 @@ preferences_dialog_init (PreferencesDialog *prefsdlg)
 	      }
 	      gconf_value_free (value);
 	    }
-	    g_free (key);
 
 	    priv->handlers[i] = g_signal_connect (priv->widgets[i],
 						  "selection-changed",
@@ -266,6 +269,8 @@ preferences_dialog_init (PreferencesDialog *prefsdlg)
 	    priv->handlers[i] = 0;
 	  break;
       }
+
+      g_free (key);
     }
   }
   else
@@ -459,6 +464,10 @@ preferences_dialog_on_value_changed (GConfClient *client,
 	   won't get stuck in an infinite loop */
 	if (priv->handlers[i])
 	  g_signal_handler_block (priv->widgets[i], priv->handlers[i]);
+
+	/* Recheck whether we have write permission to this key */
+	gtk_widget_set_sensitive (priv->widgets[i],
+				  gconf_client_key_is_writable (priv->gconf, key, NULL));
 
 	switch (entry->type)
 	{
