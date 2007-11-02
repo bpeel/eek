@@ -27,7 +27,7 @@ struct _MainWindow
   GtkActionGroup *action_group;
   GtkUIManager *ui_manager;
 
-  guint started, stopped, disdialog_destroy;
+  guint started, stopped, rom_error, disdialog_destroy;
 };
 
 struct _MainWindowClass

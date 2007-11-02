@@ -11,6 +11,7 @@
 #include <gtk/gtkhbox.h>
 #include <gtk/gtkvbox.h>
 #include <gtk/gtkmain.h>
+#include <gtk/gtkmessagedialog.h>
 
 #include "mainwindow.h"
 #include "electronmanager.h"
@@ -45,10 +46,13 @@ static void main_window_on_about (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_run (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_step (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_break (GtkAction *action, MainWindow *mainwin);
+static void main_window_on_reset (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_edit_breakpoint (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_disassembler (GtkAction *action, MainWindow *mainwin);
 
 static void main_window_update_debug_actions (MainWindow *mainwin);
+static void main_window_on_rom_error (MainWindow *mainwin, GList *errors,
+				      ElectronManager *eman);
 
 static void main_window_on_toggle_toolbar (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_toggle_debugger (GtkAction *action, MainWindow *mainwin);
@@ -85,6 +89,9 @@ static const MainWindowAction main_window_actions[] =
       "F11", N_("Single-step one instruction"), FALSE, G_CALLBACK (main_window_on_step) },
     { "ActionBreak", NULL, N_("MenuDebug|_Break"), NULL,
       "F9", N_("Stop the emulator"), FALSE, G_CALLBACK (main_window_on_break) },
+    { "ActionReset", NULL, N_("MenuDebug|R_eset"), NULL,
+      NULL, N_("Reset the emulator to location in the vector at $FFFC"), FALSE,
+      G_CALLBACK (main_window_on_reset) },
     { "ActionEditBreakpoint", NULL, N_("MenuDebug|Edit brea_kpoint..."), NULL,
       NULL, N_("Set or remove a breakpoint"), FALSE,
       G_CALLBACK (main_window_on_edit_breakpoint) },
@@ -114,6 +121,7 @@ static const char main_window_ui_definition[] =
 "   <menuitem name=\"Run\" action=\"ActionRun\" />\n"
 "   <menuitem name=\"Step\" action=\"ActionStep\" />\n"
 "   <menuitem name=\"Break\" action=\"ActionBreak\" />\n"
+"   <menuitem name=\"Reset\" action=\"ActionReset\" />\n"
 "   <separator />\n"
 "   <menuitem name=\"EditBreakpoint\" action=\"ActionEditBreakpoint\" />\n"
 "   <menuitem name=\"Disassembler\" action=\"ActionDisassembler\" />\n"
@@ -317,6 +325,7 @@ main_window_set_electron (MainWindow *mainwin, ElectronManager *electron)
   {
     g_signal_handler_disconnect (oldelectron, mainwin->started);
     g_signal_handler_disconnect (oldelectron, mainwin->stopped);
+    g_signal_handler_disconnect (oldelectron, mainwin->rom_error);
 
     mainwin->electron = NULL;
 
@@ -337,6 +346,9 @@ main_window_set_electron (MainWindow *mainwin, ElectronManager *electron)
     mainwin->stopped
       = g_signal_connect_swapped (electron, "stopped",
 				  G_CALLBACK (main_window_update_debug_actions), mainwin);
+    mainwin->rom_error
+      = g_signal_connect_swapped (electron, "rom-error",
+				  G_CALLBACK (main_window_on_rom_error), mainwin);
   }
 
   if (mainwin->ewidget)
@@ -421,6 +433,15 @@ main_window_on_break (GtkAction *action, MainWindow *mainwin)
 
   if (mainwin->electron)
     electron_manager_stop (mainwin->electron);
+}
+
+static void
+main_window_on_reset (GtkAction *action, MainWindow *mainwin)
+{
+  g_return_if_fail (IS_MAIN_WINDOW (mainwin));
+
+  if (mainwin->electron)
+    cpu_restart (&mainwin->electron->data->cpu);
 }
 
 static void
@@ -556,4 +577,46 @@ main_window_debugger_notify (gpointer data, GObject *obj)
   g_return_if_fail (obj == G_OBJECT (mainwin->debugger));
 
   mainwin->debugger = NULL;
+}
+
+static void
+main_window_on_rom_error (MainWindow *mainwin, GList *errors,
+			  ElectronManager *eman)
+{
+  int error_count;
+  gchar *note;
+  GString *message;
+  GtkWidget *dialog;
+
+  g_return_if_fail (IS_MAIN_WINDOW (mainwin));
+  g_return_if_fail (IS_ELECTRON_MANAGER (eman));
+  g_return_if_fail (eman == mainwin->electron);
+
+  error_count = g_list_length (errors);
+  note = g_strdup_printf (ngettext ("An error occurred while loading a ROM",
+				    "Some errors occurred while loading the ROMs",
+				    error_count), error_count);
+
+  message = g_string_new ("");
+  for (; errors; errors = errors->next)
+  {
+    if (errors->prev)
+      g_string_append_c (message, '\n');
+    g_string_append (message, ((GError *) errors->data)->message);
+  }
+
+  dialog = gtk_message_dialog_new (GTK_WINDOW (mainwin),
+				   GTK_DIALOG_DESTROY_WITH_PARENT,
+				   GTK_MESSAGE_ERROR,
+				   GTK_BUTTONS_CLOSE,
+				   "%s", note);
+  gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog),
+					    "%s", message->str);
+  g_signal_connect_swapped (dialog, "response",
+			    G_CALLBACK (gtk_widget_destroy),
+			    dialog);
+  gtk_widget_show (dialog);
+
+  g_string_free (message, TRUE);
+  g_free (note);
 }
