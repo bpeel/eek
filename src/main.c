@@ -24,12 +24,8 @@ main_window_on_destroy (GtkWidget *widget, gpointer data)
 int
 main (int argc, char **argv)
 {
-  char *os_rom = "roms/os.rom";
   GtkWidget *mainwin;
   ElectronManager *eman;
-
-  if (argc >= 2)
-    os_rom = argv[1];
 
   /* Initialise GTK */
   gtk_init (&argc, &argv);
@@ -39,26 +35,11 @@ main (int argc, char **argv)
   mainwin = main_window_new_with_electron (eman);
   g_signal_connect (G_OBJECT (mainwin), "destroy", G_CALLBACK (main_window_on_destroy), NULL);
 
-  /* Load the two default roms */
-  {
-    FILE *file;
-
-    if ((file = fopen (os_rom, "rb")) == NULL
-	|| electron_load_os_rom (eman->data, file) == -1
-	|| fclose (file) == EOF
-	|| (file = fopen ("roms/basic.rom", "rb")) == NULL
-	|| electron_load_paged_rom (eman->data, ELECTRON_BASIC_PAGE, file)
-	|| fclose (file) == EOF)
-    {
-      g_error ("couldn't load rom: %s\n", g_strerror (errno));
-      exit (-1);
-    }
-  }
-
   cpu_restart (&eman->data->cpu);
   /* Set the emulation to start when the main loop is entered */
   electron_manager_start (eman);
 
+  electron_manager_update_all_roms (eman);
   g_object_unref (eman);
 
   gtk_widget_show (mainwin);
