@@ -25,8 +25,6 @@ struct _ElectronManager
   GObject parent;
 
   Electron *data;
-
-  guint timeout;
 };
 
 struct _ElectronManagerClass
@@ -36,7 +34,16 @@ struct _ElectronManagerClass
   void (* frame_end) (ElectronManager *eman);
   void (* started) (ElectronManager *eman);
   void (* stopped) (ElectronManager *eman);
+  void (* rom_error) (ElectronManager *eman, GList *error_list);
 };
+
+typedef enum
+{
+  ELECTRON_MANAGER_ERROR_FILE
+} ElectronManagerError;
+
+#define ELECTRON_MANAGER_ERROR electron_manager_error_quark ()
+GQuark electron_manager_error_quark ();
 
 ElectronManager *electron_manager_new ();
 GType electron_manager_get_type ();
@@ -44,6 +51,7 @@ void electron_manager_start (ElectronManager *eman);
 void electron_manager_stop (ElectronManager *eman);
 void electron_manager_step (ElectronManager *eman);
 gboolean electron_manager_is_running (ElectronManager *eman);
+void electron_manager_update_all_roms (ElectronManager *eman);
 
 #define electron_manager_press_key(eman, line, bit) \
 do { electron_press_key ((eman)->data, line, bit); } while (0)
