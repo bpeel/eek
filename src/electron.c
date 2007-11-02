@@ -219,6 +219,12 @@ electron_run_frame (Electron *electron)
   return got_break;
 }
 
+void
+electron_clear_os_rom (Electron *electron)
+{
+  memset (electron->os_rom, 0, ELECTRON_OS_ROM_LENGTH);
+}
+
 int
 electron_load_os_rom (Electron *electron, FILE *in)
 {
@@ -227,6 +233,16 @@ electron_load_os_rom (Electron *electron, FILE *in)
     return -1;
   else
     return 0;
+}
+
+void
+electron_clear_paged_rom (Electron *electron, int page)
+{
+  if (electron->paged_roms[page])
+  {
+    g_free (electron->paged_roms[page]);
+    electron->paged_roms[page] = NULL;
+  }
 }
 
 int

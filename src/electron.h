@@ -79,7 +79,9 @@ struct _Electron
 
 Electron *electron_new ();
 void electron_free (Electron *electron);
+void electron_clear_os_rom (Electron *electron);
 int electron_load_os_rom (Electron *electron, FILE *in);
+void electron_clear_paged_rom (Electron *electron, int page);
 int electron_load_paged_rom (Electron *electron, int page, FILE *in);
 void electron_write_to_location (Electron *electron, guint16 location, guint8 v);
 guint8 electron_read_from_location (Electron *electron, guint16 location);
