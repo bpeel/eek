@@ -21,6 +21,12 @@
 #define gettext(String) (String)
 #define dgettext(Domain,String) (String)
 #define dcgettext(Domain,String,Type) (String)
+#define ngettext(String1,String2,Num) \
+ ((Num) == 1 ? (String1) : (String2))
+#define dngettext(Domain,String1,String2,Num) \
+ ((Num) == 1 ? (String1) : (String2))
+#define dcngettext(Domain,String1,String2,Num,Category) \
+ ((Num) == 1 ? (String1) : (String2))
 #define bindtextdomain(Domain,Directory) (Domain) 
 #define bind_textdomain_codeset(Domain,Codeset) (Codeset) 
 
