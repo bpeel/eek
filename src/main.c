@@ -35,11 +35,11 @@ main (int argc, char **argv)
   mainwin = main_window_new_with_electron (eman);
   g_signal_connect (G_OBJECT (mainwin), "destroy", G_CALLBACK (main_window_on_destroy), NULL);
 
+  electron_manager_update_all_roms (eman);
   cpu_restart (&eman->data->cpu);
   /* Set the emulation to start when the main loop is entered */
   electron_manager_start (eman);
 
-  electron_manager_update_all_roms (eman);
   g_object_unref (eman);
 
   gtk_widget_show (mainwin);
