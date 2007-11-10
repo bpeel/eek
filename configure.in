@@ -30,6 +30,10 @@ packagesrcdir=`cd $srcdir && pwd`
 AC_DEFINE_UNQUOTED(PACKAGE_SOURCE_DIR, "${packagesrcdir}",
 				       [Define to the source directory])
 
+dnl GConf settings
+AC_PATH_PROG(GCONFTOOL, gconftool-2)
+AM_GCONF_SOURCE_2
+
 dnl Use -Wall if we have gcc.
 changequote(,)dnl
 if test "x$GCC" = "xyes"; then
@@ -44,4 +48,5 @@ AC_OUTPUT([
 Makefile
 src/Makefile
 glade/Makefile
+gconf/Makefile
 ])

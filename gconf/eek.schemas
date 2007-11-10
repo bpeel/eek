@@ -1,0 +1,158 @@
+<gconfschemafile>
+  <schemalist>
+    <schema>
+      <key>/schemas/apps/eek/roms/os_rom</key>
+      <applyto>/apps/eek/roms/os_rom</applyto>
+      <owner>eek</owner>
+      <type>string</type>
+      <locale name="C">
+        <default></default>
+        <short>Filename of the OS ROM.</short>
+        <long>Filename of the ROM that occupies memory locations 0xC000 to 0xFFFF. This is usually where the operating system is found.</long>
+      </locale>
+    </schema>
+    <schema>
+      <key>/schemas/apps/eek/roms/basic_rom</key>
+      <applyto>/apps/eek/roms/basic_rom</applyto>
+      <owner>eek</owner>
+      <type>string</type>
+      <locale name="C">
+        <default></default>
+        <short>Filename of the BASIC language ROM.</short>
+        <long>Filename of the ROM that is used when page number 10 or 11 is selected. This is usually where the BASIC language ROM is found.</long>
+      </locale>
+    </schema>
+    <schema>
+      <key>/schemas/apps/eek/roms/rom_12</key>
+      <applyto>/apps/eek/roms/rom_12</applyto>
+      <owner>eek</owner>
+      <type>string</type>
+      <locale name="C">
+        <default></default>
+        <short>Filename of ROM in slot 12</short>
+        <long>Filename of ROM that is used when page number 12 is selected. This slot is a fast ROM because it only requires one write to the paging register to select.</long>
+      </locale>
+    </schema>
+    <schema>
+      <key>/schemas/apps/eek/roms/rom_13</key>
+      <applyto>/apps/eek/roms/rom_13</applyto>
+      <owner>eek</owner>
+      <type>string</type>
+      <locale name="C">
+        <default></default>
+        <short>Filename of ROM in slot 13</short>
+        <long>Filename of ROM that is used when page number 13 is selected. This slot is a fast ROM because it only requires one write to the paging register to select.</long>
+      </locale>
+    </schema>
+    <schema>
+      <key>/schemas/apps/eek/roms/rom_14</key>
+      <applyto>/apps/eek/roms/rom_14</applyto>
+      <owner>eek</owner>
+      <type>string</type>
+      <locale name="C">
+        <default></default>
+        <short>Filename of ROM in slot 14</short>
+        <long>Filename of ROM that is used when page number 14 is selected. This slot is a fast ROM because it only requires one write to the paging register to select.</long>
+      </locale>
+    </schema>
+    <schema>
+      <key>/schemas/apps/eek/roms/rom_15</key>
+      <applyto>/apps/eek/roms/rom_15</applyto>
+      <owner>eek</owner>
+      <type>string</type>
+      <locale name="C">
+        <default></default>
+        <short>Filename of ROM in slot 15</short>
+        <long>Filename of ROM that is used when page number 15 is selected. This slot is a fast ROM because it only requires one write to the paging register to select.</long>
+      </locale>
+    </schema>
+    <schema>
+      <key>/schemas/apps/eek/roms/rom_0</key>
+      <applyto>/apps/eek/roms/rom_0</applyto>
+      <owner>eek</owner>
+      <type>string</type>
+      <locale name="C">
+        <default></default>
+        <short>Filename of ROM in slot 0</short>
+        <long>Filename of ROM that is used when page number 0 is selected. This slot is a slow ROM because it requires two writes to the paging register to select. The first write causes the BASIC ROM to be deselected.</long>
+      </locale>
+    </schema>
+    <schema>
+      <key>/schemas/apps/eek/roms/rom_1</key>
+      <applyto>/apps/eek/roms/rom_1</applyto>
+      <owner>eek</owner>
+      <type>string</type>
+      <locale name="C">
+        <default></default>
+        <short>Filename of ROM in slot 1</short>
+        <long>Filename of ROM that is used when page number 1 is selected. This slot is a slow ROM because it requires two writes to the paging register to select. The first write causes the BASIC ROM to be deselected.</long>
+      </locale>
+    </schema>
+    <schema>
+      <key>/schemas/apps/eek/roms/rom_2</key>
+      <applyto>/apps/eek/roms/rom_2</applyto>
+      <owner>eek</owner>
+      <type>string</type>
+      <locale name="C">
+        <default></default>
+        <short>Filename of ROM in slot 2</short>
+        <long>Filename of ROM that is used when page number 2 is selected. This slot is a slow ROM because it requires two writes to the paging register to select. The first write causes the BASIC ROM to be deselected.</long>
+      </locale>
+    </schema>
+    <schema>
+      <key>/schemas/apps/eek/roms/rom_3</key>
+      <applyto>/apps/eek/roms/rom_3</applyto>
+      <owner>eek</owner>
+      <type>string</type>
+      <locale name="C">
+        <default></default>
+        <short>Filename of ROM in slot 3</short>
+        <long>Filename of ROM that is used when page number 3 is selected. This slot is a slow ROM because it requires two writes to the paging register to select. The first write causes the BASIC ROM to be deselected.</long>
+      </locale>
+    </schema>
+    <schema>
+      <key>/schemas/apps/eek/roms/rom_4</key>
+      <applyto>/apps/eek/roms/rom_4</applyto>
+      <owner>eek</owner>
+      <type>string</type>
+      <locale name="C">
+        <default></default>
+        <short>Filename of ROM in slot 4</short>
+        <long>Filename of ROM that is used when page number 4 is selected. This slot is a slow ROM because it requires two writes to the paging register to select. The first write causes the BASIC ROM to be deselected.</long>
+      </locale>
+    </schema>
+    <schema>
+      <key>/schemas/apps/eek/roms/rom_5</key>
+      <applyto>/apps/eek/roms/rom_5</applyto>
+      <owner>eek</owner>
+      <type>string</type>
+      <locale name="C">
+        <default></default>
+        <short>Filename of ROM in slot 5</short>
+        <long>Filename of ROM that is used when page number 5 is selected. This slot is a slow ROM because it requires two writes to the paging register to select. The first write causes the BASIC ROM to be deselected.</long>
+      </locale>
+    </schema>
+    <schema>
+      <key>/schemas/apps/eek/roms/rom_6</key>
+      <applyto>/apps/eek/roms/rom_6</applyto>
+      <owner>eek</owner>
+      <type>string</type>
+      <locale name="C">
+        <default></default>
+        <short>Filename of ROM in slot 6</short>
+        <long>Filename of ROM that is used when page number 6 is selected. This slot is a slow ROM because it requires two writes to the paging register to select. The first write causes the BASIC ROM to be deselected.</long>
+      </locale>
+    </schema>
+    <schema>
+      <key>/schemas/apps/eek/roms/rom_7</key>
+      <applyto>/apps/eek/roms/rom_7</applyto>
+      <owner>eek</owner>
+      <type>string</type>
+      <locale name="C">
+        <default></default>
+        <short>Filename of ROM in slot 7</short>
+        <long>Filename of ROM that is used when page number 7 is selected. This slot is a slow ROM because it requires two writes to the paging register to select. The first write causes the BASIC ROM to be deselected.</long>
+      </locale>
+    </schema>
+  </schemalist>
+</gconfschemafile>

@@ -1,1 +1,1 @@
-SUBDIRS = src glade
+SUBDIRS = src glade gconf
