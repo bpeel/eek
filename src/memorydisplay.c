@@ -420,7 +420,7 @@ memory_display_expose (GtkWidget *widget, GdkEventExpose *event)
     {
       if (memdisplay->disp_type == MEMORY_DISPLAY_ADDRESS)
       {
-        g_snprintf (hexbuf, 5, "%04" G_GSIZE_FORMAT, pos);
+        g_snprintf (hexbuf, 5, "%04" G_GSIZE_MODIFIER "X", pos);
 
         pango_layout_set_text (layout, hexbuf, -1);
 
