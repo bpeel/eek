@@ -93,9 +93,9 @@ struct _Cpu
 #define CPU_ADDRESS_SIZE 65536
 #define CPU_RAM_SIZE     32768
 
-void cpu_init (Cpu *cpu, guint8 *memory, 
-	       CpuMemReadFunc read_func, CpuMemWriteFunc write_func,
-	       void *memory_data);
+void cpu_init (Cpu *cpu, guint8 *memory,
+               CpuMemReadFunc read_func, CpuMemWriteFunc write_func,
+               void *memory_data);
 int cpu_fetch_execute (Cpu *cpu, cycles_t target_time);
 
 void cpu_set_irq (Cpu *cpu);

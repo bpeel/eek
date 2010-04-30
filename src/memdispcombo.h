@@ -48,7 +48,7 @@ struct _MemDispComboClass
   GtkHPanedClass parent_class;
 
   void  (* set_scroll_adjustments) (MemDispCombo *hexdispcombo,
-				    GtkAdjustment *hadjustment, GtkAdjustment *vadjustment);
+                                    GtkAdjustment *hadjustment, GtkAdjustment *vadjustment);
 };
 
 GType mem_disp_combo_get_type ();
@@ -56,6 +56,6 @@ GtkWidget *mem_disp_combo_new ();
 GtkWidget *mem_disp_combo_new_with_electron (ElectronManager *electron);
 void mem_disp_combo_set_electron (MemDispCombo *hexdisplay, ElectronManager *electron);
 void mem_disp_combo_set_cursor_adjustment (MemDispCombo *memdispcombo,
-					   GtkAdjustment *cur_adjustment);
+                                           GtkAdjustment *cur_adjustment);
 
 #endif /* _MEM_DISP_COMBO_H */

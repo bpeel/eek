@@ -37,9 +37,9 @@ struct _FrameSource
 static gboolean frame_source_prepare (GSource *source, gint *timeout);
 static gboolean frame_source_check (GSource *source);
 static gboolean frame_source_dispatch (GSource *source, GSourceFunc callback,
-				       gpointer user_data);
+                                       gpointer user_data);
 
-static GSourceFuncs frame_source_funcs = 
+static GSourceFuncs frame_source_funcs =
   {
     frame_source_prepare,
     frame_source_check,
@@ -49,7 +49,7 @@ static GSourceFuncs frame_source_funcs =
 
 guint
 frame_source_add (guint frame_time, GSourceFunc function, gpointer data,
-		  GDestroyNotify notify)
+                  GDestroyNotify notify)
 {
   guint ret;
   GSource *source = g_source_new (&frame_source_funcs, sizeof (FrameSource));
@@ -74,7 +74,7 @@ frame_source_get_ticks (FrameSource *frame_source)
   GTimeVal time_now;
 
   g_source_get_current_time ((GSource *) frame_source, &time_now);
-  
+
   return (time_now.tv_sec - frame_source->start_time.tv_sec) * 1000
     + (time_now.tv_usec - frame_source->start_time.tv_usec) / 1000;
 }

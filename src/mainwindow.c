@@ -70,7 +70,7 @@ static void main_window_on_disassembler (GtkAction *action, MainWindow *mainwin)
 
 static void main_window_update_debug_actions (MainWindow *mainwin);
 static void main_window_on_rom_error (MainWindow *mainwin, GList *errors,
-				      ElectronManager *eman);
+                                      ElectronManager *eman);
 
 static void main_window_on_toggle_toolbar (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_toggle_debugger (GtkAction *action, MainWindow *mainwin);
@@ -164,20 +164,20 @@ main_window_get_type ()
   {
     static const GTypeInfo main_window_info =
       {
-	sizeof (MainWindowClass),
-	NULL, NULL,
-	(GClassInitFunc) main_window_class_init,
-	NULL, NULL,
+        sizeof (MainWindowClass),
+        NULL, NULL,
+        (GClassInitFunc) main_window_class_init,
+        NULL, NULL,
 
-	sizeof (MainWindow),
-	0,
-	(GInstanceInitFunc) main_window_init,
-	NULL
+        sizeof (MainWindow),
+        0,
+        (GInstanceInitFunc) main_window_init,
+        NULL
       };
 
     main_window_type = g_type_register_static (GTK_TYPE_WINDOW,
-					       "MainWindow",
-					       &main_window_info, 0);
+                                               "MainWindow",
+                                               &main_window_info, 0);
   }
 
   return main_window_type;
@@ -205,7 +205,7 @@ main_window_init (MainWindow *mainwin)
 
   /* We haven't created a disassembler dialog yet */
   mainwin->disdialog = NULL;
-  
+
   /* Create a GtkVBox to hold the menu and the main display widget */
   vbox = gtk_vbox_new (FALSE, 0);
 
@@ -220,37 +220,37 @@ main_window_init (MainWindow *mainwin)
     if (main_window_actions[i].toggle)
     {
       action = GTK_ACTION (gtk_toggle_action_new
-			   (a->name,
-			    a->label
-			    ? g_strip_context (a->label, gettext (a->label))
-			    : NULL,
-			    a->tooltip
-			    ? g_strip_context (a->tooltip, gettext (a->tooltip))
-			    : NULL,
-			    main_window_actions[i].stock_id));
+                           (a->name,
+                            a->label
+                            ? g_strip_context (a->label, gettext (a->label))
+                            : NULL,
+                            a->tooltip
+                            ? g_strip_context (a->tooltip, gettext (a->tooltip))
+                            : NULL,
+                            main_window_actions[i].stock_id));
       if (main_window_actions[i].callback)
-	g_signal_connect (G_OBJECT (action), "toggled",
-			  main_window_actions[i].callback, mainwin);
+        g_signal_connect (G_OBJECT (action), "toggled",
+                          main_window_actions[i].callback, mainwin);
     }
     else
     {
       action = gtk_action_new (a->name,
-			       a->label
-			       ? g_strip_context (a->label, gettext (a->label))
-			       : NULL,
-			       a->tooltip
-			       ? g_strip_context (a->tooltip, gettext (a->tooltip))
-			       : NULL,
-			       main_window_actions[i].stock_id);
+                               a->label
+                               ? g_strip_context (a->label, gettext (a->label))
+                               : NULL,
+                               a->tooltip
+                               ? g_strip_context (a->tooltip, gettext (a->tooltip))
+                               : NULL,
+                               main_window_actions[i].stock_id);
       if (main_window_actions[i].callback)
-	g_signal_connect (G_OBJECT (action), "activate",
-			  main_window_actions[i].callback, mainwin);
+        g_signal_connect (G_OBJECT (action), "activate",
+                          main_window_actions[i].callback, mainwin);
     }
     if (main_window_actions[i].short_label)
       g_object_set (G_OBJECT (action), "short-label",
-		    g_strip_context (a->short_label, gettext (a->short_label)), NULL);
+                    g_strip_context (a->short_label, gettext (a->short_label)), NULL);
     gtk_action_group_add_action_with_accel (mainwin->action_group, action,
-					    main_window_actions[i].accelerator);
+                                            main_window_actions[i].accelerator);
     g_object_unref (action);
   }
 
@@ -258,8 +258,8 @@ main_window_init (MainWindow *mainwin)
   mainwin->ui_manager = gtk_ui_manager_new ();
   gtk_ui_manager_insert_action_group (mainwin->ui_manager, mainwin->action_group, 0);
   if (gtk_ui_manager_add_ui_from_string (mainwin->ui_manager, main_window_ui_definition,
-					 sizeof (main_window_ui_definition) - 1,
-					 &ui_error) == 0)
+                                         sizeof (main_window_ui_definition) - 1,
+                                         &ui_error) == 0)
   {
     /* If the UI description failed to parse then it is a programming
        error so it should be reported with g_error */
@@ -269,12 +269,12 @@ main_window_init (MainWindow *mainwin)
 
   /* Add the accelerators to this window */
   gtk_window_add_accel_group (GTK_WINDOW (mainwin),
-			      gtk_ui_manager_get_accel_group (mainwin->ui_manager));
+                              gtk_ui_manager_get_accel_group (mainwin->ui_manager));
 
   /* Add the menu bar to the vbox */
   if ((menu_bar = gtk_ui_manager_get_widget (mainwin->ui_manager, "/MenuBar")))
     gtk_box_pack_start (GTK_BOX (vbox), menu_bar, FALSE, TRUE, 0);
-  
+
   /* Add the tool bar to the vbox */
   if ((tool_bar = gtk_ui_manager_get_widget (mainwin->ui_manager, "/ToolBar")))
   {
@@ -353,20 +353,20 @@ main_window_set_electron (MainWindow *mainwin, ElectronManager *electron)
   if (electron)
   {
     g_return_if_fail (IS_ELECTRON_MANAGER (electron));
-    
+
     g_object_ref (electron);
 
     mainwin->electron = electron;
 
     mainwin->started
       = g_signal_connect_swapped (electron, "started",
-				  G_CALLBACK (main_window_update_debug_actions), mainwin);
+                                  G_CALLBACK (main_window_update_debug_actions), mainwin);
     mainwin->stopped
       = g_signal_connect_swapped (electron, "stopped",
-				  G_CALLBACK (main_window_update_debug_actions), mainwin);
+                                  G_CALLBACK (main_window_update_debug_actions), mainwin);
     mainwin->rom_error
       = g_signal_connect_swapped (electron, "rom-error",
-				  G_CALLBACK (main_window_on_rom_error), mainwin);
+                                  G_CALLBACK (main_window_on_rom_error), mainwin);
   }
 
   if (mainwin->ewidget)
@@ -381,7 +381,7 @@ static void
 main_window_on_quit (GtkAction *action, MainWindow *mainwin)
 {
   g_return_if_fail (IS_MAIN_WINDOW (mainwin));
-  
+
   gtk_main_quit ();
 }
 
@@ -397,7 +397,7 @@ main_window_on_toggle_toolbar (GtkAction *action, MainWindow *mainwin)
   GtkWidget *toolbar;
 
   if (mainwin->ui_manager && (toolbar = gtk_ui_manager_get_widget (mainwin->ui_manager,
-								   "/ToolBar")))
+                                                                   "/ToolBar")))
   {
     if (gtk_toggle_action_get_active (GTK_TOGGLE_ACTION (action)))
       gtk_widget_show (toolbar);
@@ -481,10 +481,10 @@ main_window_on_disassembler (GtkAction *action, MainWindow *mainwin)
     mainwin->disdialog = dis_dialog_new_with_electron (mainwin->electron);
     g_object_ref_sink (mainwin->disdialog);
     g_signal_connect (G_OBJECT (mainwin->disdialog), "response",
-		      G_CALLBACK (gtk_widget_destroy), mainwin);
+                      G_CALLBACK (gtk_widget_destroy), mainwin);
     mainwin->disdialog_destroy
       = g_signal_connect_swapped (G_OBJECT (mainwin->disdialog), "destroy",
-				  G_CALLBACK (main_window_forget_dis_dialog), mainwin);
+                                  G_CALLBACK (main_window_forget_dis_dialog), mainwin);
     gtk_window_set_transient_for (GTK_WINDOW (mainwin->disdialog), GTK_WINDOW (mainwin));
     gtk_window_set_position (GTK_WINDOW (mainwin->disdialog), GTK_WIN_POS_CENTER_ON_PARENT);
     gtk_window_set_default_size (GTK_WINDOW (mainwin->disdialog), 1, 500);
@@ -539,14 +539,14 @@ main_window_dispose (GObject *obj)
   if (mainwin->ewidget)
   {
     g_object_weak_unref (G_OBJECT (mainwin->ewidget),
-			 main_window_electron_widget_notify, mainwin);
+                         main_window_electron_widget_notify, mainwin);
     mainwin->ewidget = NULL;
   }
 
   if (mainwin->debugger)
   {
     g_object_weak_unref (G_OBJECT (mainwin->debugger),
-			 main_window_debugger_notify, mainwin);
+                         main_window_debugger_notify, mainwin);
     mainwin->debugger = NULL;
   }
 
@@ -577,7 +577,7 @@ main_window_electron_widget_notify (gpointer data, GObject *obj)
   g_return_if_fail (IS_MAIN_WINDOW (data));
 
   mainwin = MAIN_WINDOW (data);
-  
+
   g_return_if_fail (obj == G_OBJECT (mainwin->ewidget));
 
   mainwin->ewidget = NULL;
@@ -591,7 +591,7 @@ main_window_debugger_notify (gpointer data, GObject *obj)
   g_return_if_fail (IS_MAIN_WINDOW (data));
 
   mainwin = MAIN_WINDOW (data);
-  
+
   g_return_if_fail (obj == G_OBJECT (mainwin->debugger));
 
   mainwin->debugger = NULL;
@@ -599,7 +599,7 @@ main_window_debugger_notify (gpointer data, GObject *obj)
 
 static void
 main_window_on_rom_error (MainWindow *mainwin, GList *errors,
-			  ElectronManager *eman)
+                          ElectronManager *eman)
 {
   int error_count;
   gchar *note;
@@ -612,8 +612,8 @@ main_window_on_rom_error (MainWindow *mainwin, GList *errors,
 
   error_count = g_list_length (errors);
   note = g_strdup_printf (ngettext ("An error occurred while loading a ROM",
-				    "Some errors occurred while loading the ROMs",
-				    error_count), error_count);
+                                    "Some errors occurred while loading the ROMs",
+                                    error_count), error_count);
 
   message = g_string_new ("");
   for (; errors; errors = errors->next)
@@ -624,15 +624,15 @@ main_window_on_rom_error (MainWindow *mainwin, GList *errors,
   }
 
   dialog = gtk_message_dialog_new (GTK_WINDOW (mainwin),
-				   GTK_DIALOG_DESTROY_WITH_PARENT,
-				   GTK_MESSAGE_ERROR,
-				   GTK_BUTTONS_CLOSE,
-				   "%s", note);
+                                   GTK_DIALOG_DESTROY_WITH_PARENT,
+                                   GTK_MESSAGE_ERROR,
+                                   GTK_BUTTONS_CLOSE,
+                                   "%s", note);
   gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog),
-					    "%s", message->str);
+                                            "%s", message->str);
   g_signal_connect_swapped (dialog, "response",
-			    G_CALLBACK (gtk_widget_destroy),
-			    dialog);
+                            G_CALLBACK (gtk_widget_destroy),
+                            dialog);
   gtk_widget_show (dialog);
 
   g_string_free (message, TRUE);

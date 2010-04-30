@@ -64,20 +64,20 @@ dis_dialog_get_type ()
   {
     static const GTypeInfo dis_dialog_info =
       {
-	sizeof (DisDialogClass),
-	NULL, NULL,
-	(GClassInitFunc) dis_dialog_class_init,
-	NULL, NULL,
+        sizeof (DisDialogClass),
+        NULL, NULL,
+        (GClassInitFunc) dis_dialog_class_init,
+        NULL, NULL,
 
-	sizeof (DisDialog),
-	0,
-	(GInstanceInitFunc) dis_dialog_init,
-	NULL
+        sizeof (DisDialog),
+        0,
+        (GInstanceInitFunc) dis_dialog_init,
+        NULL
       };
 
     dis_dialog_type = g_type_register_static (GTK_TYPE_DIALOG,
-					      "DisDialog",
-					      &dis_dialog_info, 0);
+                                              "DisDialog",
+                                              &dis_dialog_info, 0);
   }
 
   return dis_dialog_type;
@@ -105,61 +105,61 @@ dis_dialog_init (DisDialog *disdialog)
   gtk_dialog_add_button (GTK_DIALOG (disdialog), GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE);
 
   disdialog->address_adj = GTK_ADJUSTMENT (gtk_adjustment_new (0.0, 0.0, 65535.0,
-							       1.0, 16.0, 16.0));
+                                                               1.0, 16.0, 16.0));
   g_object_ref_sink (disdialog->address_adj);
   disdialog->lines_adj = GTK_ADJUSTMENT (gtk_adjustment_new (64.0, 0.0, 65535.0,
-							     1.0, 16.0, 16.0));
+                                                             1.0, 16.0, 16.0));
   g_object_ref_sink (disdialog->lines_adj);
 
   table = gtk_table_new (2, 5, FALSE);
   gtk_table_set_row_spacings (GTK_TABLE (table), 12);
   gtk_table_set_col_spacings (GTK_TABLE (table), 12);
   gtk_container_set_border_width (GTK_CONTAINER (table), 12);
-  
+
   label = gtk_label_new_with_mnemonic (_("A_ddress:"));
   gtk_misc_set_alignment (GTK_MISC (label), 0.0f, 0.5f);
 
   address_spin = hex_spin_button_new ();
   g_object_set (address_spin, "numeric", TRUE, "adjustment", disdialog->address_adj, "hex", TRUE,
-		"digits", 4, NULL);
+                "digits", 4, NULL);
   g_signal_connect_object (G_OBJECT (address_spin), "activate",
-			   G_CALLBACK (dis_dialog_on_apply),
-			   disdialog, G_CONNECT_SWAPPED | G_CONNECT_AFTER);
+                           G_CALLBACK (dis_dialog_on_apply),
+                           disdialog, G_CONNECT_SWAPPED | G_CONNECT_AFTER);
 
   gtk_label_set_mnemonic_widget (GTK_LABEL (label), address_spin);
   gtk_widget_show (label);
   gtk_table_attach (GTK_TABLE (table), label, 0, 1, 0, 1,
-		    GTK_FILL, GTK_FILL, 0, 0);
+                    GTK_FILL, GTK_FILL, 0, 0);
 
   gtk_widget_show (address_spin);
   gtk_table_attach (GTK_TABLE (table), address_spin, 1, 2, 0, 1,
-		    GTK_FILL | GTK_EXPAND, GTK_FILL, 0, 0);
+                    GTK_FILL | GTK_EXPAND, GTK_FILL, 0, 0);
 
   label = gtk_label_new_with_mnemonic (_("_Lines:"));
   gtk_misc_set_alignment (GTK_MISC (label), 0.0f, 0.5f);
 
   lines_spin = gtk_spin_button_new (disdialog->lines_adj, 1.0, 0);
   g_signal_connect_object (G_OBJECT (lines_spin), "activate",
-			   G_CALLBACK (dis_dialog_on_apply),
-			   disdialog, G_CONNECT_SWAPPED | G_CONNECT_AFTER);
+                           G_CALLBACK (dis_dialog_on_apply),
+                           disdialog, G_CONNECT_SWAPPED | G_CONNECT_AFTER);
   gtk_spin_button_set_numeric (GTK_SPIN_BUTTON (lines_spin), TRUE);
 
   gtk_label_set_mnemonic_widget (GTK_LABEL (label), lines_spin);
   gtk_widget_show (label);
   gtk_table_attach (GTK_TABLE (table), label, 2, 3, 0, 1,
-		    GTK_FILL, GTK_FILL, 0, 0);
+                    GTK_FILL, GTK_FILL, 0, 0);
 
   gtk_widget_show (lines_spin);
   gtk_table_attach (GTK_TABLE (table), lines_spin, 3, 4, 0, 1,
-		    GTK_FILL | GTK_EXPAND, GTK_FILL, 0, 0);
+                    GTK_FILL | GTK_EXPAND, GTK_FILL, 0, 0);
 
   apply_button = gtk_button_new_from_stock (GTK_STOCK_APPLY);
   g_signal_connect_object (G_OBJECT (apply_button), "clicked",
-			   G_CALLBACK (dis_dialog_on_apply),
-			   disdialog, G_CONNECT_SWAPPED);
+                           G_CALLBACK (dis_dialog_on_apply),
+                           disdialog, G_CONNECT_SWAPPED);
   gtk_widget_show (apply_button);
   gtk_table_attach (GTK_TABLE (table), apply_button, 4, 5, 0, 1,
-		    GTK_FILL | GTK_EXPAND, GTK_FILL, 0, 0);
+                    GTK_FILL | GTK_EXPAND, GTK_FILL, 0, 0);
 
   disdialog->text_buffer = gtk_text_buffer_new (NULL);
   g_object_ref_sink (disdialog->text_buffer);
@@ -217,7 +217,7 @@ dis_dialog_set_electron (DisDialog *disdialog, ElectronManager *electron)
   if (electron)
   {
     g_return_if_fail (IS_ELECTRON_MANAGER (electron));
-    
+
     g_object_ref (electron);
 
     disdialog->electron = electron;
@@ -247,9 +247,9 @@ dis_dialog_on_apply (DisDialog *disdialog)
       /* Fill the buffer so that we have at least DISASSEMBLE_MAX_BYTES bytes */
       while (got_bytes < DISASSEMBLE_MAX_BYTES)
       {
-	bytes[got_bytes] = electron_read_from_location (disdialog->electron->data,
-							address + got_bytes);
-	got_bytes++;
+        bytes[got_bytes] = electron_read_from_location (disdialog->electron->data,
+                                                        address + got_bytes);
+        got_bytes++;
       }
 
       /* Disassemble the bytes */
@@ -260,16 +260,16 @@ dis_dialog_on_apply (DisDialog *disdialog)
 
       /* Add the bytes */
       for (i = 0; i < num_bytes; i++)
-	g_string_append_printf (strbuf, "%02X ", bytes[i]);
+        g_string_append_printf (strbuf, "%02X ", bytes[i]);
       /* Pad so that the mnemonic will align */
       for (i = num_bytes; i < DISASSEMBLE_MAX_BYTES; i++)
-	g_string_append (strbuf, "   ");
+        g_string_append (strbuf, "   ");
 
       /* Add the mnemonic */
       g_string_append (strbuf, mnemonic);
       /* Pad */
       for (i = strlen (mnemonic); i < DISASSEMBLE_MAX_MNEMONIC + 1; i++)
-	g_string_append_c (strbuf, ' ');
+        g_string_append_c (strbuf, ' ');
 
       /* Add the operands */
       g_string_append (strbuf, operands);
@@ -295,9 +295,9 @@ dis_dialog_on_apply (DisDialog *disdialog)
 
     /* Make all of the text monospaced */
     tag = gtk_text_buffer_create_tag (GTK_TEXT_BUFFER (disdialog->text_buffer),
-				      NULL, "family", "monospace", NULL);
+                                      NULL, "family", "monospace", NULL);
     gtk_text_buffer_apply_tag (GTK_TEXT_BUFFER (disdialog->text_buffer),
-			       tag, &start, &end);
+                               tag, &start, &end);
 
     g_string_free (strbuf, TRUE);
   }

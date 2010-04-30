@@ -39,19 +39,19 @@ static GtkTreeModelFlags dis_model_get_flags (GtkTreeModel *tree_model);
 static gint dis_model_get_n_columns (GtkTreeModel *tree_model);
 static GType dis_model_get_column_type (GtkTreeModel *tree_model, gint index);
 static gboolean dis_model_get_iter (GtkTreeModel *tree_model, GtkTreeIter *iter_r,
-				    GtkTreePath *path);
+                                    GtkTreePath *path);
 static GtkTreePath *dis_model_get_path (GtkTreeModel *tree_model, GtkTreeIter *iter);
 static void dis_model_get_value (GtkTreeModel *tree_model, GtkTreeIter *iter,
-				 gint column, GValue *value);
+                                 gint column, GValue *value);
 static gboolean dis_model_iter_next (GtkTreeModel *tree_model, GtkTreeIter *iter);
 static gboolean dis_model_iter_children (GtkTreeModel *tree_model, GtkTreeIter *iter,
-					 GtkTreeIter *parent);
+                                         GtkTreeIter *parent);
 static gboolean dis_model_iter_has_child (GtkTreeModel *tree_model, GtkTreeIter *iter);
 static gint dis_model_iter_n_children (GtkTreeModel *tree_model, GtkTreeIter *iter);
 static gboolean dis_model_iter_nth_child (GtkTreeModel *tree_model, GtkTreeIter *iter,
-					  GtkTreeIter *parent, gint n);
+                                          GtkTreeIter *parent, gint n);
 static gboolean dis_model_iter_parent (GtkTreeModel *tree_model, GtkTreeIter *iter,
-				       GtkTreeIter *child);
+                                       GtkTreeIter *child);
 
 static void dis_model_refresh_rows (DisModel *model);
 static void dis_model_on_stopped (ElectronManager *electron, DisModel *model);
@@ -115,30 +115,30 @@ dis_model_get_type ()
   {
     static const GTypeInfo dis_model_info =
       {
-	sizeof (DisModelClass), /* size of class structure */
-	NULL, /* base_init */
-	NULL, /* base_finalize */
-	(GClassInitFunc) dis_model_class_init, /* class struct init func */
-	NULL, /* class_finalize */
-	NULL, /* class_data */
-	sizeof (DisModel), /* size of the object structure */
-	0, /* n_preallocs */
-	(GInstanceInitFunc) dis_model_init /* constructor */
+        sizeof (DisModelClass), /* size of class structure */
+        NULL, /* base_init */
+        NULL, /* base_finalize */
+        (GClassInitFunc) dis_model_class_init, /* class struct init func */
+        NULL, /* class_finalize */
+        NULL, /* class_data */
+        sizeof (DisModel), /* size of the object structure */
+        0, /* n_preallocs */
+        (GInstanceInitFunc) dis_model_init /* constructor */
       };
 
     static const GInterfaceInfo tree_model_info =
       {
-	(GInterfaceInitFunc) dis_model_tree_model_init,
-	NULL,
-	NULL
+        (GInterfaceInitFunc) dis_model_tree_model_init,
+        NULL,
+        NULL
       };
 
     dis_model_type = g_type_register_static (G_TYPE_OBJECT, "DisModel",
-					     &dis_model_info, 0);
+                                             &dis_model_info, 0);
 
     g_type_add_interface_static (dis_model_type,
-				 GTK_TYPE_TREE_MODEL,
-				 &tree_model_info);
+                                 GTK_TYPE_TREE_MODEL,
+                                 &tree_model_info);
   }
 
   return dis_model_type;
@@ -165,11 +165,11 @@ dis_model_set_electron (DisModel *model, ElectronManager *electron)
 
     model->stopped_handler
       = g_signal_connect (electron, "stopped",
-			  G_CALLBACK (dis_model_on_stopped),
-			  model);
+                          G_CALLBACK (dis_model_on_stopped),
+                          model);
     model->address = electron->data->cpu.pc;
   }
-    
+
   model->electron = electron;
 
   dis_model_refresh_rows (model);
@@ -193,7 +193,7 @@ dis_model_on_stopped (ElectronManager *electron, DisModel *model)
   if (row < DIS_MODEL_ROW_COUNT)
     /* Make sure the current address is in the top quarter of the display */
     model->address = model->rows[row >= DIS_MODEL_ROW_COUNT / 4
-				 ? row - DIS_MODEL_ROW_COUNT / 4 : 0].address;
+                                 ? row - DIS_MODEL_ROW_COUNT / 4 : 0].address;
   else
     /* We aren't already displaying the address so just start from
        there */
@@ -227,9 +227,9 @@ dis_model_refresh_rows (DisModel *model)
     {
       while (got_bytes < DISASSEMBLE_MAX_BYTES)
       {
-	row.bytes[got_bytes] = electron_read_from_location (model->electron->data,
-							    address + got_bytes);
-	got_bytes++;
+        row.bytes[got_bytes] = electron_read_from_location (model->electron->data,
+                                                            address + got_bytes);
+        got_bytes++;
       }
       row.address = address;
       row.num_bytes = disassemble_instruction (address, row.bytes, row.mnemonic, row.operands);
@@ -238,9 +238,9 @@ dis_model_refresh_rows (DisModel *model)
 
     /* Only fire the changed signal if the row is actually different */
     if (row.address != model->rows[row_num].address
-	|| row.num_bytes != model->rows[row_num].num_bytes
-	|| memcmp (row.bytes, model->rows[row_num].bytes, row.num_bytes)
-	|| row.current != model->rows[row_num].current)
+        || row.num_bytes != model->rows[row_num].num_bytes
+        || memcmp (row.bytes, model->rows[row_num].bytes, row.num_bytes)
+        || row.current != model->rows[row_num].current)
     {
       model->rows[row_num] = row;
       gtk_tree_path_get_indices (path)[0] = row_num;
@@ -307,7 +307,7 @@ dis_model_get_iter (GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreePath *pa
   else
   {
     DisModel *model = DIS_MODEL (tree_model);
-    
+
     iter->stamp = model->iter_stamp;
     iter->user_data = GINT_TO_POINTER (pos);
 
@@ -324,13 +324,13 @@ dis_model_get_path (GtkTreeModel *tree_model, GtkTreeIter *iter)
   model = DIS_MODEL (tree_model);
   g_return_val_if_fail (model->iter_stamp == iter->stamp, NULL);
   g_return_val_if_fail (GPOINTER_TO_INT (iter->user_data) >= 0
-			&& GPOINTER_TO_INT (iter->user_data) < DIS_MODEL_ROW_COUNT, NULL);
+                        && GPOINTER_TO_INT (iter->user_data) < DIS_MODEL_ROW_COUNT, NULL);
   return gtk_tree_path_new_from_indices (GPOINTER_TO_INT (iter->user_data), -1);
 }
 
 static void
 dis_model_get_value (GtkTreeModel *tree_model, GtkTreeIter *iter,
-		     gint column, GValue *value)
+                     gint column, GValue *value)
 {
   DisModel *model;
   int row;
@@ -350,51 +350,51 @@ dis_model_get_value (GtkTreeModel *tree_model, GtkTreeIter *iter,
     switch (column)
     {
       case DIS_MODEL_COL_ADDRESS:
-	g_sprintf (buf, "%04X", model->rows[row].address);
-	g_value_init (value, G_TYPE_STRING);
-	g_value_set_string (value, buf);
-	break;
+        g_sprintf (buf, "%04X", model->rows[row].address);
+        g_value_init (value, G_TYPE_STRING);
+        g_value_set_string (value, buf);
+        break;
 
       case DIS_MODEL_COL_BYTES:
-	{
-	  char *p = buf;
-	  int i;
+        {
+          char *p = buf;
+          int i;
 
-	  if (model->rows[row].num_bytes < 1)
-	    buf[0] = '\0';
-	  else
-	  {
-	    for (i = 0; i < model->rows[row].num_bytes; i++)
-	    {
-	      g_sprintf (p, "%02X ", model->rows[row].bytes[i]);
-	      p += 3;
-	    }
-	    *(p - 1) = '\0';
-	  }
+          if (model->rows[row].num_bytes < 1)
+            buf[0] = '\0';
+          else
+          {
+            for (i = 0; i < model->rows[row].num_bytes; i++)
+            {
+              g_sprintf (p, "%02X ", model->rows[row].bytes[i]);
+              p += 3;
+            }
+            *(p - 1) = '\0';
+          }
 
-	  g_value_init (value, G_TYPE_STRING);
-	  g_value_set_string (value, buf);
-	}
-	break;
+          g_value_init (value, G_TYPE_STRING);
+          g_value_set_string (value, buf);
+        }
+        break;
 
       case DIS_MODEL_COL_MNEMONIC:
-	g_value_init (value, G_TYPE_STRING);
-	g_value_set_string (value, model->rows[row].mnemonic);
-	break;
+        g_value_init (value, G_TYPE_STRING);
+        g_value_set_string (value, model->rows[row].mnemonic);
+        break;
 
       case DIS_MODEL_COL_OPERANDS:
-	g_value_init (value, G_TYPE_STRING);
-	g_value_set_string (value, model->rows[row].operands);
-	break;
+        g_value_init (value, G_TYPE_STRING);
+        g_value_set_string (value, model->rows[row].operands);
+        break;
 
       case DIS_MODEL_COL_BOLD_IF_CURRENT:
-	g_value_init (value, G_TYPE_INT);
-	g_value_set_int (value, model->rows[row].current
-			 ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL);
-	break;
+        g_value_init (value, G_TYPE_INT);
+        g_value_set_int (value, model->rows[row].current
+                         ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL);
+        break;
 
       default:
-	g_return_if_reached ();
+        g_return_if_reached ();
     }
 }
 
@@ -434,9 +434,9 @@ dis_model_iter_children (GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreeIte
   model = DIS_MODEL (tree_model);
 
   g_return_val_if_fail (parent == NULL
-			|| (model->iter_stamp == parent->stamp
-			    && GPOINTER_TO_INT (parent->user_data) >= 0
-			    && GPOINTER_TO_INT (parent->user_data) < DIS_MODEL_ROW_COUNT), FALSE);
+                        || (model->iter_stamp == parent->stamp
+                            && GPOINTER_TO_INT (parent->user_data) >= 0
+                            && GPOINTER_TO_INT (parent->user_data) < DIS_MODEL_ROW_COUNT), FALSE);
 
   if (parent)
   {
@@ -462,7 +462,7 @@ dis_model_iter_has_child (GtkTreeModel *tree_model, GtkTreeIter *iter)
 
   g_return_val_if_fail (model->iter_stamp == iter->stamp, FALSE);
   g_return_val_if_fail (GPOINTER_TO_INT (iter->user_data) >= 0
-			&& GPOINTER_TO_INT (iter->user_data) < DIS_MODEL_ROW_COUNT, FALSE);
+                        && GPOINTER_TO_INT (iter->user_data) < DIS_MODEL_ROW_COUNT, FALSE);
 
   return FALSE;
 }
@@ -477,9 +477,9 @@ dis_model_iter_n_children (GtkTreeModel *tree_model, GtkTreeIter *iter)
   model = DIS_MODEL (tree_model);
 
   g_return_val_if_fail (iter == NULL
-			|| (model->iter_stamp == iter->stamp
-			    && GPOINTER_TO_INT (iter->user_data) >= 0
-			    && GPOINTER_TO_INT (iter->user_data) < DIS_MODEL_ROW_COUNT), FALSE);
+                        || (model->iter_stamp == iter->stamp
+                            && GPOINTER_TO_INT (iter->user_data) >= 0
+                            && GPOINTER_TO_INT (iter->user_data) < DIS_MODEL_ROW_COUNT), FALSE);
 
   if (iter == NULL)
     return DIS_MODEL_ROW_COUNT;
@@ -489,7 +489,7 @@ dis_model_iter_n_children (GtkTreeModel *tree_model, GtkTreeIter *iter)
 
 static gboolean
 dis_model_iter_nth_child (GtkTreeModel *tree_model, GtkTreeIter *iter,
-			  GtkTreeIter *parent, gint n)
+                          GtkTreeIter *parent, gint n)
 {
   DisModel *model;
 
@@ -498,9 +498,9 @@ dis_model_iter_nth_child (GtkTreeModel *tree_model, GtkTreeIter *iter,
   model = DIS_MODEL (tree_model);
 
   g_return_val_if_fail (parent == NULL
-			|| (model->iter_stamp == parent->stamp
-			    && GPOINTER_TO_INT (parent->user_data) >= 0
-			    && GPOINTER_TO_INT (parent->user_data) < DIS_MODEL_ROW_COUNT), FALSE);
+                        || (model->iter_stamp == parent->stamp
+                            && GPOINTER_TO_INT (parent->user_data) >= 0
+                            && GPOINTER_TO_INT (parent->user_data) < DIS_MODEL_ROW_COUNT), FALSE);
 
   model = DIS_MODEL (tree_model);
 
@@ -528,7 +528,7 @@ dis_model_iter_parent (GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreeIter 
 
   g_return_val_if_fail (model->iter_stamp == child->stamp, FALSE);
   g_return_val_if_fail (GPOINTER_TO_INT (child->user_data) >= 0
-			&& GPOINTER_TO_INT (child->user_data) < DIS_MODEL_ROW_COUNT, FALSE);
+                        && GPOINTER_TO_INT (child->user_data) < DIS_MODEL_ROW_COUNT, FALSE);
 
   iter->user_data = GINT_TO_POINTER (-1);
   return FALSE;

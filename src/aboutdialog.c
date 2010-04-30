@@ -31,12 +31,12 @@ void
 about_dialog_show ()
 {
   gtk_show_about_dialog (NULL,
-			 "authors", about_dialog_authors,
-			 "comments", _("An Acorn Electron Emulator"),
-			 "copyright", _("Copyright (C) 2007 Neil Roberts"),
-			 "name", _("Eek"),
-			 "translator-credits", _("translator-credits"),
-			 "website", "http://www.busydoingnothing.co.uk/eek/",
-			 "version", VERSION,
-			 NULL);
+                         "authors", about_dialog_authors,
+                         "comments", _("An Acorn Electron Emulator"),
+                         "copyright", _("Copyright (C) 2007 Neil Roberts"),
+                         "name", _("Eek"),
+                         "translator-credits", _("translator-credits"),
+                         "website", "http://www.busydoingnothing.co.uk/eek/",
+                         "version", VERSION,
+                         NULL);
 }

@@ -84,8 +84,8 @@ electron_new ()
 
   /* Initialise the cpu */
   cpu_init (&electron->cpu, electron->memory,
-	    (CpuMemReadFunc) electron_read_from_location, 
-	    (CpuMemWriteFunc) electron_write_to_location, electron);
+            (CpuMemReadFunc) electron_read_from_location,
+            (CpuMemWriteFunc) electron_write_to_location, electron);
 
   return electron;
 }
@@ -138,9 +138,9 @@ electron_next_scanline (Electron *electron)
   {
     if (electron->scanline == 0)
       /* The video start address is only recognised at the start of
-	 each frame */
+         each frame */
       video_set_start_address (&electron->video, ((electron->sheila[0x3] & 0x3f) << 9)
-			       | ((electron->sheila[0x2] & 0xe0) << 1));
+                               | ((electron->sheila[0x2] & 0xe0) << 1));
 
     video_draw_scanline (&electron->video, electron->scanline);
 
@@ -163,43 +163,43 @@ electron_next_scanline (Electron *electron)
       /* Are we in write mode? */
       if ((electron->sheila[0x7] & 0x06) == 0x04)
       {
-	/* Add a high tone if the cassette buffer has no data */
-	if (electron->data_shift_has_data)
-	{
-	  tape_buffer_store_byte (electron->tape_buffer, electron->sheila[0x4]);
-	  electron->data_shift_has_data = FALSE;
-	  electron_generate_interrupt (electron, ELECTRON_I_TRANSMIT);
-	}
-	else
-	  tape_buffer_store_high_tone (electron->tape_buffer);
+        /* Add a high tone if the cassette buffer has no data */
+        if (electron->data_shift_has_data)
+        {
+          tape_buffer_store_byte (electron->tape_buffer, electron->sheila[0x4]);
+          electron->data_shift_has_data = FALSE;
+          electron_generate_interrupt (electron, ELECTRON_I_TRANSMIT);
+        }
+        else
+          tape_buffer_store_high_tone (electron->tape_buffer);
       }
       else
       {
-	int next_byte;
+        int next_byte;
 
-	/* If we've gone past the end of the tape then add silence */
-	if (tape_buffer_is_at_end (electron->tape_buffer))
-	{
-	  tape_buffer_store_silence (electron->tape_buffer);
-	  next_byte = TAPE_BUFFER_SILENCE;
-	}
-	else
-	  next_byte = tape_buffer_get_next_byte (electron->tape_buffer);
-	
-	/* If it was a high tone then generate the interrupt */
-	if (next_byte == TAPE_BUFFER_HIGH_TONE)
-	  electron_generate_interrupt (electron, ELECTRON_I_HIGH_TONE);
-	else
-	{
-	  electron_clear_interrupts (electron, ELECTRON_I_HIGH_TONE);
-	  /* Put the byte in the buffer if we are in read mode unless
-	     the tape is silent */
-	  if (next_byte >= 0 && (electron->sheila[0x7] & 0x06) == 0x00)
-	  {
-	    electron->sheila[0x4] = next_byte;
-	    electron_generate_interrupt (electron, ELECTRON_I_RECEIVE);
-	  }
-	}
+        /* If we've gone past the end of the tape then add silence */
+        if (tape_buffer_is_at_end (electron->tape_buffer))
+        {
+          tape_buffer_store_silence (electron->tape_buffer);
+          next_byte = TAPE_BUFFER_SILENCE;
+        }
+        else
+          next_byte = tape_buffer_get_next_byte (electron->tape_buffer);
+
+        /* If it was a high tone then generate the interrupt */
+        if (next_byte == TAPE_BUFFER_HIGH_TONE)
+          electron_generate_interrupt (electron, ELECTRON_I_HIGH_TONE);
+        else
+        {
+          electron_clear_interrupts (electron, ELECTRON_I_HIGH_TONE);
+          /* Put the byte in the buffer if we are in read mode unless
+             the tape is silent */
+          if (next_byte >= 0 && (electron->sheila[0x7] & 0x06) == 0x00)
+          {
+            electron->sheila[0x4] = next_byte;
+            electron_generate_interrupt (electron, ELECTRON_I_RECEIVE);
+          }
+        }
       }
     }
   }
@@ -272,7 +272,7 @@ electron_load_paged_rom (Electron *electron, int page, FILE *in)
   if (electron->paged_roms[page])
     buf = electron->paged_roms[page];
   else
-    electron->paged_roms[page] = buf 
+    electron->paged_roms[page] = buf
       = g_malloc (ELECTRON_PAGED_ROM_LENGTH * sizeof (guint8));
 
   if (fread (buf, sizeof (guint8), ELECTRON_PAGED_ROM_LENGTH, in)
@@ -343,12 +343,12 @@ electron_read_from_location (Electron *electron, guint16 location)
       int i, value = 0;
 
       /* or together all of the locations of the keyboard memory which
-	 have a '0' in the corresponding address bit */
+         have a '0' in the corresponding address bit */
       for (i = 0; i < 14; i++)
       {
-	if ((location & 1) == 0)
-	  value |= electron->keyboard[i];
-	location >>= 1;
+        if ((location & 1) == 0)
+          value |= electron->keyboard[i];
+        location >>= 1;
       }
 
       fflush (stdout);
@@ -366,31 +366,31 @@ electron_read_from_location (Electron *electron, guint16 location)
     switch (location & 0x0f)
     {
       case 0x0:
-	{
-	  /* bit 7 is always set */
-	  int r = (electron->sheila[0x0] | 0x80) & ~ELECTRON_I_MASTER;
-	  /* the master irq bit is set if an enabled interrupt is occuring */
-	  if ((electron->ienabled & electron->sheila[0x0] & ~(ELECTRON_I_MASTER | ELECTRON_I_POWERON | 0x80)))
-	    r |= ELECTRON_I_MASTER;
-	  /* the power on bit is only set the first time it is read */
-	  electron->sheila[0x0] &= ~ELECTRON_I_POWERON;
-	  return r;
-	}
+        {
+          /* bit 7 is always set */
+          int r = (electron->sheila[0x0] | 0x80) & ~ELECTRON_I_MASTER;
+          /* the master irq bit is set if an enabled interrupt is occuring */
+          if ((electron->ienabled & electron->sheila[0x0] & ~(ELECTRON_I_MASTER | ELECTRON_I_POWERON | 0x80)))
+            r |= ELECTRON_I_MASTER;
+          /* the power on bit is only set the first time it is read */
+          electron->sheila[0x0] &= ~ELECTRON_I_POWERON;
+          return r;
+        }
       case 0x1: case 0x2: case 0x3: case 0x5: case 0x6: case 0x7:
       case 0x8: case 0x9: case 0xa: case 0xb: case 0xc: case 0xd:
       case 0xe: case 0xf:
-	/* write only locations read from the underlying ROM */
-	return electron->os_rom[location - ELECTRON_OS_ROM_ADDRESS];
+        /* write only locations read from the underlying ROM */
+        return electron->os_rom[location - ELECTRON_OS_ROM_ADDRESS];
       case 0x4:
-	/* Reading from the tape buffer clears the read interrupt */
-	electron_clear_interrupts (electron, ELECTRON_I_RECEIVE);
-	/* flow through */
+        /* Reading from the tape buffer clears the read interrupt */
+        electron_clear_interrupts (electron, ELECTRON_I_RECEIVE);
+        /* flow through */
       default:
-	return electron->sheila[location & 0x0f];
+        return electron->sheila[location & 0x0f];
     }
   /* Check if it's in the OS rom */
-  else if (location >= ELECTRON_OS_ROM_ADDRESS 
-	   && location < ELECTRON_OS_ROM_ADDRESS + ELECTRON_OS_ROM_LENGTH)
+  else if (location >= ELECTRON_OS_ROM_ADDRESS
+           && location < ELECTRON_OS_ROM_ADDRESS + ELECTRON_OS_ROM_LENGTH)
     return electron->os_rom[location - ELECTRON_OS_ROM_ADDRESS];
   /* Otherwise if it's in memory return from there */
   else if (location < CPU_RAM_SIZE)
@@ -409,61 +409,61 @@ electron_write_to_location (Electron *electron, guint16 location, guint8 v)
     switch (location & 0x0f)
     {
       case 0x0:
-	electron->ienabled = v & ~ELECTRON_I_POWERON;
-	break;
+        electron->ienabled = v & ~ELECTRON_I_POWERON;
+        break;
       case 0x4:
-	electron->sheila[0x4] = v;
-	/* Writing to the cassette data buffer clears the transmit interrupt */
-	electron_clear_interrupts (electron, ELECTRON_I_TRANSMIT);
-	/* Write the byte instead of a high tone */
-	electron->data_shift_has_data = TRUE;
-	break;
+        electron->sheila[0x4] = v;
+        /* Writing to the cassette data buffer clears the transmit interrupt */
+        electron_clear_interrupts (electron, ELECTRON_I_TRANSMIT);
+        /* Write the byte instead of a high tone */
+        electron->data_shift_has_data = TRUE;
+        break;
       case 0x5:
-	{
-	  int clear_mask = 0;
-	  /* Set the page number. If the keyboard or basic page is
-	     currently selected then only pages 8-15 are actually
-	     honoured */
-	  if (electron->page < 8 || electron->page > 11 || (v & 0x0f) >= 8)
-	    electron->page = v & 0x0f;
-	  /* Clear interrupts */
-	  if (v & ELECTRON_C_HIGH_TONE)
-	    clear_mask |= ELECTRON_I_HIGH_TONE;
-	  if (v & ELECTRON_C_RTC)
-	    clear_mask |= ELECTRON_I_RTC;
-	  if (v & ELECTRON_C_DISPLAY_END)
-	    clear_mask |= ELECTRON_I_DISPLAY_END;
-	  electron_clear_interrupts (electron, clear_mask);
-	}
-	break;
+        {
+          int clear_mask = 0;
+          /* Set the page number. If the keyboard or basic page is
+             currently selected then only pages 8-15 are actually
+             honoured */
+          if (electron->page < 8 || electron->page > 11 || (v & 0x0f) >= 8)
+            electron->page = v & 0x0f;
+          /* Clear interrupts */
+          if (v & ELECTRON_C_HIGH_TONE)
+            clear_mask |= ELECTRON_I_HIGH_TONE;
+          if (v & ELECTRON_C_RTC)
+            clear_mask |= ELECTRON_I_RTC;
+          if (v & ELECTRON_C_DISPLAY_END)
+            clear_mask |= ELECTRON_I_DISPLAY_END;
+          electron_clear_interrupts (electron, clear_mask);
+        }
+        break;
       case 0x7:
-	{
-	  guint8 old_value = electron->sheila[location & 0x0f];
+        {
+          guint8 old_value = electron->sheila[location & 0x0f];
 
-	  electron->sheila[location & 0x0f] = v;
+          electron->sheila[location & 0x0f] = v;
 
-	  /* If the mode has changed then update the palette and set
-	     the mode */
-	  if (ELECTRON_MODE_OF_BYTE (old_value) != ELECTRON_MODE_OF_BYTE (v))
-	  {
-	    video_set_mode (&electron->video, ELECTRON_MODE (electron));
-	    electron_update_palette (electron);
-	  }
+          /* If the mode has changed then update the palette and set
+             the mode */
+          if (ELECTRON_MODE_OF_BYTE (old_value) != ELECTRON_MODE_OF_BYTE (v))
+          {
+            video_set_mode (&electron->video, ELECTRON_MODE (electron));
+            electron_update_palette (electron);
+          }
 
-	  /* Changing to cassette write mode causes it to start
-	     writing a high tone */
-	  if ((old_value & 0x06) != 0x04 && (v & 0x06) == 0x04)
-	  {
-	    electron->data_shift_has_data = FALSE;
-	    electron_generate_interrupt (electron, ELECTRON_I_TRANSMIT);
-	  }
-	}
-	break;
+          /* Changing to cassette write mode causes it to start
+             writing a high tone */
+          if ((old_value & 0x06) != 0x04 && (v & 0x06) == 0x04)
+          {
+            electron->data_shift_has_data = FALSE;
+            electron_generate_interrupt (electron, ELECTRON_I_TRANSMIT);
+          }
+        }
+        break;
       default:
-	electron->sheila[location & 0x0f] = v;
-	if ((location & 0x0f) >= 0x08)
-	  electron_update_palette (electron);
-	break;
+        electron->sheila[location & 0x0f] = v;
+        if ((location & 0x0f) >= 0x08)
+          electron_update_palette (electron);
+        break;
     }
   /* Otherwise if it's in memory use that */
   else if (location < CPU_RAM_SIZE)

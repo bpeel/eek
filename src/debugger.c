@@ -63,20 +63,20 @@ debugger_get_type ()
   {
     static const GTypeInfo debugger_info =
       {
-	sizeof (DebuggerClass),
-	NULL, NULL,
-	(GClassInitFunc) debugger_class_init,
-	NULL, NULL,
+        sizeof (DebuggerClass),
+        NULL, NULL,
+        (GClassInitFunc) debugger_class_init,
+        NULL, NULL,
 
-	sizeof (Debugger),
-	0,
-	(GInstanceInitFunc) debugger_init,
-	NULL
+        sizeof (Debugger),
+        0,
+        (GInstanceInitFunc) debugger_init,
+        NULL
       };
 
     debugger_type = g_type_register_static (GTK_TYPE_TABLE,
-					    "Debugger",
-					    &debugger_info, 0);
+                                            "Debugger",
+                                            &debugger_info, 0);
   }
 
   return debugger_type;
@@ -117,7 +117,7 @@ debugger_init (Debugger *debugger)
     label = gtk_label_new (debugger_register_names[i]);
     gtk_label_set_attributes (GTK_LABEL (label), attr_list);
     gtk_table_attach (GTK_TABLE (debugger), label, 0, 1, i, i + 1,
-		      GTK_FILL, 0, 0, 0);
+                      GTK_FILL, 0, 0, 0);
     gtk_misc_set_alignment (GTK_MISC (label), 1.0f, 0.5f);
     gtk_widget_show (label);
 
@@ -126,7 +126,7 @@ debugger_init (Debugger *debugger)
     gtk_misc_set_alignment (GTK_MISC (label), 0.0f, 0.5f);
     g_object_weak_ref (G_OBJECT (label), debugger_register_notify, debugger);
     gtk_table_attach (GTK_TABLE (debugger), label, 1, 2, i, i + 1,
-		      GTK_FILL, 0, 8, 0);
+                      GTK_FILL, 0, 8, 0);
     gtk_widget_show (label);
   }
 
@@ -135,7 +135,7 @@ debugger_init (Debugger *debugger)
   separator = gtk_hseparator_new ();
   gtk_widget_show (separator);
   gtk_table_attach (GTK_TABLE (debugger), separator, 1, 2, DEBUGGER_REGISTER_COUNT,
-		    DEBUGGER_REGISTER_COUNT + 1, 0, 0, 0, 0);
+                    DEBUGGER_REGISTER_COUNT + 1, 0, 0, 0, 0);
 
   /* Add a table to show the disassembly */
   debugger->dis_model = dis_model_new ();
@@ -147,37 +147,37 @@ debugger_init (Debugger *debugger)
     GtkCellRenderer *cell_renderer = gtk_cell_renderer_text_new ();
     g_object_set (cell_renderer, "weight-set", TRUE, NULL);
     gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (dis_table), -1, "",
-						 cell_renderer,
-						 "text", debugger_disassembler_columns[i],
-						 "weight", DIS_MODEL_COL_BOLD_IF_CURRENT,
-						 NULL);
+                                                 cell_renderer,
+                                                 "text", debugger_disassembler_columns[i],
+                                                 "weight", DIS_MODEL_COL_BOLD_IF_CURRENT,
+                                                 NULL);
   }
   gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (dis_table), FALSE);
   gtk_widget_show (dis_table);
   gtk_table_attach (GTK_TABLE (debugger), dis_table, 0, 2,
-		    DEBUGGER_REGISTER_COUNT + 1, DEBUGGER_REGISTER_COUNT + 2,
-		    GTK_FILL | GTK_EXPAND, GTK_FILL, 0, 0);
+                    DEBUGGER_REGISTER_COUNT + 1, DEBUGGER_REGISTER_COUNT + 2,
+                    GTK_FILL | GTK_EXPAND, GTK_FILL, 0, 0);
 
   separator = gtk_hseparator_new ();
   gtk_widget_show (separator);
   gtk_table_attach (GTK_TABLE (debugger), separator, 1, 2, DEBUGGER_REGISTER_COUNT + 2,
-		    DEBUGGER_REGISTER_COUNT + 3, 0, 0, 0, 0);
+                    DEBUGGER_REGISTER_COUNT + 3, 0, 0, 0, 0);
 
   /* Add a hex scroll button to display the address for the memory
      display widget */
   addr_adj = GTK_ADJUSTMENT (gtk_adjustment_new (0.0, 0.0, 65535.0, 1.0, 10.0, 10.0));
   hexspin = hex_spin_button_new ();
   g_object_set (hexspin, "numeric", TRUE, "adjustment", addr_adj, "hex", TRUE,
-		"digits", 4, NULL);
+                "digits", 4, NULL);
   gtk_widget_show (hexspin);
   gtk_table_attach (GTK_TABLE (debugger), hexspin, 0, 2,
-		    DEBUGGER_REGISTER_COUNT + 3, DEBUGGER_REGISTER_COUNT + 4,
-		    GTK_FILL | GTK_EXPAND, GTK_FILL, 0, 0);
+                    DEBUGGER_REGISTER_COUNT + 3, DEBUGGER_REGISTER_COUNT + 4,
+                    GTK_FILL | GTK_EXPAND, GTK_FILL, 0, 0);
 
   /* Add a memory display widget */
   scrolled_win = gtk_scrolled_window_new (NULL, NULL);
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_win),
-				  GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+                                  GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
   debugger->mem_disp = mem_disp_combo_new ();
   g_object_weak_ref (G_OBJECT (debugger->mem_disp), debugger_mem_disp_notify, debugger);
   mem_disp_combo_set_cursor_adjustment (MEM_DISP_COMBO (DEBUGGER (debugger)->mem_disp), addr_adj);
@@ -185,8 +185,8 @@ debugger_init (Debugger *debugger)
   gtk_container_add (GTK_CONTAINER (scrolled_win), debugger->mem_disp);
   gtk_widget_show (scrolled_win);
   gtk_table_attach (GTK_TABLE (debugger), scrolled_win, 0, 2,
-		    DEBUGGER_REGISTER_COUNT + 4, DEBUGGER_REGISTER_COUNT + 5,
-		    GTK_FILL | GTK_EXPAND, GTK_FILL | GTK_EXPAND, 0, 0);
+                    DEBUGGER_REGISTER_COUNT + 4, DEBUGGER_REGISTER_COUNT + 5,
+                    GTK_FILL | GTK_EXPAND, GTK_FILL | GTK_EXPAND, 0, 0);
 }
 
 GtkWidget *
@@ -220,24 +220,24 @@ debugger_dispose (GObject *obj)
     if (debugger->register_widgets[i])
     {
       g_object_weak_unref (G_OBJECT (debugger->register_widgets[i]),
-			   debugger_register_notify, debugger);
+                           debugger_register_notify, debugger);
       debugger->register_widgets[i] = NULL;
     }
 
   if (debugger->mem_disp)
   {
     g_object_weak_unref (G_OBJECT (debugger->mem_disp),
-			 debugger_mem_disp_notify, debugger);
+                         debugger_mem_disp_notify, debugger);
     debugger->mem_disp = NULL;
   }
 
   if (debugger->dis_model)
   {
     g_object_weak_unref (G_OBJECT (debugger->dis_model),
-			 debugger_dis_model_notify, debugger);
+                         debugger_dis_model_notify, debugger);
     debugger->dis_model = NULL;
   }
-  
+
   debugger_set_electron (debugger, NULL);
 
   G_OBJECT_CLASS (parent_class)->dispose (obj);
@@ -264,17 +264,17 @@ debugger_set_electron (Debugger *debugger, ElectronManager *electron)
   if (electron)
   {
     g_return_if_fail (IS_ELECTRON_MANAGER (electron));
-    
+
     g_object_ref (electron);
 
     debugger->electron = electron;
 
     debugger->started
       = g_signal_connect_swapped (electron, "started",
-				  G_CALLBACK (debugger_update), debugger);
+                                  G_CALLBACK (debugger_update), debugger);
     debugger->stopped
       = g_signal_connect_swapped (electron, "stopped",
-				  G_CALLBACK (debugger_update), debugger);
+                                  G_CALLBACK (debugger_update), debugger);
   }
 
   if (debugger->mem_disp)
@@ -283,7 +283,7 @@ debugger_set_electron (Debugger *debugger, ElectronManager *electron)
   if (debugger->dis_model)
     dis_model_set_electron (debugger->dis_model, electron);
 
-  debugger_update (debugger);  
+  debugger_update (debugger);
 }
 
 static void
@@ -295,7 +295,7 @@ debugger_register_notify (gpointer data, GObject *obj)
   g_return_if_fail (IS_DEBUGGER (data));
 
   debugger = DEBUGGER (data);
-  
+
   for (i = 0; i < DEBUGGER_REGISTER_COUNT; i++)
     if (debugger->register_widgets[i] == GTK_WIDGET (obj))
     {
@@ -314,7 +314,7 @@ debugger_mem_disp_notify (gpointer data, GObject *obj)
   g_return_if_fail (IS_DEBUGGER (data));
 
   debugger = DEBUGGER (data);
-  
+
   g_return_if_fail (obj == G_OBJECT (debugger->mem_disp));
 
   debugger->mem_disp = NULL;
@@ -328,7 +328,7 @@ debugger_dis_model_notify (gpointer data, GObject *obj)
   g_return_if_fail (IS_DEBUGGER (data));
 
   debugger = DEBUGGER (data);
-  
+
   g_return_if_fail (obj == G_OBJECT (debugger->dis_model));
 
   debugger->dis_model = NULL;
@@ -345,7 +345,7 @@ debugger_update (Debugger *debugger)
   {
     for (i = 0; i < DEBUGGER_REGISTER_COUNT; i++)
       if (debugger->register_widgets[i])
-	gtk_label_set_text (GTK_LABEL (debugger->register_widgets[i]), "");
+        gtk_label_set_text (GTK_LABEL (debugger->register_widgets[i]), "");
   }
   else
   {

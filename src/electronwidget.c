@@ -178,20 +178,20 @@ electron_widget_get_type ()
   {
     static const GTypeInfo electron_widget_info =
       {
-	sizeof (ElectronWidgetClass),
-	NULL, NULL,
-	(GClassInitFunc) electron_widget_class_init,
-	NULL, NULL,
+        sizeof (ElectronWidgetClass),
+        NULL, NULL,
+        (GClassInitFunc) electron_widget_class_init,
+        NULL, NULL,
 
-	sizeof (ElectronWidget),
-	0,
-	(GInstanceInitFunc) electron_widget_init,
-	NULL
+        sizeof (ElectronWidget),
+        0,
+        (GInstanceInitFunc) electron_widget_init,
+        NULL
       };
 
     electron_widget_type = g_type_register_static (GTK_TYPE_WIDGET,
-						   "ElectronWidget",
-						   &electron_widget_info, 0);
+                                                   "ElectronWidget",
+                                                   &electron_widget_info, 0);
   }
 
   return electron_widget_type;
@@ -268,11 +268,11 @@ electron_widget_realize (GtkWidget *widget)
     | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK;
 
   widget->window = gdk_window_new (gtk_widget_get_parent_window (widget),
-				   &attributes,
-				   GDK_WA_X | GDK_WA_Y);
+                                   &attributes,
+                                   GDK_WA_X | GDK_WA_Y);
 
   widget->style = gtk_style_attach (widget->style, widget->window);
-  
+
   gdk_window_set_user_data (widget->window, widget);
 
   gdk_window_set_background (widget->window, &widget->style->bg[GTK_WIDGET_STATE (widget)]);
@@ -299,12 +299,12 @@ electron_widget_paint_video (ElectronWidget *ewidget)
   GtkWidget *widget = GTK_WIDGET (ewidget);
 
   gdk_draw_indexed_image (GDK_DRAWABLE (widget->window),
-			  widget->style->fg_gc[widget->state],
-			  ewidget->xpos, ewidget->ypos, VIDEO_WIDTH, VIDEO_HEIGHT,
-			  GDK_RGB_DITHER_NONE,
-			  ewidget->electron->data->video.screen_memory,
-			  VIDEO_SCREEN_PITCH,
-			  &electron_widget_color_map);
+                          widget->style->fg_gc[widget->state],
+                          ewidget->xpos, ewidget->ypos, VIDEO_WIDTH, VIDEO_HEIGHT,
+                          GDK_RGB_DITHER_NONE,
+                          ewidget->electron->data->video.screen_memory,
+                          VIDEO_SCREEN_PITCH,
+                          &electron_widget_color_map);
 }
 
 static gboolean
@@ -324,18 +324,18 @@ electron_widget_expose (GtkWidget *widget, GdkEventExpose *event)
     /* Clear the area around the display */
     if (ewidget->xpos > 0)
       gdk_window_clear_area (widget->window,
-			     0, 0, ewidget->xpos, widget->allocation.height);
+                             0, 0, ewidget->xpos, widget->allocation.height);
     if (ewidget->xpos + VIDEO_WIDTH < widget->allocation.width)
       gdk_window_clear_area (widget->window,
-			     ewidget->xpos + VIDEO_WIDTH, 0, widget->allocation.width - ewidget->xpos - VIDEO_WIDTH,
-			     widget->allocation.height);
+                             ewidget->xpos + VIDEO_WIDTH, 0, widget->allocation.width - ewidget->xpos - VIDEO_WIDTH,
+                             widget->allocation.height);
     if (ewidget->ypos > 0)
       gdk_window_clear_area (widget->window,
-			     ewidget->xpos, 0, VIDEO_WIDTH, ewidget->ypos);
+                             ewidget->xpos, 0, VIDEO_WIDTH, ewidget->ypos);
     if (ewidget->ypos + VIDEO_HEIGHT < widget->allocation.height)
       gdk_window_clear_area (widget->window,
-			     ewidget->xpos, ewidget->ypos + VIDEO_HEIGHT, VIDEO_WIDTH,
-			     widget->allocation.height - ewidget->ypos - VIDEO_HEIGHT);
+                             ewidget->xpos, ewidget->ypos + VIDEO_HEIGHT, VIDEO_WIDTH,
+                             widget->allocation.height - ewidget->ypos - VIDEO_HEIGHT);
 
     electron_widget_paint_video (ewidget);
   }
@@ -438,9 +438,9 @@ electron_widget_key_event (GtkWidget *widget, GdkEventKey *event)
     if (ewidget->key_override != -1 && ewidget->override_keycode == event->hardware_keycode)
     {
       if (ewidget->electron)
-	electron_manager_release_key (ewidget->electron,
-				      electron_widget_keymap[ewidget->key_override].line,
-				      electron_widget_keymap[ewidget->key_override].bit);
+        electron_manager_release_key (ewidget->electron,
+                                      electron_widget_keymap[ewidget->key_override].line,
+                                      electron_widget_keymap[ewidget->key_override].bit);
       ewidget->key_override = -1;
     }
     else
@@ -452,21 +452,21 @@ electron_widget_key_event (GtkWidget *widget, GdkEventKey *event)
     for (i = 0; electron_widget_keymap[i].keysym != -1; i++)
       if (electron_widget_keymap[i].keysym == event->keyval)
       {
-	if (ewidget->electron)
-	{
-	  if (ewidget->key_override != i && ewidget->key_override != -1)
-	    electron_manager_release_key (ewidget->electron,
-					  electron_widget_keymap[ewidget->key_override].line,
-					  electron_widget_keymap[ewidget->key_override].bit);
-	  electron_manager_press_key (ewidget->electron,
-				      electron_widget_keymap[i].line,
-				      electron_widget_keymap[i].bit);
-	}
+        if (ewidget->electron)
+        {
+          if (ewidget->key_override != i && ewidget->key_override != -1)
+            electron_manager_release_key (ewidget->electron,
+                                          electron_widget_keymap[ewidget->key_override].line,
+                                          electron_widget_keymap[ewidget->key_override].bit);
+          electron_manager_press_key (ewidget->electron,
+                                      electron_widget_keymap[i].line,
+                                      electron_widget_keymap[i].bit);
+        }
 
-	ewidget->key_override = i;
-	ewidget->override_keycode = event->hardware_keycode;
+        ewidget->key_override = i;
+        ewidget->override_keycode = event->hardware_keycode;
 
-	break;
+        break;
       }
 
     /* If we don't understand the key event then let it propagate further */
@@ -479,35 +479,35 @@ electron_widget_key_event (GtkWidget *widget, GdkEventKey *event)
     if (ewidget->key_override != -1)
     {
       if (electron_widget_keymap[ewidget->key_override].modifiers & 4)
-	electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
+        electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
       else
-	electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
+        electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
       if (electron_widget_keymap[ewidget->key_override].modifiers & 2)
-	electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
+        electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
       else
-	electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
+        electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
       if (electron_widget_keymap[ewidget->key_override].modifiers & 1)
-	electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
+        electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
       else
-	electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
+        electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
     }
     else
     {
       if (ewidget->control_state)
-	electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
+        electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
       else
-	electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
+        electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
       if (ewidget->shift_state)
-	electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
+        electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
       else
-	electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
+        electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
       if (ewidget->alt_state)
-	electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
+        electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
       else
-	electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
+        electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
     }
   }
-  
+
   return ret;
 }
 
@@ -531,14 +531,14 @@ electron_widget_set_electron (ElectronWidget *ewidget, ElectronManager *electron
   if (electron)
   {
     g_return_if_fail (IS_ELECTRON_MANAGER (electron));
-    
+
     g_object_ref (electron);
 
     ewidget->electron = electron;
 
     ewidget->frame_end_handler
       = g_signal_connect (electron, "frame-end",
-			  G_CALLBACK (electron_widget_on_frame_end), ewidget);
+                          G_CALLBACK (electron_widget_on_frame_end), ewidget);
   }
 }
 

@@ -44,14 +44,14 @@ static void memory_display_size_allocate (GtkWidget *widget, GtkAllocation *allo
 static void memory_display_on_started (ElectronManager *electron, MemoryDisplay *memdisplay);
 static void memory_display_on_stopped (ElectronManager *electron, MemoryDisplay *memdisplay);
 static void memory_display_on_scroll_value_changed (GtkAdjustment *adjustment,
-						    MemoryDisplay *memdisplay);
+                                                    MemoryDisplay *memdisplay);
 
 static void memory_display_set_scroll_adjustments (MemoryDisplay *memdisplay,
-						   GtkAdjustment *hadjustment,
-						   GtkAdjustment *vadjustment);
+                                                   GtkAdjustment *hadjustment,
+                                                   GtkAdjustment *vadjustment);
 
 static void memory_display_move_cursor (MemoryDisplay *memdisplay,
-					gint direction);
+                                        gint direction);
 
 static void memory_display_update_cursor_adjustment (MemoryDisplay *memdisplay);
 
@@ -94,20 +94,20 @@ memory_display_get_type ()
   {
     static const GTypeInfo memory_display_info =
       {
-	sizeof (MemoryDisplayClass),
-	NULL, NULL,
-	(GClassInitFunc) memory_display_class_init,
-	NULL, NULL,
+        sizeof (MemoryDisplayClass),
+        NULL, NULL,
+        (GClassInitFunc) memory_display_class_init,
+        NULL, NULL,
 
-	sizeof (MemoryDisplay),
-	0,
-	(GInstanceInitFunc) memory_display_init,
-	NULL
+        sizeof (MemoryDisplay),
+        0,
+        (GInstanceInitFunc) memory_display_init,
+        NULL
       };
 
     memory_display_type = g_type_register_static (GTK_TYPE_WIDGET,
-						  "MemoryDisplay",
-						  &memory_display_info, 0);
+                                                  "MemoryDisplay",
+                                                  &memory_display_info, 0);
   }
 
   return memory_display_type;
@@ -137,52 +137,52 @@ memory_display_class_init (MemoryDisplayClass *klass)
 
   widget_class->set_scroll_adjustments_signal =
     g_signal_new ("set_scroll_adjustments",
-		  G_TYPE_FROM_CLASS (object_class),
-		  G_SIGNAL_RUN_LAST,
-		  G_STRUCT_OFFSET (MemoryDisplayClass, set_scroll_adjustments),
-		  NULL, NULL,
-		  eek_marshal_VOID__OBJECT_OBJECT,
-		  G_TYPE_NONE, 2, GTK_TYPE_ADJUSTMENT, GTK_TYPE_ADJUSTMENT);
+                  G_TYPE_FROM_CLASS (object_class),
+                  G_SIGNAL_RUN_LAST,
+                  G_STRUCT_OFFSET (MemoryDisplayClass, set_scroll_adjustments),
+                  NULL, NULL,
+                  eek_marshal_VOID__OBJECT_OBJECT,
+                  G_TYPE_NONE, 2, GTK_TYPE_ADJUSTMENT, GTK_TYPE_ADJUSTMENT);
 
-  signals[MOVE_CURSOR] = 
+  signals[MOVE_CURSOR] =
     g_signal_new ("move_cursor",
-		  G_TYPE_FROM_CLASS (object_class),
-		  G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
-		  G_STRUCT_OFFSET (MemoryDisplayClass, move_cursor),
-		  NULL, NULL,
-		  g_cclosure_marshal_VOID__INT,
-		  G_TYPE_NONE, 1, G_TYPE_INT);
+                  G_TYPE_FROM_CLASS (object_class),
+                  G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+                  G_STRUCT_OFFSET (MemoryDisplayClass, move_cursor),
+                  NULL, NULL,
+                  g_cclosure_marshal_VOID__INT,
+                  G_TYPE_NONE, 1, G_TYPE_INT);
 
   binding_set = gtk_binding_set_by_class (object_class);
 
   gtk_binding_entry_add_signal (binding_set, GDK_Left, 0,
-				"move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_LEFT);
+                                "move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_LEFT);
   gtk_binding_entry_add_signal (binding_set, GDK_KP_Left, 0,
-				"move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_LEFT);
+                                "move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_LEFT);
   gtk_binding_entry_add_signal (binding_set, GDK_Right, 0,
-				"move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_RIGHT);
+                                "move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_RIGHT);
   gtk_binding_entry_add_signal (binding_set, GDK_KP_Right, 0,
-				"move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_RIGHT);
+                                "move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_RIGHT);
   gtk_binding_entry_add_signal (binding_set, GDK_Up, 0,
-				"move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_UP);
+                                "move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_UP);
   gtk_binding_entry_add_signal (binding_set, GDK_KP_Up, 0,
-				"move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_UP);
+                                "move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_UP);
   gtk_binding_entry_add_signal (binding_set, GDK_Down, 0,
-				"move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_DOWN);
+                                "move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_DOWN);
   gtk_binding_entry_add_signal (binding_set, GDK_KP_Down, 0,
-				"move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_DOWN);
+                                "move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_DOWN);
   gtk_binding_entry_add_signal (binding_set, GDK_Home, 0,
-				"move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_BOL);
+                                "move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_BOL);
   gtk_binding_entry_add_signal (binding_set, GDK_End, 0,
-				"move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_EOL);
+                                "move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_EOL);
   gtk_binding_entry_add_signal (binding_set, GDK_Home, GDK_CONTROL_MASK,
-				"move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_BOF);
+                                "move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_BOF);
   gtk_binding_entry_add_signal (binding_set, GDK_End, GDK_CONTROL_MASK,
-				"move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_EOF);
+                                "move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_EOF);
   gtk_binding_entry_add_signal (binding_set, GDK_Page_Down, 0,
-				"move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_PAGE_DOWN);
+                                "move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_PAGE_DOWN);
   gtk_binding_entry_add_signal (binding_set, GDK_Page_Up, 0,
-				"move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_PAGE_UP);
+                                "move_cursor", 1, G_TYPE_INT, MEMORY_DISPLAY_MOVE_PAGE_UP);
 }
 
 static void
@@ -213,8 +213,8 @@ memory_display_init (MemoryDisplay *memdisplay)
   }
 
   memory_display_set_cursor_adjustment (memdisplay,
-					GTK_ADJUSTMENT (gtk_adjustment_new (0.0f, 0.0f, 0.0f,
-									    0.0f, 0.0f, 0.0f)));
+                                        GTK_ADJUSTMENT (gtk_adjustment_new (0.0f, 0.0f, 0.0f,
+                                                                            0.0f, 0.0f, 0.0f)));
 }
 
 GtkWidget *
@@ -259,14 +259,14 @@ memory_display_refresh_row_height (MemoryDisplay *memdisplay)
       display_height = GTK_WIDGET (memdisplay)->allocation.height;
 
       if (memdisplay->row_height == 0
-	  || (bytes_per_page = display_height / memdisplay->row_height * memdisplay->bytes_per_row)
-	  < memdisplay->bytes_per_row)
-	bytes_per_page = memdisplay->bytes_per_row;
+          || (bytes_per_page = display_height / memdisplay->row_height * memdisplay->bytes_per_row)
+          < memdisplay->bytes_per_row)
+        bytes_per_page = memdisplay->bytes_per_row;
 
       scroll_max = memdisplay->electron ? MEMORY_DISPLAY_MEM_SIZE : 0;
       /* Must be able to show the last line */
       scroll_max = (scroll_max + memdisplay->bytes_per_row - 1) / memdisplay->bytes_per_row
-	* memdisplay->bytes_per_row;
+        * memdisplay->bytes_per_row;
 
       memdisplay->vadjustment->lower = 0.0f;
       memdisplay->vadjustment->upper = scroll_max;
@@ -312,19 +312,19 @@ memory_display_set_electron (MemoryDisplay *memdisplay, ElectronManager *electro
   if (electron)
   {
     g_return_if_fail (IS_ELECTRON_MANAGER (electron));
-    
+
     g_object_ref (electron);
 
     memdisplay->started_handler
       = g_signal_connect (electron, "started",
-			  G_CALLBACK (memory_display_on_started),
-			  memdisplay);
+                          G_CALLBACK (memory_display_on_started),
+                          memdisplay);
     memdisplay->stopped_handler
       = g_signal_connect (electron, "stopped",
-			  G_CALLBACK (memory_display_on_stopped),
-			  memdisplay);
+                          G_CALLBACK (memory_display_on_stopped),
+                          memdisplay);
   }
-    
+
   memdisplay->electron = electron;
 
   memory_display_refresh_row_height (memdisplay);
@@ -352,11 +352,11 @@ memory_display_realize (GtkWidget *widget)
     | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_EXPOSURE_MASK;
 
   widget->window = gdk_window_new (gtk_widget_get_parent_window (widget),
-				   &attributes,
-				   GDK_WA_X | GDK_WA_Y);
+                                   &attributes,
+                                   GDK_WA_X | GDK_WA_Y);
 
   widget->style = gtk_style_attach (widget->style, widget->window);
-  
+
   gdk_window_set_user_data (widget->window, widget);
 
   gdk_window_set_background (widget->window, &widget->style->base[GTK_WIDGET_STATE (widget)]);
@@ -414,160 +414,160 @@ memory_display_expose (GtkWidget *widget, GdkEventExpose *event)
       filesize = rowmax * memdisplay->bytes_per_row + memdisplay->draw_start;
 
     for (yp = rowmin * memdisplay->row_height,
-	   pos = memdisplay->draw_start + rowmin * memdisplay->bytes_per_row;
-	 yp < widget->allocation.height && pos < filesize;
-	 yp += memdisplay->row_height)
+           pos = memdisplay->draw_start + rowmin * memdisplay->bytes_per_row;
+         yp < widget->allocation.height && pos < filesize;
+         yp += memdisplay->row_height)
     {
       if (memdisplay->disp_type == MEMORY_DISPLAY_ADDRESS)
       {
-	g_snprintf (hexbuf, 5, "%04" G_GSIZE_FORMAT, pos);
+        g_snprintf (hexbuf, 5, "%04" G_GSIZE_FORMAT, pos);
 
-	pango_layout_set_text (layout, hexbuf, -1);
-	
-	if (memdisplay->cur_pos >= pos
-	    && memdisplay->cur_pos < pos + memdisplay->bytes_per_row)
-	{
-	  pango_layout_get_extents (layout, NULL, &logical_rect);
-	  
-	  if (GTK_WIDGET_HAS_FOCUS (memdisplay))
-	  {
-	    text_gc = widget->style->text_gc[GTK_STATE_SELECTED];
-	    back_gc = widget->style->base_gc[GTK_STATE_SELECTED];
-	  }
-	  else
-	  {
-	    text_gc = widget->style->text_gc[GTK_STATE_ACTIVE];
-	    back_gc = widget->style->base_gc[GTK_STATE_ACTIVE];
-	  }
+        pango_layout_set_text (layout, hexbuf, -1);
 
-	  gdk_draw_rectangle (widget->window, back_gc, TRUE,
-			      logical_rect.x / PANGO_SCALE,
-			      yp + logical_rect.y / PANGO_SCALE,
-			      logical_rect.width / PANGO_SCALE,
-			      logical_rect.height / PANGO_SCALE);
-	}
-	else
-	  text_gc = widget->style->text_gc[widget->state];
+        if (memdisplay->cur_pos >= pos
+            && memdisplay->cur_pos < pos + memdisplay->bytes_per_row)
+        {
+          pango_layout_get_extents (layout, NULL, &logical_rect);
 
-	gdk_draw_layout (GDK_DRAWABLE (widget->window), text_gc,
-			 0, yp, layout);
-	
-	pos += memdisplay->bytes_per_row;
+          if (GTK_WIDGET_HAS_FOCUS (memdisplay))
+          {
+            text_gc = widget->style->text_gc[GTK_STATE_SELECTED];
+            back_gc = widget->style->base_gc[GTK_STATE_SELECTED];
+          }
+          else
+          {
+            text_gc = widget->style->text_gc[GTK_STATE_ACTIVE];
+            back_gc = widget->style->base_gc[GTK_STATE_ACTIVE];
+          }
+
+          gdk_draw_rectangle (widget->window, back_gc, TRUE,
+                              logical_rect.x / PANGO_SCALE,
+                              yp + logical_rect.y / PANGO_SCALE,
+                              logical_rect.width / PANGO_SCALE,
+                              logical_rect.height / PANGO_SCALE);
+        }
+        else
+          text_gc = widget->style->text_gc[widget->state];
+
+        gdk_draw_layout (GDK_DRAWABLE (widget->window), text_gc,
+                         0, yp, layout);
+
+        pos += memdisplay->bytes_per_row;
       }
       else
       {
-	int len = MIN (memdisplay->bytes_per_row, filesize - pos);
+        int len = MIN (memdisplay->bytes_per_row, filesize - pos);
 
-	for (i = 0; i < len; i++)
-	  membuf[i] = electron_read_from_location (memdisplay->electron->data, pos + i);
-	
-	if (memdisplay->disp_type == MEMORY_DISPLAY_TEXT)
-	{
-	  unsigned char *p = membuf;
-	  int count = len;
+        for (i = 0; i < len; i++)
+          membuf[i] = electron_read_from_location (memdisplay->electron->data, pos + i);
 
-	  while (count-- > 0)
-	  {
-	    if (*p < 32 || *p >= 127)
-	      *p = '.';
-	    p++;
-	  }
+        if (memdisplay->disp_type == MEMORY_DISPLAY_TEXT)
+        {
+          unsigned char *p = membuf;
+          int count = len;
 
-	  if (memdisplay->cur_pos >= pos
-	      && memdisplay->cur_pos < pos + memdisplay->bytes_per_row)
-	  {
-	    int xoff = memdisplay->cur_pos % memdisplay->bytes_per_row;
+          while (count-- > 0)
+          {
+            if (*p < 32 || *p >= 127)
+              *p = '.';
+            p++;
+          }
 
-	    xp = 0;
+          if (memdisplay->cur_pos >= pos
+              && memdisplay->cur_pos < pos + memdisplay->bytes_per_row)
+          {
+            int xoff = memdisplay->cur_pos % memdisplay->bytes_per_row;
 
-	    if (GTK_WIDGET_HAS_FOCUS (memdisplay))
-	    {
-	      text_gc = widget->style->text_gc[GTK_STATE_SELECTED];
-	      back_gc = widget->style->base_gc[GTK_STATE_SELECTED];
-	    }
-	    else
-	    {
-	      text_gc = widget->style->text_gc[GTK_STATE_ACTIVE];
-	      back_gc = widget->style->base_gc[GTK_STATE_ACTIVE];
-	    }
+            xp = 0;
 
-	    pango_layout_set_text (layout, (char *) membuf, xoff);
-	    pango_layout_get_extents (layout, NULL, &logical_rect);
-	    gdk_draw_layout (GDK_DRAWABLE (widget->window),
-			     widget->style->text_gc[widget->state],
-			     0, yp, layout);
-	    xp += logical_rect.width;
+            if (GTK_WIDGET_HAS_FOCUS (memdisplay))
+            {
+              text_gc = widget->style->text_gc[GTK_STATE_SELECTED];
+              back_gc = widget->style->base_gc[GTK_STATE_SELECTED];
+            }
+            else
+            {
+              text_gc = widget->style->text_gc[GTK_STATE_ACTIVE];
+              back_gc = widget->style->base_gc[GTK_STATE_ACTIVE];
+            }
 
-	    pango_layout_set_text (layout, (char *) membuf + xoff, 1);
-	    pango_layout_get_extents (layout, NULL, &logical_rect);
-	    gdk_draw_rectangle (widget->window, back_gc, TRUE,
-				(xp + logical_rect.x) / PANGO_SCALE,
-				yp + logical_rect.y / PANGO_SCALE,
-				logical_rect.width / PANGO_SCALE,
-				logical_rect.height / PANGO_SCALE);
-	    gdk_draw_layout (GDK_DRAWABLE (widget->window), text_gc,
-			     xp / PANGO_SCALE, yp, layout);
-	    xp += logical_rect.width;
+            pango_layout_set_text (layout, (char *) membuf, xoff);
+            pango_layout_get_extents (layout, NULL, &logical_rect);
+            gdk_draw_layout (GDK_DRAWABLE (widget->window),
+                             widget->style->text_gc[widget->state],
+                             0, yp, layout);
+            xp += logical_rect.width;
 
-	    pango_layout_set_text (layout, (char *) membuf + xoff + 1,
-				   (memdisplay->cur_pos + memdisplay->bytes_per_row > filesize
-				    ? len
-				    : memdisplay->bytes_per_row)
-				   - (xoff + 1));
-	    gdk_draw_layout (GDK_DRAWABLE (widget->window),
-			     widget->style->text_gc[widget->state],
-			     xp / PANGO_SCALE, yp, layout);
-	  }
-	  else
-	  {
-	    pango_layout_set_text (layout, (char *) membuf, len);
-	    gdk_draw_layout (GDK_DRAWABLE (widget->window),
-			     widget->style->text_gc[widget->state],
-			     0, yp, layout);
-	  }
+            pango_layout_set_text (layout, (char *) membuf + xoff, 1);
+            pango_layout_get_extents (layout, NULL, &logical_rect);
+            gdk_draw_rectangle (widget->window, back_gc, TRUE,
+                                (xp + logical_rect.x) / PANGO_SCALE,
+                                yp + logical_rect.y / PANGO_SCALE,
+                                logical_rect.width / PANGO_SCALE,
+                                logical_rect.height / PANGO_SCALE);
+            gdk_draw_layout (GDK_DRAWABLE (widget->window), text_gc,
+                             xp / PANGO_SCALE, yp, layout);
+            xp += logical_rect.width;
 
-	  pos += len;
-	}
-	else
-	  for (i = 0, xp = 0; i < memdisplay->bytes_per_row && pos < filesize;
-	       i++, pos++)
-	  {
-	    hexbuf[0] = GET_HEX_DIGIT (membuf[i] >> 4);
-	    hexbuf[1] = GET_HEX_DIGIT (membuf[i] & 0x0f);
+            pango_layout_set_text (layout, (char *) membuf + xoff + 1,
+                                   (memdisplay->cur_pos + memdisplay->bytes_per_row > filesize
+                                    ? len
+                                    : memdisplay->bytes_per_row)
+                                   - (xoff + 1));
+            gdk_draw_layout (GDK_DRAWABLE (widget->window),
+                             widget->style->text_gc[widget->state],
+                             xp / PANGO_SCALE, yp, layout);
+          }
+          else
+          {
+            pango_layout_set_text (layout, (char *) membuf, len);
+            gdk_draw_layout (GDK_DRAWABLE (widget->window),
+                             widget->style->text_gc[widget->state],
+                             0, yp, layout);
+          }
 
-	    if (pos == memdisplay->cur_pos)
-	    {
-	      pango_layout_set_text (layout, hexbuf, 2);
-	      pango_layout_get_extents (layout, NULL, &logical_rect);
+          pos += len;
+        }
+        else
+          for (i = 0, xp = 0; i < memdisplay->bytes_per_row && pos < filesize;
+               i++, pos++)
+          {
+            hexbuf[0] = GET_HEX_DIGIT (membuf[i] >> 4);
+            hexbuf[1] = GET_HEX_DIGIT (membuf[i] & 0x0f);
 
-	      if (GTK_WIDGET_HAS_FOCUS (memdisplay))
-	      {
-		text_gc = widget->style->text_gc[GTK_STATE_SELECTED];
-		back_gc = widget->style->base_gc[GTK_STATE_SELECTED];
-	      }
-	      else
-	      {
-		text_gc = widget->style->text_gc[GTK_STATE_ACTIVE];
-		back_gc = widget->style->base_gc[GTK_STATE_ACTIVE];
-	      }
+            if (pos == memdisplay->cur_pos)
+            {
+              pango_layout_set_text (layout, hexbuf, 2);
+              pango_layout_get_extents (layout, NULL, &logical_rect);
 
-	      gdk_draw_rectangle (widget->window, back_gc, TRUE,
-				  xp + logical_rect.x / PANGO_SCALE,
-				  yp + logical_rect.y / PANGO_SCALE,
-				  logical_rect.width / PANGO_SCALE,
-				  logical_rect.height / PANGO_SCALE);
-	    }
-	    else
-	      text_gc = widget->style->text_gc[widget->state];
+              if (GTK_WIDGET_HAS_FOCUS (memdisplay))
+              {
+                text_gc = widget->style->text_gc[GTK_STATE_SELECTED];
+                back_gc = widget->style->base_gc[GTK_STATE_SELECTED];
+              }
+              else
+              {
+                text_gc = widget->style->text_gc[GTK_STATE_ACTIVE];
+                back_gc = widget->style->base_gc[GTK_STATE_ACTIVE];
+              }
 
-	    pango_layout_set_text (layout, hexbuf, 3);
-	    pango_layout_get_extents (layout, NULL, &logical_rect);
+              gdk_draw_rectangle (widget->window, back_gc, TRUE,
+                                  xp + logical_rect.x / PANGO_SCALE,
+                                  yp + logical_rect.y / PANGO_SCALE,
+                                  logical_rect.width / PANGO_SCALE,
+                                  logical_rect.height / PANGO_SCALE);
+            }
+            else
+              text_gc = widget->style->text_gc[widget->state];
 
-	    gdk_draw_layout (GDK_DRAWABLE (widget->window), text_gc,
-			     xp, yp, layout);
-	
-	    xp += logical_rect.width / PANGO_SCALE;
-	  }
+            pango_layout_set_text (layout, hexbuf, 3);
+            pango_layout_get_extents (layout, NULL, &logical_rect);
+
+            gdk_draw_layout (GDK_DRAWABLE (widget->window), text_gc,
+                             xp, yp, layout);
+
+            xp += logical_rect.width / PANGO_SCALE;
+          }
       }
     }
 
@@ -602,13 +602,13 @@ memory_display_size_request (GtkWidget *widget, GtkRequisition *requisition)
   memdisplay = MEMORY_DISPLAY (widget);
 
   layout = gtk_widget_create_pango_layout (widget,
-					   memdisplay->disp_type == MEMORY_DISPLAY_HEX
-					   ? "00 " : "0");
+                                           memdisplay->disp_type == MEMORY_DISPLAY_HEX
+                                           ? "00 " : "0");
   pango_layout_get_extents (layout, NULL, &logical_rect);
   g_object_unref (layout);
 
   requisition->width = (memdisplay->disp_type == MEMORY_DISPLAY_ADDRESS ? 4
-			: memdisplay->bytes_per_row) * (logical_rect.width / PANGO_SCALE);
+                        : memdisplay->bytes_per_row) * (logical_rect.width / PANGO_SCALE);
   requisition->height = MEMORY_DISPLAY_MINIMUM_ROWS * memdisplay->row_height;
 }
 
@@ -646,7 +646,7 @@ memory_display_on_scroll_value_changed (GtkAdjustment *adjustment, MemoryDisplay
 {
   size_t oldpos;
   gint dx;
-  
+
   g_return_if_fail (GTK_IS_ADJUSTMENT (adjustment));
   g_return_if_fail (IS_MEMORY_DISPLAY (memdisplay));
   g_return_if_fail (memdisplay->vadjustment == adjustment);
@@ -658,8 +658,8 @@ memory_display_on_scroll_value_changed (GtkAdjustment *adjustment, MemoryDisplay
   if (oldpos != memdisplay->draw_start
       && GTK_WIDGET_REALIZED (GTK_WIDGET (memdisplay)))
     gdk_window_scroll (GTK_WIDGET (memdisplay)->window, 0,
-		       dx = ((gint) oldpos - (gint) memdisplay->draw_start)
-		       * memdisplay->row_height / memdisplay->bytes_per_row);
+                       dx = ((gint) oldpos - (gint) memdisplay->draw_start)
+                       * memdisplay->row_height / memdisplay->bytes_per_row);
 }
 
 void
@@ -679,8 +679,8 @@ memory_display_set_type (MemoryDisplay *memdisplay, int type)
 
 static void
 memory_display_set_scroll_adjustments (MemoryDisplay *memdisplay,
-				       GtkAdjustment *hadjustment,
-				       GtkAdjustment *vadjustment)
+                                       GtkAdjustment *hadjustment,
+                                       GtkAdjustment *vadjustment)
 {
   GtkAdjustment *oldadj;
   gint oldhandler;
@@ -700,7 +700,7 @@ memory_display_set_scroll_adjustments (MemoryDisplay *memdisplay,
   }
   if (oldadj)
     g_object_unref (oldadj);
-  
+
   oldadj = memdisplay->vadjustment;
   oldhandler = memdisplay->scroll_value_changed_handler;
   memdisplay->vadjustment = vadjustment;
@@ -711,8 +711,8 @@ memory_display_set_scroll_adjustments (MemoryDisplay *memdisplay,
 
     memdisplay->scroll_value_changed_handler
       = g_signal_connect (vadjustment, "value_changed",
-			  G_CALLBACK (memory_display_on_scroll_value_changed),
-			  memdisplay);
+                          G_CALLBACK (memory_display_on_scroll_value_changed),
+                          memdisplay);
 
     memdisplay->draw_start = gtk_adjustment_get_value (vadjustment);
     if (GTK_WIDGET_REALIZED (GTK_WIDGET (memdisplay)))
@@ -724,7 +724,7 @@ memory_display_set_scroll_adjustments (MemoryDisplay *memdisplay,
 
     g_object_unref (oldadj);
   }
-  
+
   memory_display_refresh_row_height (memdisplay);
 }
 
@@ -741,7 +741,7 @@ memory_display_update_cursor_position (MemoryDisplay *memdisplay, size_t pos)
 
     clamp_pos = pos - pos % memdisplay->bytes_per_row;
     gtk_adjustment_clamp_page (memdisplay->vadjustment, clamp_pos,
-			       clamp_pos + memdisplay->bytes_per_row);
+                               clamp_pos + memdisplay->bytes_per_row);
   }
 
   if (GTK_WIDGET_REALIZED (GTK_WIDGET (memdisplay)))
@@ -766,8 +766,8 @@ memory_display_update_cursor_position (MemoryDisplay *memdisplay, size_t pos)
     if (pos != oldpos)
     {
       rect.y = (int) (pos - memdisplay->draw_start / memdisplay->bytes_per_row)
-	* memdisplay->row_height;
-      
+        * memdisplay->row_height;
+
       gdk_window_invalidate_rect (GTK_WIDGET (memdisplay)->window, &rect, FALSE);
     }
   }
@@ -777,12 +777,12 @@ static void
 memory_display_on_cursor_value_changed (GtkAdjustment *adjustment, gpointer user_data)
 {
   MemoryDisplay *memdisplay;
-  
+
   g_return_if_fail (GTK_IS_ADJUSTMENT (adjustment));
   g_return_if_fail (IS_MEMORY_DISPLAY (user_data));
 
   memdisplay = MEMORY_DISPLAY (user_data);
-  
+
   g_return_if_fail (memdisplay->cur_adjustment == adjustment);
 
   memory_display_update_cursor_position (memdisplay, gtk_adjustment_get_value (adjustment));
@@ -801,7 +801,7 @@ memory_display_update_cursor_adjustment (MemoryDisplay *memdisplay)
     memdisplay->cur_adjustment->step_increment = 1;
     memdisplay->cur_adjustment->page_increment = 1;
     memdisplay->cur_adjustment->page_size = 1;
-    
+
     gtk_adjustment_changed (memdisplay->cur_adjustment);
   }
 }
@@ -827,8 +827,8 @@ memory_display_set_cursor_adjustment (MemoryDisplay *memdisplay, GtkAdjustment *
 
     memdisplay->cursor_value_changed_handler
       = g_signal_connect (adjustment, "value_changed",
-			  G_CALLBACK (memory_display_on_cursor_value_changed),
-			  memdisplay);
+                          G_CALLBACK (memory_display_on_cursor_value_changed),
+                          memdisplay);
 
     memory_display_update_cursor_adjustment (memdisplay);
     memory_display_update_cursor_position (memdisplay, gtk_adjustment_get_value (adjustment));
@@ -847,15 +847,15 @@ memory_display_move_cursor (MemoryDisplay *memdisplay, gint direction)
 {
   g_return_if_fail (IS_MEMORY_DISPLAY (memdisplay));
   g_return_if_fail (direction == MEMORY_DISPLAY_MOVE_UP
-		    || direction == MEMORY_DISPLAY_MOVE_DOWN
-		    || direction == MEMORY_DISPLAY_MOVE_LEFT
-		    || direction == MEMORY_DISPLAY_MOVE_RIGHT
-		    || direction == MEMORY_DISPLAY_MOVE_BOL
-		    || direction == MEMORY_DISPLAY_MOVE_EOL
-		    || direction == MEMORY_DISPLAY_MOVE_BOF
-		    || direction == MEMORY_DISPLAY_MOVE_EOF
-		    || direction == MEMORY_DISPLAY_MOVE_PAGE_UP
-		    || direction == MEMORY_DISPLAY_MOVE_PAGE_DOWN);
+                    || direction == MEMORY_DISPLAY_MOVE_DOWN
+                    || direction == MEMORY_DISPLAY_MOVE_LEFT
+                    || direction == MEMORY_DISPLAY_MOVE_RIGHT
+                    || direction == MEMORY_DISPLAY_MOVE_BOL
+                    || direction == MEMORY_DISPLAY_MOVE_EOL
+                    || direction == MEMORY_DISPLAY_MOVE_BOF
+                    || direction == MEMORY_DISPLAY_MOVE_EOF
+                    || direction == MEMORY_DISPLAY_MOVE_PAGE_UP
+                    || direction == MEMORY_DISPLAY_MOVE_PAGE_DOWN);
 
   if (memdisplay->cur_adjustment)
   {
@@ -884,7 +884,7 @@ memory_display_move_cursor (MemoryDisplay *memdisplay, gint direction)
 
       /* Make sure the cursor is visible before we scroll the display */
       gtk_adjustment_clamp_page (memdisplay->vadjustment, val,
-				 val + memdisplay->bytes_per_row);
+                                 val + memdisplay->bytes_per_row);
 
       scroll_val = gtk_adjustment_get_value (memdisplay->vadjustment);
       /* Record the offset of the cursor from the top of the screen */
@@ -892,13 +892,13 @@ memory_display_move_cursor (MemoryDisplay *memdisplay, gint direction)
 
       /* Scroll the display */
       if (direction == MEMORY_DISPLAY_MOVE_PAGE_DOWN)
-	scroll_val += memdisplay->vadjustment->page_increment;
+        scroll_val += memdisplay->vadjustment->page_increment;
       else
-	scroll_val -= memdisplay->vadjustment->page_increment;
+        scroll_val -= memdisplay->vadjustment->page_increment;
 
       scroll_val = CLAMP (scroll_val, memdisplay->vadjustment->lower,
-			  memdisplay->vadjustment->upper - memdisplay->vadjustment->page_size);
-      
+                          memdisplay->vadjustment->upper - memdisplay->vadjustment->page_size);
+
       gtk_adjustment_set_value (memdisplay->vadjustment, scroll_val);
 
       /* Put the cursor back at the same offset from the top of the screen */
@@ -937,61 +937,61 @@ memory_display_button_press (GtkWidget *widget, GdkEventButton *event)
       layout = gtk_widget_create_pango_layout (widget, NULL);
 
       for (i = 0; i < len; i++)
-	membuf[i] = electron_read_from_location (memdisplay->electron->data, addr + i);
+        membuf[i] = electron_read_from_location (memdisplay->electron->data, addr + i);
 
       if (memdisplay->disp_type == MEMORY_DISPLAY_HEX)
       {
-	char hexbuf[3];
-	int xp = 0, i;
+        char hexbuf[3];
+        int xp = 0, i;
 
-	hexbuf[2] = ' ';
+        hexbuf[2] = ' ';
 
-	for (i = 0; i < memdisplay->bytes_per_row - 1; i++, addr++)
-	{
-	  hexbuf[0] = GET_HEX_DIGIT (membuf[i] >> 4);
-	  hexbuf[1] = GET_HEX_DIGIT (membuf[i] & 0x0f);
-	    
-	  pango_layout_set_text (layout, hexbuf, 3);
-	  pango_layout_get_extents (layout, NULL, &logical_rect);
+        for (i = 0; i < memdisplay->bytes_per_row - 1; i++, addr++)
+        {
+          hexbuf[0] = GET_HEX_DIGIT (membuf[i] >> 4);
+          hexbuf[1] = GET_HEX_DIGIT (membuf[i] & 0x0f);
 
-	  xp += logical_rect.width / PANGO_SCALE;
+          pango_layout_set_text (layout, hexbuf, 3);
+          pango_layout_get_extents (layout, NULL, &logical_rect);
 
-	  if (xp > event->x)
-	    break;
-	}
+          xp += logical_rect.width / PANGO_SCALE;
+
+          if (xp > event->x)
+            break;
+        }
       }
       else if (memdisplay->disp_type == MEMORY_DISPLAY_TEXT)
       {
-	unsigned char *p = membuf;
-	int count = len;
-	PangoLayoutLine *line;
+        unsigned char *p = membuf;
+        int count = len;
+        PangoLayoutLine *line;
 
-	while (count-- > 0)
-	{
-	  if (*p < 32 || *p >= 127)
-	    *p = '.';
-	  p++;
-	}
+        while (count-- > 0)
+        {
+          if (*p < 32 || *p >= 127)
+            *p = '.';
+          p++;
+        }
 
-	pango_layout_set_text (layout, (char *) membuf, len);
+        pango_layout_set_text (layout, (char *) membuf, len);
 
-	if ((line = pango_layout_get_line (layout, 0)))
-	{
-	  int offset;
+        if ((line = pango_layout_get_line (layout, 0)))
+        {
+          int offset;
 
-	  if (!pango_layout_line_x_to_index (line, event->x * PANGO_SCALE, &offset, NULL)
-	      || offset >= memdisplay->bytes_per_row)
-	    offset = memdisplay->bytes_per_row - 1;
-	    
-	  addr += offset;
-	}
+          if (!pango_layout_line_x_to_index (line, event->x * PANGO_SCALE, &offset, NULL)
+              || offset >= memdisplay->bytes_per_row)
+            offset = memdisplay->bytes_per_row - 1;
+
+          addr += offset;
+        }
       }
-      
+
       g_object_unref (layout);
     }
 
     gtk_adjustment_set_value (memdisplay->cur_adjustment, addr);
-  }  
+  }
 
   return TRUE;
 }

@@ -68,10 +68,10 @@ breakpoint_edit_dialog_update_sensitivity (GtkCheckButton *enabled_checkbox, Gtk
   g_return_if_fail (GTK_IS_WIDGET (table));
 
   gtk_container_foreach (GTK_CONTAINER (table),
-			 gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (enabled_checkbox))
-			 ? breakpoint_edit_dialog_set_sensitive
-			 : breakpoint_edit_dialog_set_insensitive,
-			 enabled_checkbox);
+                         gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (enabled_checkbox))
+                         ? breakpoint_edit_dialog_set_sensitive
+                         : breakpoint_edit_dialog_set_insensitive,
+                         enabled_checkbox);
 }
 
 void
@@ -90,11 +90,11 @@ breakpoint_edit_dialog_run (GtkWindow *parent, ElectronManager *electron)
   g_object_ref (electron);
 
   dialog = gtk_dialog_new_with_buttons (_("Edit breakpoint"),
-					parent,
-					GTK_DIALOG_MODAL,
-					GTK_STOCK_CANCEL, GTK_RESPONSE_REJECT,
-					GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
-					NULL);
+                                        parent,
+                                        GTK_DIALOG_MODAL,
+                                        GTK_STOCK_CANCEL, GTK_RESPONSE_REJECT,
+                                        GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
+                                        NULL);
 
   /* Layout the controls in a table */
   table = gtk_table_new (3, 2, FALSE);
@@ -108,10 +108,10 @@ breakpoint_edit_dialog_run (GtkWindow *parent, ElectronManager *electron)
      dialog is destroyed */
   g_object_ref_sink (enabled_checkbox);
   g_signal_connect (G_OBJECT (enabled_checkbox), "toggled",
-		    G_CALLBACK (breakpoint_edit_dialog_update_sensitivity),
-		    table);
+                    G_CALLBACK (breakpoint_edit_dialog_update_sensitivity),
+                    table);
   gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (enabled_checkbox),
-				electron->data->cpu.break_type != CPU_BREAK_NONE);
+                                electron->data->cpu.break_type != CPU_BREAK_NONE);
   gtk_widget_show (enabled_checkbox);
   gtk_table_attach_defaults (GTK_TABLE (table), enabled_checkbox, 0, 2, 0, 1);
 
@@ -122,16 +122,16 @@ breakpoint_edit_dialog_run (GtkWindow *parent, ElectronManager *electron)
 
   /* Create an adjustment for the breakpoint address */
   address_adj = GTK_ADJUSTMENT (gtk_adjustment_new
-				(electron->data->cpu.break_type == CPU_BREAK_NONE ? 0.0
-				 : (gdouble) electron->data->cpu.break_address,
-				 0.0, 65535.0, 1.0, 16.0, 16.0));
+                                (electron->data->cpu.break_type == CPU_BREAK_NONE ? 0.0
+                                 : (gdouble) electron->data->cpu.break_address,
+                                 0.0, 65535.0, 1.0, 16.0, 16.0));
   /* Reference it so that it won't go away after the dialog is destroyed */
   g_object_ref_sink (address_adj);
 
   /* Create a spin control for the address */
   GtkWidget *hexspin = hex_spin_button_new ();
   g_object_set (hexspin, "numeric", TRUE, "adjustment", address_adj, "hex", TRUE,
-		"digits", 4, NULL);
+                "digits", 4, NULL);
   gtk_label_set_mnemonic_widget (GTK_LABEL (label), hexspin);
   gtk_widget_show (hexspin);
   gtk_table_attach_defaults (GTK_TABLE (table), hexspin, 1, 2, 1, 2);
@@ -148,11 +148,11 @@ breakpoint_edit_dialog_run (GtkWindow *parent, ElectronManager *electron)
   /* Add all of the break point type strings */
   for (i = 0; i < BREAKPOINT_EDIT_DIALOG_BREAK_TYPE_COUNT; i++)
     gtk_combo_box_append_text (GTK_COMBO_BOX (type_combobox),
-			       breakpoint_edit_dialog_break_types[i].name);
+                               breakpoint_edit_dialog_break_types[i].name);
   /* Select the current breakpoint type */
   for (i = 0; i < BREAKPOINT_EDIT_DIALOG_BREAK_TYPE_COUNT; i++)
     if (breakpoint_edit_dialog_break_types[i].break_type
-	== electron->data->cpu.break_type)
+        == electron->data->cpu.break_type)
     {
       gtk_combo_box_set_active (GTK_COMBO_BOX (type_combobox), i);
       break;
@@ -166,7 +166,7 @@ breakpoint_edit_dialog_run (GtkWindow *parent, ElectronManager *electron)
 
   gtk_widget_show (table);
   gtk_box_pack_start (GTK_BOX (GTK_DIALOG (dialog)->vbox), table,
-		      FALSE, FALSE, 0);
+                      FALSE, FALSE, 0);
 
   breakpoint_edit_dialog_update_sensitivity (GTK_CHECK_BUTTON (enabled_checkbox), table);
 
@@ -182,12 +182,12 @@ breakpoint_edit_dialog_run (GtkWindow *parent, ElectronManager *electron)
 
     if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (enabled_checkbox)))
       break_type = breakpoint_edit_dialog_break_types
-	[gtk_combo_box_get_active (GTK_COMBO_BOX (type_combobox))].break_type;
+        [gtk_combo_box_get_active (GTK_COMBO_BOX (type_combobox))].break_type;
     else
       break_type = CPU_BREAK_NONE;
 
     cpu_set_break (&electron->data->cpu, break_type,
-		   (guint16) gtk_adjustment_get_value (address_adj));
+                   (guint16) gtk_adjustment_get_value (address_adj));
   }
 
   g_object_unref (type_combobox);

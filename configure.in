@@ -28,7 +28,7 @@ fi;
 dnl Set PACKAGE_SOURCE_DIR in config.h.
 packagesrcdir=`cd $srcdir && pwd`
 AC_DEFINE_UNQUOTED(PACKAGE_SOURCE_DIR, "${packagesrcdir}",
-				       [Define to the source directory])
+                                       [Define to the source directory])
 
 dnl GConf settings
 AC_PATH_PROG(GCONFTOOL, gconftool-2)

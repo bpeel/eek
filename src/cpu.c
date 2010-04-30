@@ -117,7 +117,7 @@ static Cpu cpu_state;
                                  cpu_state.got_break = 1; \
                                (_taddr < CPU_RAM_SIZE - 1) \
                                ? (GUINT16_FROM_LE (*(guint16 *) (cpu_state.memory + (_taddr)))) \
-  			       : (cpu_state.read_func (cpu_state.memory_data, _taddr) \
+                               : (cpu_state.read_func (cpu_state.memory_data, _taddr) \
                                   | (cpu_state.read_func (cpu_state.memory_data, \
                                                           _taddr + 1) << 8)); })
 #define CPU_FETCH()        (CPU_READ (cpu_state.pc++))
@@ -143,9 +143,9 @@ static const CpuAddressFunc cpu_addressing_modes_addresses[];
 
 /* Initialise the cpu struct */
 void
-cpu_init (Cpu *cpu, guint8 *memory, 
-	  CpuMemReadFunc read_func, CpuMemWriteFunc write_func,
-	  void *memory_data)
+cpu_init (Cpu *cpu, guint8 *memory,
+          CpuMemReadFunc read_func, CpuMemWriteFunc write_func,
+          void *memory_data)
 {
   /* Initialise the memory access */
   cpu->memory = memory;
@@ -196,8 +196,8 @@ cpu_fetch_execute (Cpu *cpu, cycles_t target_time)
   memcpy (&cpu_state, cpu, sizeof (Cpu));
 
   while (cpu_state.time < target_time
-	 /* Check for a break */
-	 && !cpu_state.got_break)
+         /* Check for a break */
+         && !cpu_state.got_break)
   {
     /* Check for interrupts */
     if (cpu_state.nmi)
@@ -217,7 +217,7 @@ cpu_fetch_execute (Cpu *cpu, cycles_t target_time)
     else if (cpu_state.irq && !CPU_IS_I ())
     {
       cpu_state.time += 7;
-    
+
       /* Store pc - 1 */
       CPU_PUSH_WORD (cpu_state.pc);
       /* Store flags, break flag is cleared, unused flag is always one */
@@ -230,15 +230,15 @@ cpu_fetch_execute (Cpu *cpu, cycles_t target_time)
     else
     {
       if (cpu_state.break_type == CPU_BREAK_ADDR
-	  && cpu_state.break_address == cpu_state.pc)
-	cpu_state.got_break = TRUE;
+          && cpu_state.break_address == cpu_state.pc)
+        cpu_state.got_break = TRUE;
       else
-	/* Use the jumpblock to call the function that is being pointed to
-	   by the program counter. Also store the current instruction */
-	cpu_jumpblock[cpu_state.instruction = CPU_FETCH ()] ();
+        /* Use the jumpblock to call the function that is being pointed to
+           by the program counter. Also store the current instruction */
+        cpu_jumpblock[cpu_state.instruction = CPU_FETCH ()] ();
     }
   }
-  
+
   /* Put the cpu state back */
   memcpy (cpu, &cpu_state, sizeof (Cpu));
 
@@ -524,7 +524,7 @@ cpu_op_asl (void)
 {
   guint16 addr = CPU_ADDR_FOR_OP (cpu_state.instruction);
   guint8 v = CPU_READ (addr);
-  
+
   CPU_SET_C (v & 0x80);
   v <<= 1;
   CPU_SET_N (v & 0x80);
@@ -548,7 +548,7 @@ cpu_op_lsr (void)
 {
   guint16 addr = CPU_ADDR_FOR_OP (cpu_state.instruction);
   guint8 v = CPU_READ (addr);
-  
+
   CPU_SET_C (v & 0x01);
   v >>= 1;
   CPU_SET_N (FALSE);
@@ -573,7 +573,7 @@ cpu_op_rol (void)
   guint16 addr = CPU_ADDR_FOR_OP (cpu_state.instruction);
   guint8 v = CPU_READ (addr);
   int oc = CPU_IS_C ();
-  
+
   CPU_SET_C (v & 0x80);
   v <<= 1;
   if (oc)
@@ -603,7 +603,7 @@ cpu_op_ror (void)
   guint16 addr = CPU_ADDR_FOR_OP (cpu_state.instruction);
   guint8 v = CPU_READ (addr);
   int oc = CPU_IS_C ();
-  
+
   CPU_SET_C (v & 0x01);
   v >>= 1;
   if (oc)
@@ -676,7 +676,7 @@ cpu_op_sei (void)
   CPU_SET_I (TRUE);
 }
 
-void 
+void
 cpu_op_inx (void)
 {
   cpu_state.time += 2;
@@ -685,7 +685,7 @@ cpu_op_inx (void)
   CPU_SET_Z (!cpu_state.x);
 }
 
-void 
+void
 cpu_op_iny (void)
 {
   cpu_state.time += 2;
@@ -694,7 +694,7 @@ cpu_op_iny (void)
   CPU_SET_Z (!cpu_state.y);
 }
 
-void 
+void
 cpu_op_dex (void)
 {
   cpu_state.time += 2;
@@ -703,7 +703,7 @@ cpu_op_dex (void)
   CPU_SET_Z (!cpu_state.x);
 }
 
-void 
+void
 cpu_op_dey (void)
 {
   cpu_state.time += 2;
@@ -713,9 +713,9 @@ cpu_op_dey (void)
 }
 
 static const int cpu_branch_tests[4] = { CPU_FLAG_N,
-					 CPU_FLAG_V,
-					 CPU_FLAG_C,
-					 CPU_FLAG_Z };
+                                         CPU_FLAG_V,
+                                         CPU_FLAG_C,
+                                         CPU_FLAG_Z };
 
 void
 cpu_op_branch (void)
@@ -724,7 +724,7 @@ cpu_op_branch (void)
   guint16 new_addr;
   int ins;
   int t = cpu_state.p & cpu_branch_tests[(ins = cpu_state.instruction) >> 6];
-  
+
   if ((ins & 0x20) == 0)
     t = !t;
   if (t)
@@ -940,7 +940,7 @@ cpu_get_absolute_indexed_x (void)
   if (al >= 0x100)
   {
     /* count an extra cycle when it goes over the page boundary */
-    cpu_state.time += 5; 
+    cpu_state.time += 5;
     return CPU_READ ((ah << 8) + al);
   }
   else
@@ -959,7 +959,7 @@ cpu_get_absolute_indexed_y (void)
   if (al >= 0x100)
   {
     cpu_state.time += 5; /* count an extra cycle when it goes over the page
-		       boundary */
+                       boundary */
     return CPU_READ ((ah << 8) + al);
   }
   else
@@ -976,7 +976,7 @@ cpu_get_pre_indexed_x (void)
   int al = CPU_READ (za++);
   int ah = CPU_READ (za);
   cpu_state.time += 6;
-  return CPU_READ ((ah << 8) | al);  
+  return CPU_READ ((ah << 8) | al);
 }
 
 guint8
@@ -1030,7 +1030,7 @@ cpu_write_absolute_indexed_x (guint8 v)
   if (al >= 0x100)
   {
     /* count an extra cycle when it goes over the page boundary */
-    cpu_state.time += 5; 
+    cpu_state.time += 5;
     CPU_WRITE ((ah << 8) + al, v);
   }
   else

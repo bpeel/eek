@@ -48,9 +48,9 @@ static void electron_manager_dispose (GObject *obj);
 
 static gboolean electron_manager_timeout (ElectronManager *eman);
 static void electron_manager_on_value_changed (GConfClient *client,
-					       const gchar *key,
-					       GConfValue *value,
-					       ElectronManager *eman);
+                                               const gchar *key,
+                                               GConfValue *value,
+                                               ElectronManager *eman);
 
 static gpointer parent_class;
 
@@ -78,7 +78,7 @@ electron_manager_rom_table[] =
     { "rom_12", 12 }, { "rom_13", 13 }, { "rom_14", 14 }, { "rom_15", 15 }
   };
 #define ELECTRON_MANAGER_ROM_COUNT (sizeof (electron_manager_rom_table) \
-				    / sizeof (electron_manager_rom_table[0]))
+                                    / sizeof (electron_manager_rom_table[0]))
 
 static void
 electron_manager_class_init (ElectronManagerClass *klass)
@@ -92,36 +92,36 @@ electron_manager_class_init (ElectronManagerClass *klass)
 
   electron_manager_signals[ELECTRON_MANAGER_FRAME_END_SIGNAL]
     = g_signal_new ("frame-end",
-		    G_TYPE_FROM_CLASS (klass),
-		    G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
-		    G_STRUCT_OFFSET (ElectronManagerClass, frame_end),
-		    NULL, NULL,
-		    g_cclosure_marshal_VOID__VOID,
-		    G_TYPE_NONE, 0);
+                    G_TYPE_FROM_CLASS (klass),
+                    G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
+                    G_STRUCT_OFFSET (ElectronManagerClass, frame_end),
+                    NULL, NULL,
+                    g_cclosure_marshal_VOID__VOID,
+                    G_TYPE_NONE, 0);
   electron_manager_signals[ELECTRON_MANAGER_STARTED_SIGNAL]
     = g_signal_new ("started",
-		    G_TYPE_FROM_CLASS (klass),
-		    G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
-		    G_STRUCT_OFFSET (ElectronManagerClass, started),
-		    NULL, NULL,
-		    g_cclosure_marshal_VOID__VOID,
-		    G_TYPE_NONE, 0);
+                    G_TYPE_FROM_CLASS (klass),
+                    G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
+                    G_STRUCT_OFFSET (ElectronManagerClass, started),
+                    NULL, NULL,
+                    g_cclosure_marshal_VOID__VOID,
+                    G_TYPE_NONE, 0);
   electron_manager_signals[ELECTRON_MANAGER_STOPPED_SIGNAL]
     = g_signal_new ("stopped",
-		    G_TYPE_FROM_CLASS (klass),
-		    G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
-		    G_STRUCT_OFFSET (ElectronManagerClass, stopped),
-		    NULL, NULL,
-		    g_cclosure_marshal_VOID__VOID,
-		    G_TYPE_NONE, 0);
+                    G_TYPE_FROM_CLASS (klass),
+                    G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
+                    G_STRUCT_OFFSET (ElectronManagerClass, stopped),
+                    NULL, NULL,
+                    g_cclosure_marshal_VOID__VOID,
+                    G_TYPE_NONE, 0);
   electron_manager_signals[ELECTRON_MANAGER_ROM_ERROR_SIGNAL]
     = g_signal_new ("rom-error",
-		    G_TYPE_FROM_CLASS (klass),
-		    G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
-		    G_STRUCT_OFFSET (ElectronManagerClass, rom_error),
-		    NULL, NULL,
-		    g_cclosure_marshal_VOID__POINTER,
-		    G_TYPE_NONE, 1, G_TYPE_POINTER);
+                    G_TYPE_FROM_CLASS (klass),
+                    G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
+                    G_STRUCT_OFFSET (ElectronManagerClass, rom_error),
+                    NULL, NULL,
+                    g_cclosure_marshal_VOID__POINTER,
+                    G_TYPE_NONE, 1, G_TYPE_POINTER);
 
   g_type_class_add_private (object_class, sizeof (ElectronManagerPrivate));
 }
@@ -137,7 +137,7 @@ electron_manager_init (ElectronManager *eman)
 
   priv->gconf = gconf_client_get_default ();
   gconf_client_add_dir (priv->gconf, ELECTRON_MANAGER_ROMS_CONF_DIR,
-			GCONF_CLIENT_PRELOAD_ONELEVEL, &error);
+                        GCONF_CLIENT_PRELOAD_ONELEVEL, &error);
 
   if (error == NULL)
     priv->added_dir = FALSE;
@@ -149,8 +149,8 @@ electron_manager_init (ElectronManager *eman)
 
   priv->value_changed_handler
     = g_signal_connect (priv->gconf, "value-changed",
-			G_CALLBACK (electron_manager_on_value_changed),
-			eman);
+                        G_CALLBACK (electron_manager_on_value_changed),
+                        eman);
 }
 
 gboolean
@@ -173,15 +173,15 @@ electron_manager_start (ElectronManager *eman)
   if (priv->timeout == 0)
   {
     priv->timeout = frame_source_add (ELECTRON_TICKS_PER_FRAME,
-				      (GSourceFunc) electron_manager_timeout,
-				      eman, NULL);
+                                      (GSourceFunc) electron_manager_timeout,
+                                      eman, NULL);
     g_signal_emit (G_OBJECT (eman),
-		   electron_manager_signals[ELECTRON_MANAGER_STARTED_SIGNAL], 0);
+                   electron_manager_signals[ELECTRON_MANAGER_STARTED_SIGNAL], 0);
     /* If we're breaking at the current address then skip over one
        instruction. Otherwise when the breakpoint is hit continuing
        the emulation will cause it to break immediatly */
     if (eman->data->cpu.break_type == CPU_BREAK_ADDR
-	&& eman->data->cpu.break_address == eman->data->cpu.pc)
+        && eman->data->cpu.break_address == eman->data->cpu.pc)
       electron_step (eman->data);
   }
 }
@@ -199,7 +199,7 @@ electron_manager_stop (ElectronManager *eman)
     priv->timeout = 0;
 
     g_signal_emit (G_OBJECT (eman),
-		   electron_manager_signals[ELECTRON_MANAGER_STOPPED_SIGNAL], 0);
+                   electron_manager_signals[ELECTRON_MANAGER_STOPPED_SIGNAL], 0);
   }
 }
 
@@ -213,7 +213,7 @@ electron_manager_step (ElectronManager *eman)
   electron_manager_stop (eman);
 
   g_signal_emit (G_OBJECT (eman),
-		 electron_manager_signals[ELECTRON_MANAGER_STARTED_SIGNAL], 0);
+                 electron_manager_signals[ELECTRON_MANAGER_STARTED_SIGNAL], 0);
 
   last_scanline = eman->data->scanline;
   electron_step (eman->data);
@@ -221,10 +221,10 @@ electron_manager_step (ElectronManager *eman)
   /* Check if we've reached the end of a frame */
   if (last_scanline != eman->data->scanline && eman->data->scanline == ELECTRON_END_SCANLINE)
     g_signal_emit (G_OBJECT (eman),
-		   electron_manager_signals[ELECTRON_MANAGER_FRAME_END_SIGNAL], 0);
+                   electron_manager_signals[ELECTRON_MANAGER_FRAME_END_SIGNAL], 0);
 
   g_signal_emit (G_OBJECT (eman),
-		 electron_manager_signals[ELECTRON_MANAGER_STOPPED_SIGNAL], 0);
+                 electron_manager_signals[ELECTRON_MANAGER_STOPPED_SIGNAL], 0);
 }
 
 static gboolean
@@ -241,7 +241,7 @@ electron_manager_timeout (ElectronManager *eman)
   else
     /* Otherwise we've done a whole frame so emit the frame end signal */
     g_signal_emit (G_OBJECT (eman),
-		   electron_manager_signals[ELECTRON_MANAGER_FRAME_END_SIGNAL], 0);
+                   electron_manager_signals[ELECTRON_MANAGER_FRAME_END_SIGNAL], 0);
 
   return TRUE;
 }
@@ -255,19 +255,19 @@ electron_manager_get_type ()
   {
     static const GTypeInfo electron_manager_info =
       {
-	sizeof (ElectronManagerClass), /* size of class structure */
-	NULL, /* base_init */
-	NULL, /* base_finalize */
-	(GClassInitFunc) electron_manager_class_init, /* class struct init func */
-	NULL, /* class_finalize */
-	NULL, /* class_data */
-	sizeof (ElectronManager), /* size of the object structure */
-	0, /* n_preallocs */
-	(GInstanceInitFunc) electron_manager_init /* constructor */
+        sizeof (ElectronManagerClass), /* size of class structure */
+        NULL, /* base_init */
+        NULL, /* base_finalize */
+        (GClassInitFunc) electron_manager_class_init, /* class struct init func */
+        NULL, /* class_finalize */
+        NULL, /* class_data */
+        sizeof (ElectronManager), /* size of the object structure */
+        0, /* n_preallocs */
+        (GInstanceInitFunc) electron_manager_init /* constructor */
       };
 
     electron_manager_type = g_type_register_static (G_TYPE_OBJECT, "ElectronManager",
-						    &electron_manager_info, 0);
+                                                    &electron_manager_info, 0);
   }
 
   return electron_manager_type;
@@ -319,13 +319,13 @@ electron_manager_update_rom (ElectronManager *eman, int rom_num, GError **error)
   if (priv->gconf)
   {
     gchar *full_key = g_strconcat (ELECTRON_MANAGER_ROMS_CONF_DIR,
-				   "/", electron_manager_rom_table[rom_num].key,
-				   NULL);
+                                   "/", electron_manager_rom_table[rom_num].key,
+                                   NULL);
     value = gconf_client_get (priv->gconf, full_key, NULL);
     g_free (full_key);
-    
+
     if (value && (value->type != GCONF_VALUE_STRING
-		  || gconf_value_get_string (value)[0] == '\0'))
+                  || gconf_value_get_string (value)[0] == '\0'))
     {
       gconf_value_free (value);
       value = NULL;
@@ -346,11 +346,11 @@ electron_manager_update_rom (ElectronManager *eman, int rom_num, GError **error)
     GError *conv_error = NULL;
 
     if ((filename = g_filename_from_utf8 (gconf_value_get_string (value), -1,
-					  NULL, NULL, &conv_error)) == NULL)
+                                          NULL, NULL, &conv_error)) == NULL)
     {
       g_set_error (error, ELECTRON_MANAGER_ERROR, ELECTRON_MANAGER_ERROR_FILE,
-		   _("Failed to convert \"%s\" to correct filename encoding: %s"),
-		   gconf_value_get_string (value), conv_error->message);
+                   _("Failed to convert \"%s\" to correct filename encoding: %s"),
+                   gconf_value_get_string (value), conv_error->message);
       g_error_free (conv_error);
       ret = -1;
     }
@@ -358,32 +358,32 @@ electron_manager_update_rom (ElectronManager *eman, int rom_num, GError **error)
     {
       if ((file = g_fopen (filename, "rb")) == NULL)
       {
-	g_set_error (error, ELECTRON_MANAGER_ERROR, ELECTRON_MANAGER_ERROR_FILE,
-		     _("Failed to load \"%s\": %s"), gconf_value_get_string (value),
-		     strerror (errno));
-	ret = -1;
+        g_set_error (error, ELECTRON_MANAGER_ERROR, ELECTRON_MANAGER_ERROR_FILE,
+                     _("Failed to load \"%s\": %s"), gconf_value_get_string (value),
+                     strerror (errno));
+        ret = -1;
       }
       else
       {
-	int load_ret;
+        int load_ret;
 
-	if (electron_manager_rom_table[rom_num].page == -1)
-	  load_ret = electron_load_os_rom (eman->data, file);
-	else
-	  load_ret = electron_load_paged_rom (eman->data,
-					      electron_manager_rom_table[rom_num].page,
-					      file);
-	if (load_ret == -1)
-	{
-	  g_set_error (error, ELECTRON_MANAGER_ERROR, ELECTRON_MANAGER_ERROR_FILE,
-		       _("Failed to load \"%s\": %s"), gconf_value_get_string (value),
-		       ferror (file) ? strerror (errno) : _("ROM file too short"));
-	  ret = -1;
-	}
+        if (electron_manager_rom_table[rom_num].page == -1)
+          load_ret = electron_load_os_rom (eman->data, file);
+        else
+          load_ret = electron_load_paged_rom (eman->data,
+                                              electron_manager_rom_table[rom_num].page,
+                                              file);
+        if (load_ret == -1)
+        {
+          g_set_error (error, ELECTRON_MANAGER_ERROR, ELECTRON_MANAGER_ERROR_FILE,
+                       _("Failed to load \"%s\": %s"), gconf_value_get_string (value),
+                       ferror (file) ? strerror (errno) : _("ROM file too short"));
+          ret = -1;
+        }
 
-	fclose (file);
+        fclose (file);
       }
-      
+
       g_free (filename);
     }
 
@@ -401,9 +401,9 @@ electron_manager_error_quark ()
 
 static void
 electron_manager_on_value_changed (GConfClient *client,
-				   const gchar *key,
-				   GConfValue *value,
-				   ElectronManager *eman)
+                                   const gchar *key,
+                                   GConfValue *value,
+                                   ElectronManager *eman)
 {
   ElectronManagerPrivate *priv;
 
@@ -411,7 +411,7 @@ electron_manager_on_value_changed (GConfClient *client,
   priv = ELECTRON_MANAGER_GET_PRIVATE (eman);
   g_return_if_fail (GCONF_IS_CLIENT (client));
   g_return_if_fail (priv->gconf == client);
-  
+
   if (g_str_has_prefix (key, ELECTRON_MANAGER_ROMS_CONF_DIR)
       && key[sizeof (ELECTRON_MANAGER_ROMS_CONF_DIR) - 1] == '/')
   {
@@ -419,21 +419,21 @@ electron_manager_on_value_changed (GConfClient *client,
 
     for (rom_num = 0; rom_num < ELECTRON_MANAGER_ROM_COUNT; rom_num++)
       if (!strcmp (key + sizeof (ELECTRON_MANAGER_ROMS_CONF_DIR),
-		   electron_manager_rom_table[rom_num].key))
+                   electron_manager_rom_table[rom_num].key))
       {
-	GError *error = NULL;
+        GError *error = NULL;
 
-	if (electron_manager_update_rom (eman, rom_num, &error) == -1)
-	{
-	  GList *list = g_list_prepend (NULL, error);
-	  g_signal_emit (G_OBJECT (eman),
-			 electron_manager_signals[ELECTRON_MANAGER_ROM_ERROR_SIGNAL],
-			 0, list);
-	  g_error_free (error);
-	  g_list_free (list);
-	}
+        if (electron_manager_update_rom (eman, rom_num, &error) == -1)
+        {
+          GList *list = g_list_prepend (NULL, error);
+          g_signal_emit (G_OBJECT (eman),
+                         electron_manager_signals[ELECTRON_MANAGER_ROM_ERROR_SIGNAL],
+                         0, list);
+          g_error_free (error);
+          g_list_free (list);
+        }
 
-	break;
+        break;
       }
   }
 }
@@ -455,8 +455,8 @@ electron_manager_update_all_roms (ElectronManager *eman)
   if (errors)
   {
     g_signal_emit (G_OBJECT (eman),
-		   electron_manager_signals[ELECTRON_MANAGER_ROM_ERROR_SIGNAL],
-		   0, errors);
+                   electron_manager_signals[ELECTRON_MANAGER_ROM_ERROR_SIGNAL],
+                   0, errors);
     g_list_foreach (errors, (GFunc) g_error_free, NULL);
     g_list_free (errors);
   }

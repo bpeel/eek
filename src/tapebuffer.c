@@ -112,8 +112,8 @@ tape_buffer_store_byte_or_command (TapeBuffer *tbuf, guint8 byte)
     {
       tbuf->buf[tbuf->buf_pos++] = byte;
       memmove (tbuf->buf + tbuf->buf_pos,
-	       tbuf->buf + tbuf->buf_pos + 1,
-	       tbuf->buf_length - tbuf->buf_pos);
+               tbuf->buf + tbuf->buf_pos + 1,
+               tbuf->buf_length - tbuf->buf_pos);
       tbuf->buf_length--;
     }
     else
@@ -151,18 +151,18 @@ tape_buffer_store_byte (TapeBuffer *tbuf, guint8 byte)
     {
       if (tbuf->buf[tbuf->buf_pos] == TAPE_BUFFER_CMD_QUOTE)
       {
-	tbuf->buf[tbuf->buf_pos + 1] = byte;
-	tbuf->buf_pos += 2;
+        tbuf->buf[tbuf->buf_pos + 1] = byte;
+        tbuf->buf_pos += 2;
       }
       else
       {
-	tape_buffer_ensure_size (tbuf, tbuf->buf_length + 1);
-	tbuf->buf[tbuf->buf_pos++] = TAPE_BUFFER_CMD_QUOTE;
-	memmove (tbuf->buf + tbuf->buf_pos + 1,
-		 tbuf->buf + tbuf->buf_pos,
-		 tbuf->buf_length - tbuf->buf_pos);
-	tbuf->buf[tbuf->buf_pos++] = byte;
-	tbuf->buf_length++;
+        tape_buffer_ensure_size (tbuf, tbuf->buf_length + 1);
+        tbuf->buf[tbuf->buf_pos++] = TAPE_BUFFER_CMD_QUOTE;
+        memmove (tbuf->buf + tbuf->buf_pos + 1,
+                 tbuf->buf + tbuf->buf_pos,
+                 tbuf->buf_length - tbuf->buf_pos);
+        tbuf->buf[tbuf->buf_pos++] = byte;
+        tbuf->buf_length++;
       }
     }
   }

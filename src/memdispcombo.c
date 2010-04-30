@@ -31,8 +31,8 @@ static void mem_disp_combo_class_init (MemDispComboClass *klass);
 static void mem_disp_combo_init (MemDispCombo *memdispcombo);
 
 static void mem_disp_combo_set_scroll_adjustments (MemDispCombo *memdispcombo,
-						   GtkAdjustment *hadjustment,
-						   GtkAdjustment *vadjustment);
+                                                   GtkAdjustment *hadjustment,
+                                                   GtkAdjustment *vadjustment);
 
 GType
 mem_disp_combo_get_type ()
@@ -43,22 +43,22 @@ mem_disp_combo_get_type ()
   {
     static const GTypeInfo mem_disp_combo_info =
       {
-	sizeof (MemDispComboClass),
-	NULL, NULL,
-	(GClassInitFunc) mem_disp_combo_class_init,
-	NULL, NULL,
+        sizeof (MemDispComboClass),
+        NULL, NULL,
+        (GClassInitFunc) mem_disp_combo_class_init,
+        NULL, NULL,
 
-	sizeof (MemDispCombo),
-	0,
-	(GInstanceInitFunc) mem_disp_combo_init,
-	NULL
+        sizeof (MemDispCombo),
+        0,
+        (GInstanceInitFunc) mem_disp_combo_init,
+        NULL
       };
 
     mem_disp_combo_type = g_type_register_static (GTK_TYPE_HPANED,
-						  "MemDispCombo",
-						  &mem_disp_combo_info, 0);
+                                                  "MemDispCombo",
+                                                  &mem_disp_combo_info, 0);
   }
-  
+
   return mem_disp_combo_type;
 }
 
@@ -71,12 +71,12 @@ mem_disp_combo_class_init (MemDispComboClass *klass)
 
   widget_class->set_scroll_adjustments_signal =
     g_signal_new ("set_scroll_adjustments",
-		  G_TYPE_FROM_CLASS (klass),
-		  G_SIGNAL_RUN_LAST,
-		  G_STRUCT_OFFSET (MemDispComboClass, set_scroll_adjustments),
-		  NULL, NULL,
-		  eek_marshal_VOID__OBJECT_OBJECT,
-		  G_TYPE_NONE, 2, GTK_TYPE_ADJUSTMENT, GTK_TYPE_ADJUSTMENT);
+                  G_TYPE_FROM_CLASS (klass),
+                  G_SIGNAL_RUN_LAST,
+                  G_STRUCT_OFFSET (MemDispComboClass, set_scroll_adjustments),
+                  NULL, NULL,
+                  eek_marshal_VOID__OBJECT_OBJECT,
+                  G_TYPE_NONE, 2, GTK_TYPE_ADJUSTMENT, GTK_TYPE_ADJUSTMENT);
 }
 
 static void
@@ -106,7 +106,7 @@ mem_disp_combo_init (MemDispCombo *memdispcombo)
   memdispcombo->text_display = memory_display_new ();
   memory_display_set_type (MEMORY_DISPLAY (memdispcombo->text_display), MEMORY_DISPLAY_TEXT);
   gtk_widget_show (memdispcombo->text_display);
-  
+
   gtk_paned_add2 (GTK_PANED (memdispcombo), memdispcombo->text_display);
 
   cur_adjustment = GTK_ADJUSTMENT (gtk_adjustment_new (0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f));
@@ -135,7 +135,7 @@ mem_disp_combo_new ()
 }
 
 GtkWidget *
-mem_disp_combo_new_with_electron (ElectronManager *electron)				  
+mem_disp_combo_new_with_electron (ElectronManager *electron)
 {
   GtkWidget *ret;
 
@@ -158,15 +158,15 @@ mem_disp_combo_set_electron (MemDispCombo *memdispcombo, ElectronManager *electr
 
 static void
 mem_disp_combo_set_scroll_adjustments (MemDispCombo *memdispcombo,
-				       GtkAdjustment *hadjustment,
-				       GtkAdjustment *vadjustment)
+                                       GtkAdjustment *hadjustment,
+                                       GtkAdjustment *vadjustment)
 {
   g_return_if_fail (IS_MEM_DISP_COMBO (memdispcombo));
 
   gtk_widget_set_scroll_adjustments (memdispcombo->address_display,
-				     hadjustment, vadjustment);
+                                     hadjustment, vadjustment);
   gtk_widget_set_scroll_adjustments (memdispcombo->binary_display,
-				     hadjustment, vadjustment);
+                                     hadjustment, vadjustment);
   gtk_widget_set_scroll_adjustments (memdispcombo->text_display,
-				     hadjustment, vadjustment);
+                                     hadjustment, vadjustment);
 }

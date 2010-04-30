@@ -45,7 +45,7 @@ glade_util_load (const char *filename, const char *root_widget)
   }
 
   ret = glade_xml_new (full_filename, root_widget, NULL);
-  
+
   g_free (full_filename);
 
   return ret;
@@ -53,7 +53,7 @@ glade_util_load (const char *filename, const char *root_widget)
 
 gboolean
 glade_util_get_widgets (const char *filename, const char *root_widget,
-			GtkWidget **error_widget, ...)
+                        GtkWidget **error_widget, ...)
 {
   va_list ap;
   const char *name;
@@ -65,9 +65,9 @@ glade_util_get_widgets (const char *filename, const char *root_widget,
   {
     char *full_filename = g_build_filename (EEK_GLADE_DIR, filename, NULL);
     char *error_message = g_strdup_printf (_("There was an error opening the Glade file "
-					     "\"%s\". Please check your installation."),
-					   full_filename);
-    
+                                             "\"%s\". Please check your installation."),
+                                           full_filename);
+
     *error_widget = gtk_label_new (error_message);
     gtk_label_set_line_wrap (GTK_LABEL (*error_widget), TRUE);
 
@@ -86,25 +86,25 @@ glade_util_get_widgets (const char *filename, const char *root_widget,
 
       if (((* widget_ret) = glade_xml_get_widget (gui, name)) == NULL)
       {
-	GtkWidget *root;
-	char *full_filename = g_build_filename (EEK_GLADE_DIR, filename, NULL);
-	char *error_message = g_strdup_printf (_("A widget is missing in the file "
-						 "\"%s\". Please check your installation."),
-					       full_filename);
-    
-	*error_widget = gtk_label_new (error_message);
-	gtk_label_set_line_wrap (GTK_LABEL (*error_widget), TRUE);
+        GtkWidget *root;
+        char *full_filename = g_build_filename (EEK_GLADE_DIR, filename, NULL);
+        char *error_message = g_strdup_printf (_("A widget is missing in the file "
+                                                 "\"%s\". Please check your installation."),
+                                               full_filename);
 
-	g_free (error_message);
-	g_free (full_filename);
+        *error_widget = gtk_label_new (error_message);
+        gtk_label_set_line_wrap (GTK_LABEL (*error_widget), TRUE);
 
-	/* Try to destroy the root widget otherwise it will leak */
-	if (root_widget && (root = glade_xml_get_widget (gui, root_widget)))
-	  gtk_widget_destroy (root);
+        g_free (error_message);
+        g_free (full_filename);
 
-	ret = FALSE;
+        /* Try to destroy the root widget otherwise it will leak */
+        if (root_widget && (root = glade_xml_get_widget (gui, root_widget)))
+          gtk_widget_destroy (root);
 
-	break;
+        ret = FALSE;
+
+        break;
       }
     }
 

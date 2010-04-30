@@ -127,8 +127,8 @@ disassemble_instruction (guint16 address, const guint8 *bytes, char *mnemonic, c
   {
     static const DisassembleModeFunc mode_table[8] =
       { disassemble_ind_zero_page_x, disassemble_zero_page, disassemble_immediate,
-	disassemble_absolute, disassemble_ind_zero_page_y, disassemble_zero_page_x,
-	disassemble_absolute_y, disassemble_absolute_x };
+        disassemble_absolute, disassemble_ind_zero_page_y, disassemble_zero_page_x,
+        disassemble_absolute_y, disassemble_absolute_x };
     static const char mnemonic_table[8 * 4] =
       "ORA\0AND\0EOR\0ADC\0STA\0LDA\0CMP\0SBC";
 
@@ -153,14 +153,14 @@ disassemble_instruction (guint16 address, const guint8 *bytes, char *mnemonic, c
       /* STX absolute, y does not work */
       if (bytes[0] == 0x9e)
       {
-	memcpy (mnemonic, "???", 4);
-	return disassemble_implied (address, bytes, operands);
+        memcpy (mnemonic, "???", 4);
+        return disassemble_implied (address, bytes, operands);
       }
       else
       {
-	memcpy (mnemonic, (bytes[0] & 0x20) ? "LDX" : "STX", 4);
-	return (* ((bytes[0] & 0x08) ? disassemble_absolute_y : disassemble_zero_page_y))
-	  (address, bytes, operands);
+        memcpy (mnemonic, (bytes[0] & 0x20) ? "LDX" : "STX", 4);
+        return (* ((bytes[0] & 0x08) ? disassemble_absolute_y : disassemble_zero_page_y))
+          (address, bytes, operands);
       }
     }
     /* Single-byte instructions in gaps of accumulator mode and missing mode 110 */
@@ -172,8 +172,8 @@ disassemble_instruction (guint16 address, const guint8 *bytes, char *mnemonic, c
     }
     /* Modes 110 and 100 are invalid */
     else if ((bytes[0] & 0x14) == 0x10
-	     /* Immediate mode is only valid for LDX */
-	     || ((bytes[0] & 0x1c) == 0x00 && bytes[0] != 0xa2))
+             /* Immediate mode is only valid for LDX */
+             || ((bytes[0] & 0x1c) == 0x00 && bytes[0] != 0xa2))
     {
       memcpy (mnemonic, "???", 4);
       return disassemble_implied (address, bytes, operands);
@@ -182,9 +182,9 @@ disassemble_instruction (guint16 address, const guint8 *bytes, char *mnemonic, c
     {
       static const char mnemonic_table[] = "ASL\0ROL\0LSR\0ROR\0STX\0LDX\0DEC\0INC";
       static const DisassembleModeFunc mode_table[8] =
-	{ disassemble_immediate, disassemble_zero_page, disassemble_accumulator,
-	  disassemble_absolute, NULL, disassemble_zero_page_x, NULL,
-	  disassemble_absolute_x };
+        { disassemble_immediate, disassemble_zero_page, disassemble_accumulator,
+          disassemble_absolute, NULL, disassemble_zero_page_x, NULL,
+          disassemble_absolute_x };
       memcpy (mnemonic, mnemonic_table + (bytes[0] >> 5) * 4, 4);
       return (* mode_table[(bytes[0] >> 2) & 0x07]) (address, bytes, operands);
     }
@@ -203,7 +203,7 @@ disassemble_instruction (guint16 address, const guint8 *bytes, char *mnemonic, c
     else if ((bytes[0] & 0x0c) == 0x08)
     {
       const char mnemonic_table[] = "PHP\0CLC\0PLP\0SEC\0PHA\0CLI\0PLA\0SEI\0"
-	"DEY\0TYA\0TAY\0CLV\0INY\0CLD\0INX\0SED";
+        "DEY\0TYA\0TAY\0CLV\0INY\0CLD\0INX\0SED";
       memcpy (mnemonic, mnemonic_table + (bytes[0] >> 4) * 4, 4);
       return disassemble_implied (address, bytes, operands);
     }
@@ -239,12 +239,12 @@ disassemble_instruction (guint16 address, const guint8 *bytes, char *mnemonic, c
     }
     /* There is no opcode 000 */
     else if ((bytes[0] & 0xe0) == 0x00
-	     /* No other address modes for JMP indirect or JMP absolute */
-	     || ((bytes[0] & 0xc0) == 0x40 && bytes[0] != 0x4c)
-	     /* No zero, x or abs, x for BIT, CPY or CPX */
-	     || (((bytes[0] & 0x80) >> 1) == (bytes[0] & 0x40) && (bytes[0] & 0x10))
-	     /* No implied or abs, x for STY */
-	     || (((bytes[0] & 0xe0) == 0x80) && (bytes[0] == 0x80 || bytes[0] == 0x9c)))
+             /* No other address modes for JMP indirect or JMP absolute */
+             || ((bytes[0] & 0xc0) == 0x40 && bytes[0] != 0x4c)
+             /* No zero, x or abs, x for BIT, CPY or CPX */
+             || (((bytes[0] & 0x80) >> 1) == (bytes[0] & 0x40) && (bytes[0] & 0x10))
+             /* No implied or abs, x for STY */
+             || (((bytes[0] & 0xe0) == 0x80) && (bytes[0] == 0x80 || bytes[0] == 0x9c)))
     {
       memcpy (mnemonic, "???", 4);
       return disassemble_implied (address, bytes, operands);
@@ -253,8 +253,8 @@ disassemble_instruction (guint16 address, const guint8 *bytes, char *mnemonic, c
     {
       static const char mnemonic_table[] = "\0\0\0\0BIT\0JMP\0\0\0\0\0STY\0LDY\0CPY\0CPX";
       static const DisassembleModeFunc mode_table[8] =
-	{ disassemble_immediate, disassemble_zero_page, NULL, disassemble_absolute,
-	  NULL, disassemble_zero_page_x, NULL, disassemble_absolute_x };
+        { disassemble_immediate, disassemble_zero_page, NULL, disassemble_absolute,
+          NULL, disassemble_zero_page_x, NULL, disassemble_absolute_x };
 
       memcpy (mnemonic, mnemonic_table + (bytes[0] >> 5) * 4, 4);
       return (* mode_table[(bytes[0] & 0x1c) >> 2]) (address, bytes, operands);

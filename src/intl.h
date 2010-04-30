@@ -45,8 +45,8 @@
  ((Num) == 1 ? (String1) : (String2))
 #define dcngettext(Domain,String1,String2,Num,Category) \
  ((Num) == 1 ? (String1) : (String2))
-#define bindtextdomain(Domain,Directory) (Domain) 
-#define bind_textdomain_codeset(Domain,Codeset) (Codeset) 
+#define bindtextdomain(Domain,Directory) (Domain)
+#define bind_textdomain_codeset(Domain,Codeset) (Codeset)
 
 #endif /* ENABLE_NLS */
 
