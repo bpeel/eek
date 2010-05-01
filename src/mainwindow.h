@@ -41,11 +41,14 @@ struct _MainWindow
 
   ElectronManager *electron;
 
-  GtkWidget *debugger, *ewidget, *disdialog;
+  GtkWidget *debugger, *ewidget, *disdialog, *open_dialog, *save_dialog;
   GtkActionGroup *action_group;
   GtkUIManager *ui_manager;
 
   guint started, stopped, rom_error, disdialog_destroy;
+  guint open_response_handler, save_response_handler;
+
+  gchar *tape_filename;
 };
 
 struct _MainWindowClass
@@ -57,5 +60,6 @@ GType main_window_get_type ();
 GtkWidget *main_window_new ();
 GtkWidget *main_window_new_with_electron (ElectronManager *electron);
 void main_window_set_electron (MainWindow *mainwin, ElectronManager *electron);
+void main_window_open_tape (MainWindow *mainwin, const gchar *filename);
 
 #endif /* _MAIN_WINDOW_H */

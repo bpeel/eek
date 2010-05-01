@@ -30,6 +30,10 @@
 #include <gtk/gtkvbox.h>
 #include <gtk/gtkmain.h>
 #include <gtk/gtkmessagedialog.h>
+#include <gtk/gtkfilechooserdialog.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
 
 #include "mainwindow.h"
 #include "electronmanager.h"
@@ -40,6 +44,7 @@
 #include "breakpointeditdialog.h"
 #include "disdialog.h"
 #include "preferencesdialog.h"
+#include "tapeuef.h"
 
 typedef struct _MainWindowAction MainWindowAction;
 
@@ -55,9 +60,17 @@ struct _MainWindowAction
 static void main_window_class_init (MainWindowClass *klass);
 static void main_window_init (MainWindow *mainwin);
 static void main_window_dispose (GObject *obj);
+static void main_window_finalize (GObject *obj);
 static void main_window_electron_widget_notify (gpointer data, GObject *obj);
 static void main_window_debugger_notify (gpointer data, GObject *obj);
+static gboolean main_window_delete_event (GtkWidget *widget,
+                                          GdkEventAny *event);
 
+static void main_window_on_new (GtkAction *action, MainWindow *mainwin);
+static void main_window_on_open (GtkAction *action, MainWindow *mainwin);
+static void main_window_on_save (GtkAction *action, MainWindow *mainwin);
+static void main_window_on_save_as (GtkAction *action, MainWindow *mainwin);
+static void main_window_on_rewind (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_quit (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_preferences (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_about (GtkAction *action, MainWindow *mainwin);
@@ -81,7 +94,7 @@ static gpointer parent_class;
 
 static const MainWindowAction main_window_actions[] =
   {
-    { "ActionFileMenu", NULL, N_("Menu|_File"), NULL, NULL,
+    { "ActionTapeMenu", NULL, N_("Menu|_Tape"), NULL, NULL,
       NULL, FALSE, NULL },
     { "ActionEditMenu", NULL, N_("Menu|_Edit"), NULL, NULL,
       NULL, FALSE, NULL },
@@ -91,7 +104,20 @@ static const MainWindowAction main_window_actions[] =
       NULL, FALSE, NULL },
     { "ActionHelpMenu", NULL, N_("Menu|_Help"), NULL, NULL,
       NULL, FALSE, NULL },
-    { "ActionQuit", GTK_STOCK_QUIT, N_("MenuFile|_Quit"), NULL,
+    { "ActionNew", GTK_STOCK_NEW, N_("MenuTape|_New"), NULL,
+      NULL, N_("Clear the tape data"), FALSE, G_CALLBACK (main_window_on_new) },
+    { "ActionOpen", GTK_STOCK_OPEN, N_("MenuTape|_Open"), NULL,
+      NULL, N_("Open the tape data from a file"), FALSE,
+      G_CALLBACK (main_window_on_open) },
+    { "ActionSave", GTK_STOCK_SAVE, N_("MenuTape|_Save"), NULL,
+      NULL, N_("Save the tape data to a file"), FALSE,
+      G_CALLBACK (main_window_on_save) },
+    { "ActionSaveAs", GTK_STOCK_SAVE_AS, N_("MenuTape|Save _As..."), NULL,
+      NULL, N_("Save the tape data to a different file"), FALSE,
+      G_CALLBACK (main_window_on_save_as) },
+    { "ActionRewind", NULL, N_("MenuTape|Rewind"), NULL, "<Control>R",
+      N_("Rewind the tape"), FALSE, G_CALLBACK (main_window_on_rewind) },
+    { "ActionQuit", GTK_STOCK_QUIT, N_("MenuTape|_Quit"), NULL,
       NULL, N_("Quit the program"), FALSE, G_CALLBACK (main_window_on_quit) },
     { "ActionPreferences", GTK_STOCK_PREFERENCES, N_("MenuEdit|_Preferences"), NULL,
       NULL, N_("Configure the application"), FALSE, G_CALLBACK (main_window_on_preferences) },
@@ -123,7 +149,15 @@ static const MainWindowAction main_window_actions[] =
 static const char main_window_ui_definition[] =
 "<ui>\n"
 " <menubar name=\"MenuBar\">\n"
-"  <menu name=\"FileMenu\" action=\"ActionFileMenu\">\n"
+"  <menu name=\"TapeMenu\" action=\"ActionTapeMenu\">\n"
+"   <menuitem name=\"New\" action=\"ActionNew\" />\n"
+"   <menuitem name=\"Open\" action=\"ActionOpen\" />\n"
+"   <separator />\n"
+"   <menuitem name=\"Save\" action=\"ActionSave\" />\n"
+"   <menuitem name=\"SaveAs\" action=\"ActionSaveAs\" />\n"
+"   <separator />\n"
+"   <menuitem name=\"Rewind\" action=\"ActionRewind\" />\n"
+"   <separator />\n"
 "   <menuitem name=\"Quit\" action=\"ActionQuit\" />\n"
 "  </menu>\n"
 "  <menu name=\"EditMenu\" action=\"ActionEditMenu\">\n"
@@ -187,10 +221,14 @@ static void
 main_window_class_init (MainWindowClass *klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
+  GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
 
   parent_class = g_type_class_peek_parent (klass);
 
   object_class->dispose = main_window_dispose;
+  object_class->finalize = main_window_finalize;
+
+  widget_class->delete_event = main_window_delete_event;
 }
 
 static void
@@ -378,6 +416,331 @@ main_window_set_electron (MainWindow *mainwin, ElectronManager *electron)
 }
 
 static void
+main_window_set_new_tape_buffer (MainWindow *mainwin)
+{
+  electron_set_tape_buffer (mainwin->electron->data, tape_buffer_new ());
+  g_free (mainwin->tape_filename);
+  mainwin->tape_filename = NULL;
+}
+
+static void
+main_window_on_new_response (GtkDialog *dialog,
+                             gint response_id,
+                             MainWindow *mainwin)
+{
+  if (response_id == GTK_RESPONSE_YES)
+    main_window_set_new_tape_buffer (mainwin);
+
+  gtk_widget_destroy (GTK_WIDGET (dialog));
+}
+
+static void
+main_window_on_new (GtkAction *action, MainWindow *mainwin)
+{
+  g_return_if_fail (IS_MAIN_WINDOW (mainwin));
+
+  if (tape_buffer_is_dirty (mainwin->electron->data->tape_buffer))
+  {
+    GtkWidget *dialog;
+
+    dialog = gtk_message_dialog_new (GTK_WINDOW (mainwin),
+                                     GTK_DIALOG_DESTROY_WITH_PARENT,
+                                     GTK_MESSAGE_QUESTION,
+                                     GTK_BUTTONS_YES_NO,
+                                     _("The tape buffer has unsaved changes "
+                                       "that will be lost if you start a new "
+                                       "tape. Are you sure you want a new "
+                                       "tape?"));
+    g_signal_connect (dialog, "response",
+                      G_CALLBACK (main_window_on_new_response),
+                      mainwin);
+    gtk_widget_show (dialog);
+  }
+  else
+    main_window_set_new_tape_buffer (mainwin);
+}
+
+void
+main_window_open_tape (MainWindow *mainwin, const gchar *filename)
+{
+  GError *error = NULL;
+  FILE *file;
+
+  if ((file = fopen (filename, "rb")) == NULL)
+    g_set_error (&error, G_FILE_ERROR, g_file_error_from_errno (errno),
+                 "%s", strerror (errno));
+  else
+  {
+    TapeBuffer *tbuf;
+
+    if ((tbuf = tape_uef_load (file, &error)))
+    {
+      electron_set_tape_buffer (mainwin->electron->data, tbuf);
+      g_free (mainwin->tape_filename);
+      mainwin->tape_filename = g_strdup (filename);
+    }
+
+    fclose (file);
+  }
+
+  if (error)
+  {
+    gchar *display_name = g_filename_display_name (filename);
+    GtkWidget *dialog
+      = gtk_message_dialog_new (GTK_WINDOW (mainwin),
+                                GTK_DIALOG_DESTROY_WITH_PARENT,
+                                GTK_MESSAGE_ERROR,
+                                GTK_BUTTONS_CLOSE,
+                                "Error opening \"%s\": %s",
+                                display_name,
+                                error->message);
+    g_signal_connect_swapped (dialog, "response",
+                              G_CALLBACK (gtk_widget_destroy),
+                              dialog);
+    gtk_widget_show (dialog);
+    g_free (display_name);
+  }
+}
+
+static void
+main_window_on_open_response (GtkDialog *dialog,
+                             gint response_id,
+                             MainWindow *mainwin)
+{
+  gtk_widget_hide (GTK_WIDGET (dialog));
+
+  if (response_id == GTK_RESPONSE_ACCEPT)
+  {
+    gchar *filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+
+    if (filename)
+    {
+      main_window_open_tape (mainwin, filename);
+      g_free (filename);
+    }
+  }
+}
+
+static void
+main_window_show_open_dialog (MainWindow *mainwin)
+{
+  if (mainwin->open_dialog == NULL)
+  {
+    mainwin->open_dialog
+      = gtk_file_chooser_dialog_new (_("Open tape"),
+                                     GTK_WINDOW (mainwin),
+                                     GTK_FILE_CHOOSER_ACTION_OPEN,
+                                     GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                     GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+                                     NULL);
+    g_object_ref_sink (mainwin->open_dialog);
+
+    g_signal_connect (mainwin->open_dialog,
+                      "delete-event",
+                      G_CALLBACK (gtk_widget_hide_on_delete),
+                      NULL);
+
+    mainwin->open_response_handler
+      = g_signal_connect (mainwin->open_dialog,
+                          "response",
+                          G_CALLBACK (main_window_on_open_response),
+                          mainwin);
+  }
+
+  gtk_window_present (GTK_WINDOW (mainwin->open_dialog));
+}
+
+static void
+main_window_on_open_confirm_response (GtkDialog *dialog,
+                                      gint response_id,
+                                      MainWindow *mainwin)
+{
+  gtk_widget_hide (GTK_WIDGET (dialog));
+
+  if (response_id == GTK_RESPONSE_YES)
+    main_window_show_open_dialog (mainwin);
+}
+
+static void
+main_window_on_open (GtkAction *action, MainWindow *mainwin)
+{
+  g_return_if_fail (IS_MAIN_WINDOW (mainwin));
+
+  if (tape_buffer_is_dirty (mainwin->electron->data->tape_buffer))
+  {
+    GtkWidget *dialog;
+
+    dialog = gtk_message_dialog_new (GTK_WINDOW (mainwin),
+                                     GTK_DIALOG_DESTROY_WITH_PARENT,
+                                     GTK_MESSAGE_QUESTION,
+                                     GTK_BUTTONS_YES_NO,
+                                     _("The tape buffer has unsaved changes "
+                                       "that will be lost if you open a new "
+                                       "tape. Are you sure you want a open "
+                                       "tape?"));
+    g_signal_connect (dialog, "response",
+                      G_CALLBACK (main_window_on_open_confirm_response),
+                      mainwin);
+    gtk_widget_show (dialog);
+  }
+  else
+    main_window_show_open_dialog (mainwin);
+}
+
+static void
+main_window_save_tape (MainWindow *mainwin, const gchar *filename)
+{
+  GError *error = NULL;
+  FILE *file;
+
+  if ((file = fopen (filename, "wb")) == NULL)
+    g_set_error (&error, G_FILE_ERROR, g_file_error_from_errno (errno),
+                 "%s", strerror (errno));
+  else
+  {
+    if (tape_uef_save (mainwin->electron->data->tape_buffer,
+#ifdef HAVE_ZLIB
+                       TRUE,
+#else
+                       FALSE,
+#endif
+                       file, &error))
+    {
+      if (filename != mainwin->tape_filename)
+      {
+        g_free (mainwin->tape_filename);
+        mainwin->tape_filename = g_strdup (filename);
+      }
+
+      tape_buffer_clear_dirty (mainwin->electron->data->tape_buffer);
+    }
+
+    fclose (file);
+  }
+
+  if (error)
+  {
+    gchar *display_name = g_filename_display_name (filename);
+    GtkWidget *dialog
+      = gtk_message_dialog_new (GTK_WINDOW (mainwin),
+                                GTK_DIALOG_DESTROY_WITH_PARENT,
+                                GTK_MESSAGE_ERROR,
+                                GTK_BUTTONS_CLOSE,
+                                "Error opening \"%s\": %s",
+                                display_name,
+                                error->message);
+    g_signal_connect_swapped (dialog, "response",
+                              G_CALLBACK (gtk_widget_destroy),
+                              dialog);
+    gtk_widget_show (dialog);
+    g_free (display_name);
+  }
+}
+
+static void
+main_window_on_save (GtkAction *action, MainWindow *mainwin)
+{
+  g_return_if_fail (IS_MAIN_WINDOW (mainwin));
+
+  if (mainwin->tape_filename)
+    main_window_save_tape (mainwin, mainwin->tape_filename);
+  else
+    main_window_on_save_as (action, mainwin);
+}
+
+static void
+main_window_on_save_response (GtkDialog *dialog,
+                             gint response_id,
+                             MainWindow *mainwin)
+{
+  gtk_widget_hide (GTK_WIDGET (dialog));
+
+  if (response_id == GTK_RESPONSE_ACCEPT)
+  {
+    gchar *filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+
+    if (filename)
+    {
+      main_window_save_tape (mainwin, filename);
+      g_free (filename);
+    }
+  }
+}
+
+static void
+main_window_on_save_as (GtkAction *action, MainWindow *mainwin)
+{
+  g_return_if_fail (IS_MAIN_WINDOW (mainwin));
+
+  if (mainwin->save_dialog == NULL)
+  {
+    mainwin->save_dialog
+      = gtk_file_chooser_dialog_new (_("Save tape"),
+                                     GTK_WINDOW (mainwin),
+                                     GTK_FILE_CHOOSER_ACTION_SAVE,
+                                     GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                     GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+                                     NULL);
+    g_object_ref_sink (mainwin->save_dialog);
+
+    g_signal_connect (mainwin->save_dialog,
+                      "delete-event",
+                      G_CALLBACK (gtk_widget_hide_on_delete),
+                      NULL);
+
+    mainwin->open_response_handler
+      = g_signal_connect (mainwin->save_dialog,
+                          "response",
+                          G_CALLBACK (main_window_on_save_response),
+                          mainwin);
+  }
+
+  gtk_window_present (GTK_WINDOW (mainwin->save_dialog));
+}
+
+static void
+main_window_on_rewind (GtkAction *action, MainWindow *mainwin)
+{
+  g_return_if_fail (IS_MAIN_WINDOW (mainwin));
+
+  electron_rewind_cassette (mainwin->electron->data);
+}
+
+static void
+main_window_on_quit_response (GtkDialog *dialog,
+                             gint response_id,
+                             MainWindow *mainwin)
+{
+  if (response_id == GTK_RESPONSE_YES)
+    gtk_widget_destroy (GTK_WIDGET (mainwin));
+
+  gtk_widget_destroy (GTK_WIDGET (dialog));
+}
+
+static void
+main_window_try_quit (MainWindow *mainwin)
+{
+  if (tape_buffer_is_dirty (mainwin->electron->data->tape_buffer))
+  {
+    GtkWidget *dialog;
+
+    dialog = gtk_message_dialog_new (GTK_WINDOW (mainwin),
+                                     GTK_DIALOG_DESTROY_WITH_PARENT,
+                                     GTK_MESSAGE_QUESTION,
+                                     GTK_BUTTONS_YES_NO,
+                                     _("The tape buffer has unsaved changes "
+                                       "that will be lost if you quit now. "
+                                       "Are you sure you want to quit?"));
+    g_signal_connect (dialog, "response",
+                      G_CALLBACK (main_window_on_quit_response),
+                      mainwin);
+    gtk_widget_show (dialog);
+  }
+  else
+    gtk_widget_destroy (GTK_WIDGET (mainwin));
+}
+
+static void
 main_window_on_quit (GtkAction *action, MainWindow *mainwin)
 {
   g_return_if_fail (IS_MAIN_WINDOW (mainwin));
@@ -528,6 +891,42 @@ main_window_update_debug_actions (MainWindow *mainwin)
 }
 
 static void
+main_window_forget_open_dialog (MainWindow *mainwin)
+{
+  if (mainwin->open_dialog)
+  {
+    g_signal_handler_disconnect (mainwin->open_dialog,
+                                 mainwin->open_response_handler);
+    gtk_widget_destroy (mainwin->open_dialog);
+    g_object_unref (mainwin->open_dialog);
+    mainwin->open_dialog = NULL;
+  }
+}
+
+static void
+main_window_forget_save_dialog (MainWindow *mainwin)
+{
+  if (mainwin->save_dialog)
+  {
+    g_signal_handler_disconnect (mainwin->save_dialog,
+                                 mainwin->save_response_handler);
+    gtk_widget_destroy (mainwin->save_dialog);
+    g_object_unref (mainwin->save_dialog);
+    mainwin->save_dialog = NULL;
+  }
+}
+
+static void
+main_window_finalize (GObject *obj)
+{
+  MainWindow *mainwin = MAIN_WINDOW (obj);
+
+  g_free (mainwin->tape_filename);
+
+  G_OBJECT_CLASS (parent_class)->finalize (obj);
+}
+
+static void
 main_window_dispose (GObject *obj)
 {
   MainWindow *mainwin;
@@ -561,6 +960,9 @@ main_window_dispose (GObject *obj)
     g_object_unref (G_OBJECT (mainwin->action_group));
     mainwin->action_group = NULL;
   }
+
+  main_window_forget_open_dialog (mainwin);
+  main_window_forget_save_dialog (mainwin);
 
   main_window_forget_dis_dialog (mainwin);
 
@@ -637,4 +1039,14 @@ main_window_on_rom_error (MainWindow *mainwin, GList *errors,
 
   g_string_free (message, TRUE);
   g_free (note);
+}
+
+static gboolean
+main_window_delete_event (GtkWidget *widget, GdkEventAny *event)
+{
+  main_window_try_quit (MAIN_WINDOW (widget));
+
+  /* Stop any further handlers so that the window won't automatically
+     be destroyed */
+  return TRUE;
 }
