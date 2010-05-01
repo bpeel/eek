@@ -31,6 +31,7 @@ struct _TapeBuffer
   int buf_size, buf_length;
   /* Index of next byte to read or written to */
   int buf_pos;
+  gboolean dirty;
 };
 
 /* Special bytes in the tape data */
@@ -48,6 +49,7 @@ tape_buffer_new ()
   ret->buf = g_malloc (ret->buf_size = 16);
   ret->buf_length = 0;
   ret->buf_pos = 0;
+  ret->dirty = FALSE;
 
   return ret;
 }
@@ -108,6 +110,8 @@ tape_buffer_get_next_byte (TapeBuffer *tbuf)
 static void
 tape_buffer_store_byte_or_command (TapeBuffer *tbuf, guint8 byte)
 {
+  tbuf->dirty = TRUE;
+
   if (tbuf->buf_pos >= tbuf->buf_length)
   {
     tape_buffer_ensure_size (tbuf, tbuf->buf_pos + 1);
@@ -132,6 +136,8 @@ tape_buffer_store_byte_or_command (TapeBuffer *tbuf, guint8 byte)
 static void
 tape_buffer_store_repeated_byte_or_command (TapeBuffer *tbuf, guint8 byte, int repeat_count)
 {
+  tbuf->dirty = TRUE;
+
   while (tbuf->buf_pos < tbuf->buf_length && repeat_count > 0)
   {
     tape_buffer_store_byte_or_command (tbuf, byte);
@@ -146,6 +152,8 @@ tape_buffer_store_repeated_byte_or_command (TapeBuffer *tbuf, guint8 byte, int r
 void
 tape_buffer_store_byte (TapeBuffer *tbuf, guint8 byte)
 {
+  tbuf->dirty = TRUE;
+
   if (byte >= TAPE_BUFFER_CMD_FIRST)
   {
     if (tbuf->buf_pos >= tbuf->buf_length)
@@ -212,6 +220,18 @@ gboolean
 tape_buffer_is_at_end (TapeBuffer *tbuf)
 {
   return tbuf->buf_pos >= tbuf->buf_length;
+}
+
+gboolean
+tape_buffer_is_dirty (TapeBuffer *tbuf)
+{
+  return tbuf->dirty;
+}
+
+void
+tape_buffer_clear_dirty (TapeBuffer *tbuf)
+{
+  tbuf->dirty = FALSE;
 }
 
 gboolean

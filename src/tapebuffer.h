@@ -48,6 +48,8 @@ void tape_buffer_store_silence (TapeBuffer *tbuf);
 void tape_buffer_store_repeated_silence (TapeBuffer *tbuf, int repeat_count);
 void tape_buffer_rewind (TapeBuffer *tbuf);
 gboolean tape_buffer_is_at_end (TapeBuffer *tbuf);
+gboolean tape_buffer_is_dirty (TapeBuffer *tbuf);
+void tape_buffer_clear_dirty (TapeBuffer *tbuf);
 gboolean tape_buffer_foreach (TapeBuffer *tbuf,
                               TapeBufferCallback callback,
                               gpointer data);
