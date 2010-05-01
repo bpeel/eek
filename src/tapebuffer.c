@@ -25,6 +25,14 @@
 
 #include "tapebuffer.h"
 
+struct _TapeBuffer
+{
+  guint8 *buf;
+  int buf_size, buf_length;
+  /* Index of next byte to read or written to */
+  int buf_pos;
+};
+
 /* Special bytes in the tape data */
 #define TAPE_BUFFER_CMD_QUOTE     0xfd /* Next byte should not be interpreted as a command */
 #define TAPE_BUFFER_CMD_SILENCE   0xfe /* No data on the tape in this time slice */

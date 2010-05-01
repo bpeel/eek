@@ -23,14 +23,6 @@
 
 typedef struct _TapeBuffer TapeBuffer;
 
-struct _TapeBuffer
-{
-  guint8 *buf;
-  int buf_size, buf_length;
-  /* Index of next byte to read or written to */
-  int buf_pos;
-};
-
 #define TAPE_BUFFER_HIGH_TONE -1
 #define TAPE_BUFFER_SILENCE   -2
 
