@@ -72,6 +72,8 @@ static void main_window_on_save (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_save_as (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_rewind (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_quit (GtkAction *action, MainWindow *mainwin);
+static void main_window_on_toggle_full_speed (GtkAction *action,
+                                              MainWindow *mainwin);
 static void main_window_on_preferences (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_about (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_run (GtkAction *action, MainWindow *mainwin);
@@ -119,6 +121,10 @@ static const MainWindowAction main_window_actions[] =
       N_("Rewind the tape"), FALSE, G_CALLBACK (main_window_on_rewind) },
     { "ActionQuit", GTK_STOCK_QUIT, N_("MenuTape|_Quit"), NULL,
       NULL, N_("Quit the program"), FALSE, G_CALLBACK (main_window_on_quit) },
+    { "ActionToggleFullSpeed", NULL, N_("MenuView|Run _full speed"), NULL,
+      NULL, N_("When enabled, run full speed otherwise "
+               "sync to an accurate speed"), TRUE,
+      G_CALLBACK (main_window_on_toggle_full_speed) },
     { "ActionPreferences", GTK_STOCK_PREFERENCES, N_("MenuEdit|_Preferences"), NULL,
       NULL, N_("Configure the application"), FALSE, G_CALLBACK (main_window_on_preferences) },
     { "ActionToggleToolbar", NULL, N_("MenuView|_Toolbar"), NULL,
@@ -161,6 +167,7 @@ static const char main_window_ui_definition[] =
 "   <menuitem name=\"Quit\" action=\"ActionQuit\" />\n"
 "  </menu>\n"
 "  <menu name=\"EditMenu\" action=\"ActionEditMenu\">\n"
+"   <menuitem name=\"ToggleFullSpeed\" action=\"ActionToggleFullSpeed\" />\n"
 "   <menuitem name=\"Preferences\" action=\"ActionPreferences\" />\n"
 "  </menu>\n"
 "  <menu name=\"ViewMenu\" action=\"ActionViewMenu\">\n"
@@ -746,6 +753,14 @@ main_window_on_quit (GtkAction *action, MainWindow *mainwin)
   g_return_if_fail (IS_MAIN_WINDOW (mainwin));
 
   gtk_main_quit ();
+}
+
+static void
+main_window_on_toggle_full_speed (GtkAction *action,
+                                  MainWindow *mainwin)
+{
+  gboolean active = gtk_toggle_action_get_active (GTK_TOGGLE_ACTION (action));
+  electron_manager_set_full_speed (mainwin->electron, active);
 }
 
 static void

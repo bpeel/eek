@@ -62,7 +62,9 @@ struct _ElectronManagerPrivate
   int timeout;
   gboolean added_dir;
   GConfClient *gconf;
+  gboolean full_speed;
   int value_changed_handler;
+  GTimer *full_speed_timer;
 };
 
 #define ELECTRON_MANAGER_ROMS_CONF_DIR "/apps/eek/roms"
@@ -152,6 +154,8 @@ electron_manager_init (ElectronManager *eman)
     = g_signal_connect (priv->gconf, "value-changed",
                         G_CALLBACK (electron_manager_on_value_changed),
                         eman);
+
+  priv->full_speed_timer = g_timer_new ();
 }
 
 gboolean
@@ -173,9 +177,18 @@ electron_manager_start (ElectronManager *eman)
 
   if (priv->timeout == 0)
   {
-    priv->timeout = frame_source_add (ELECTRON_TICKS_PER_FRAME,
-                                      (GSourceFunc) electron_manager_timeout,
-                                      eman, NULL);
+    if (priv->full_speed)
+    {
+      priv->timeout = g_idle_add ((GSourceFunc) electron_manager_timeout,
+                                  eman);
+      g_timer_start (priv->full_speed_timer);
+    }
+    else
+      priv->timeout
+        = frame_source_add (ELECTRON_TICKS_PER_FRAME,
+                            (GSourceFunc) electron_manager_timeout,
+                            eman, NULL);
+
     g_signal_emit (G_OBJECT (eman),
                    electron_manager_signals[ELECTRON_MANAGER_STARTED_SIGNAL], 0);
     /* If we're breaking at the current address then skip over one
@@ -239,8 +252,21 @@ electron_manager_timeout (ElectronManager *eman)
   if (electron_run_frame (eman->data))
     /* Breakpoint was hit, so stop the electron */
     electron_manager_stop (eman);
+  /* Otherwise we've done a whole frame so emit the frame end
+     signal. If we're running at full speed we'll only emit the frame
+     end signal if enough time has elapsed (so not every frame will be
+     drawn) */
+  else if (priv->full_speed)
+  {
+    if (g_timer_elapsed (priv->full_speed_timer, NULL) * 1000.0
+        > ELECTRON_TICKS_PER_FRAME)
+    {
+      g_timer_start (priv->full_speed_timer);
+      g_signal_emit (G_OBJECT (eman),
+                     electron_manager_signals[ELECTRON_MANAGER_FRAME_END_SIGNAL], 0);
+    }
+  }
   else
-    /* Otherwise we've done a whole frame so emit the frame end signal */
     g_signal_emit (G_OBJECT (eman),
                    electron_manager_signals[ELECTRON_MANAGER_FRAME_END_SIGNAL], 0);
 
@@ -278,8 +304,11 @@ static void
 electron_manager_finalize (GObject *obj)
 {
   ElectronManager *eman = ELECTRON_MANAGER (obj);
+  ElectronManagerPrivate *priv = eman->priv;
 
   electron_free (eman->data);
+
+  g_timer_destroy (priv->full_speed_timer);
 
   /* Chain up */
   G_OBJECT_CLASS (parent_class)->finalize (obj);
@@ -460,5 +489,33 @@ electron_manager_update_all_roms (ElectronManager *eman)
                    0, errors);
     g_list_foreach (errors, (GFunc) g_error_free, NULL);
     g_list_free (errors);
+  }
+}
+
+void
+electron_manager_set_full_speed (ElectronManager *eman,
+                                 gboolean full_speed)
+{
+  ElectronManagerPrivate *priv = eman->priv;
+
+  if (priv->full_speed != full_speed)
+  {
+    priv->full_speed = full_speed;
+
+    if (priv->timeout)
+    {
+      g_source_remove (priv->timeout);
+      if (full_speed)
+      {
+        priv->timeout = g_idle_add ((GSourceFunc) electron_manager_timeout,
+                                    eman);
+        g_timer_start (priv->full_speed_timer);
+      }
+      else
+        priv->timeout
+          = frame_source_add (ELECTRON_TICKS_PER_FRAME,
+                              (GSourceFunc) electron_manager_timeout,
+                              eman, NULL);
+    }
   }
 }

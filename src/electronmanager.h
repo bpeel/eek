@@ -73,6 +73,8 @@ void electron_manager_stop (ElectronManager *eman);
 void electron_manager_step (ElectronManager *eman);
 gboolean electron_manager_is_running (ElectronManager *eman);
 void electron_manager_update_all_roms (ElectronManager *eman);
+void electron_manager_set_full_speed (ElectronManager *eman,
+                                      gboolean full_speed);
 
 #define electron_manager_press_key(eman, line, bit) \
 do { electron_press_key ((eman)->data, line, bit); } while (0)
