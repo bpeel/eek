@@ -671,7 +671,10 @@ tape_uef_load_from_stream (TapeUEFStream *stream, GError **error)
     ret = NULL;
   }
   else if ((ret = tape_uef_do_load_from_stream (stream, error)) != NULL)
+  {
     tape_buffer_rewind (ret);
+    tape_buffer_clear_dirty (ret);
+  }
 
   return ret;
 }
