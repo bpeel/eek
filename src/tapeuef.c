@@ -291,8 +291,8 @@ tape_uef_do_load_from_stream (TapeUEFStream *stream, GError **error)
               else if (got < to_copy)
               {
                 tape_buffer_free (ret);
-                g_set_error (error, TAPE_UEF_ERROR, TAPE_UEF_ERROR_NOT_SUPPORTED,
-                             _("UEF format version not supported"));
+                g_set_error (error, TAPE_UEF_ERROR, TAPE_UEF_ERROR_INVALID,
+                             _("UEF file is invalid"));
                 ret = NULL;
                 break;
               }
