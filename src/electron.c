@@ -475,3 +475,11 @@ electron_rewind_cassette (Electron *electron)
 {
   tape_buffer_rewind (electron->tape_buffer);
 }
+
+void
+electron_set_tape_buffer (Electron *electron,
+                          TapeBuffer *tbuf)
+{
+  tape_buffer_free (electron->tape_buffer);
+  electron->tape_buffer = tbuf;
+}

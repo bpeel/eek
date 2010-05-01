@@ -106,6 +106,8 @@ guint8 electron_read_from_location (Electron *electron, guint16 location);
 int electron_run_frame (Electron *electron);
 void electron_step (Electron *electron);
 void electron_rewind_cassette (Electron *electron);
+void electron_set_tape_buffer (Electron *electron,
+                               TapeBuffer *tbuf);
 
 #define electron_press_key(electron, line, bit) \
 do { (electron)->keyboard[(line)] |= 1 << (bit); } while (0)
