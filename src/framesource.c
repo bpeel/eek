@@ -106,7 +106,7 @@ frame_source_prepare (GSource *source, gint *timeout)
   else
   {
     if (timeout)
-      *timeout = now - frame_source->last_time;
+      *timeout = frame_source->last_time + frame_source->frame_time - now;
     return FALSE;
   }
 }
