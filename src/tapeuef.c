@@ -41,6 +41,14 @@
 #define TAPE_UEF_TIME_UNITS_PER_SECOND 120
 
 /* Chunk IDs */
+
+/* Content info */
+#define TAPE_UEF_ORIGIN_INFORMATION      0x0000
+#define TAPE_UEF_INSTRUCTIONS            0x0001
+#define TAPE_UEF_INLAY_SCAN              0x0003
+#define TAPE_UEF_TARGET_MACHINE          0x0005
+
+/* Tape */
 #define TAPE_UEF_START_STOP_BIT_DATA     0x0100
 #define TAPE_UEF_CARRIER_TONE            0x0110
 #define TAPE_UEF_CARRIER_TONE_WITH_DUMMY 0x0111
@@ -559,6 +567,12 @@ tape_uef_do_load_from_stream (TapeUEFStream *stream, GError **error)
 
           default:
             g_warning ("Unsupported chunk id %04x", chunk_id);
+            /* flow through */
+            /* These are safe to ignore */
+          case TAPE_UEF_ORIGIN_INFORMATION:
+          case TAPE_UEF_INSTRUCTIONS:
+          case TAPE_UEF_INLAY_SCAN:
+          case TAPE_UEF_TARGET_MACHINE:
             if (!tape_uef_skip_bytes (stream, chunk_len, error))
             {
               tape_buffer_free (ret);
