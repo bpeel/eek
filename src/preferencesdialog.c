@@ -53,7 +53,6 @@ static gpointer parent_class;
 
 #define PREFERENCES_DIALOG_GET_PRIVATE(o) \
   (G_TYPE_INSTANCE_GET_PRIVATE ((o), TYPE_PREFERENCES_DIALOG, PreferencesDialogPrivate))
-typedef struct _PreferencesDialogPrivate PreferencesDialogPrivate;
 
 enum PreferencesDialogEntryType { PREFERENCES_DIALOG_FILE, PREFERENCES_DIALOG_CLEAR };
 
@@ -159,6 +158,8 @@ preferences_dialog_init (PreferencesDialog *prefsdlg)
   GtkWidget *notebook, *error_widget;
   PreferencesDialogPrivate *priv = PREFERENCES_DIALOG_GET_PRIVATE (prefsdlg);
   int i;
+
+  prefsdlg->priv = priv;
 
   gtk_dialog_add_button (GTK_DIALOG (prefsdlg), GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE);
   gtk_window_set_title (GTK_WINDOW (prefsdlg), _("eek Preferences"));
@@ -304,7 +305,7 @@ preferences_dialog_init (PreferencesDialog *prefsdlg)
 static void
 preferences_dialog_dispose (GObject *obj)
 {
-  PreferencesDialogPrivate *priv = PREFERENCES_DIALOG_GET_PRIVATE (obj);
+  PreferencesDialogPrivate *priv = PREFERENCES_DIALOG (obj)->priv;
   int i;
 
   g_return_if_fail (IS_PREFERENCES_DIALOG (obj));
@@ -370,7 +371,7 @@ preferences_dialog_on_response (GtkDialog *dialog, gint res_id)
 static void
 preferences_dialog_widget_notify (PreferencesDialog *prefsdlg, GObject *obj)
 {
-  PreferencesDialogPrivate *priv = PREFERENCES_DIALOG_GET_PRIVATE (obj);
+  PreferencesDialogPrivate *priv = prefsdlg->priv;
   int i;
 
   for (i = 0; i < PREFERENCES_DIALOG_ENTRY_COUNT; i++)
@@ -385,7 +386,7 @@ static void
 preferences_dialog_on_file_changed (GtkFileChooser *chooser,
                                     PreferencesDialog *prefsdlg)
 {
-  PreferencesDialogPrivate *priv = PREFERENCES_DIALOG_GET_PRIVATE (prefsdlg);
+  PreferencesDialogPrivate *priv = prefsdlg->priv;
   int widget_num;
 
   for (widget_num = 0; widget_num < PREFERENCES_DIALOG_ENTRY_COUNT; widget_num++)
@@ -432,7 +433,7 @@ static void
 preferences_dialog_on_clear (GtkButton *button,
                              PreferencesDialog *prefsdlg)
 {
-  PreferencesDialogPrivate *priv = PREFERENCES_DIALOG_GET_PRIVATE (prefsdlg);
+  PreferencesDialogPrivate *priv = prefsdlg->priv;
   int widget_num;
 
   for (widget_num = 0; widget_num < PREFERENCES_DIALOG_ENTRY_COUNT; widget_num++)
@@ -463,7 +464,7 @@ preferences_dialog_on_value_changed (GConfClient *client,
   PreferencesDialogPrivate *priv;
 
   g_return_if_fail (IS_PREFERENCES_DIALOG (prefsdlg));
-  priv = PREFERENCES_DIALOG_GET_PRIVATE (prefsdlg);
+  priv = prefsdlg->priv;
   g_return_if_fail (GCONF_IS_CLIENT (client));
   g_return_if_fail (priv->gconf == client);
 

@@ -35,10 +35,13 @@
 
 typedef struct _PreferencesDialog PreferencesDialog;
 typedef struct _PreferencesDialogClass PreferencesDialogClass;
+typedef struct _PreferencesDialogPrivate PreferencesDialogPrivate;
 
 struct _PreferencesDialog
 {
   GtkDialog parent_object;
+
+  PreferencesDialogPrivate *priv;
 };
 
 struct _PreferencesDialogClass

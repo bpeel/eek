@@ -37,12 +37,15 @@
 
 typedef struct _ElectronManager ElectronManager;
 typedef struct _ElectronManagerClass ElectronManagerClass;
+typedef struct _ElectronManagerPrivate ElectronManagerPrivate;
 
 struct _ElectronManager
 {
   GObject parent;
 
   Electron *data;
+
+  ElectronManagerPrivate *priv;
 };
 
 struct _ElectronManagerClass

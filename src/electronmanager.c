@@ -56,7 +56,6 @@ static gpointer parent_class;
 
 #define ELECTRON_MANAGER_GET_PRIVATE(o) \
   (G_TYPE_INSTANCE_GET_PRIVATE ((o), TYPE_ELECTRON_MANAGER, ElectronManagerPrivate))
-typedef struct _ElectronManagerPrivate ElectronManagerPrivate;
 
 struct _ElectronManagerPrivate
 {
@@ -132,6 +131,8 @@ electron_manager_init (ElectronManager *eman)
   ElectronManagerPrivate *priv = ELECTRON_MANAGER_GET_PRIVATE (eman);
   GError *error = NULL;
 
+  eman->priv = priv;
+
   eman->data = electron_new ();
   priv->timeout = 0;
 
@@ -156,7 +157,7 @@ electron_manager_init (ElectronManager *eman)
 gboolean
 electron_manager_is_running (ElectronManager *eman)
 {
-  ElectronManagerPrivate *priv = ELECTRON_MANAGER_GET_PRIVATE (eman);
+  ElectronManagerPrivate *priv = eman->priv;
 
   g_return_val_if_fail (IS_ELECTRON_MANAGER (eman), FALSE);
 
@@ -166,7 +167,7 @@ electron_manager_is_running (ElectronManager *eman)
 void
 electron_manager_start (ElectronManager *eman)
 {
-  ElectronManagerPrivate *priv = ELECTRON_MANAGER_GET_PRIVATE (eman);
+  ElectronManagerPrivate *priv = eman->priv;
 
   g_return_if_fail (IS_ELECTRON_MANAGER (eman));
 
@@ -189,7 +190,7 @@ electron_manager_start (ElectronManager *eman)
 void
 electron_manager_stop (ElectronManager *eman)
 {
-  ElectronManagerPrivate *priv = ELECTRON_MANAGER_GET_PRIVATE (eman);
+  ElectronManagerPrivate *priv = eman->priv;
 
   g_return_if_fail (IS_ELECTRON_MANAGER (eman));
 
@@ -230,7 +231,7 @@ electron_manager_step (ElectronManager *eman)
 static gboolean
 electron_manager_timeout (ElectronManager *eman)
 {
-  ElectronManagerPrivate *priv = ELECTRON_MANAGER_GET_PRIVATE (eman);
+  ElectronManagerPrivate *priv = eman->priv;
 
   g_return_val_if_fail (IS_ELECTRON_MANAGER (eman), FALSE);
   g_return_val_if_fail (priv->timeout != 0, FALSE);
@@ -288,7 +289,7 @@ static void
 electron_manager_dispose (GObject *obj)
 {
   ElectronManager *eman = ELECTRON_MANAGER (obj);
-  ElectronManagerPrivate *priv = ELECTRON_MANAGER_GET_PRIVATE (eman);
+  ElectronManagerPrivate *priv = eman->priv;
 
   electron_manager_stop (eman);
 
@@ -313,7 +314,7 @@ static int
 electron_manager_update_rom (ElectronManager *eman, int rom_num, GError **error)
 {
   GConfValue *value = NULL;
-  ElectronManagerPrivate *priv = ELECTRON_MANAGER_GET_PRIVATE (eman);
+  ElectronManagerPrivate *priv = eman->priv;
   int ret = 0;
 
   if (priv->gconf)
@@ -408,7 +409,7 @@ electron_manager_on_value_changed (GConfClient *client,
   ElectronManagerPrivate *priv;
 
   g_return_if_fail (IS_ELECTRON_MANAGER (eman));
-  priv = ELECTRON_MANAGER_GET_PRIVATE (eman);
+  priv = eman->priv;
   g_return_if_fail (GCONF_IS_CLIENT (client));
   g_return_if_fail (priv->gconf == client);
 
