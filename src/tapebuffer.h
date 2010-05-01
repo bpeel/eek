@@ -26,6 +26,18 @@ typedef struct _TapeBuffer TapeBuffer;
 #define TAPE_BUFFER_HIGH_TONE -1
 #define TAPE_BUFFER_SILENCE   -2
 
+typedef enum
+{
+  TAPE_BUFFER_CALLBACK_TYPE_DATA,
+  TAPE_BUFFER_CALLBACK_TYPE_HIGH_TONE,
+  TAPE_BUFFER_CALLBACK_TYPE_SILENCE
+} TapeBufferCallbackType;
+
+typedef gboolean (* TapeBufferCallback) (TapeBufferCallbackType type,
+                                         int length,
+                                         const guint8 *bytes,
+                                         gpointer data);
+
 TapeBuffer *tape_buffer_new ();
 void tape_buffer_free (TapeBuffer *tbuf);
 int tape_buffer_get_next_byte (TapeBuffer *tbuf);
@@ -36,5 +48,8 @@ void tape_buffer_store_silence (TapeBuffer *tbuf);
 void tape_buffer_store_repeated_silence (TapeBuffer *tbuf, int repeat_count);
 void tape_buffer_rewind (TapeBuffer *tbuf);
 gboolean tape_buffer_is_at_end (TapeBuffer *tbuf);
+gboolean tape_buffer_foreach (TapeBuffer *tbuf,
+                              TapeBufferCallback callback,
+                              gpointer data);
 
 #endif /* _TAPE_BUFFER_H */

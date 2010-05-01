@@ -213,3 +213,73 @@ tape_buffer_is_at_end (TapeBuffer *tbuf)
 {
   return tbuf->buf_pos >= tbuf->buf_length;
 }
+
+gboolean
+tape_buffer_foreach (TapeBuffer *tbuf,
+                     TapeBufferCallback callback,
+                     gpointer data)
+{
+  int pos = 0;
+
+  while (pos < tbuf->buf_length)
+  {
+    if (tbuf->buf[pos] < TAPE_BUFFER_CMD_FIRST)
+    {
+      int end;
+
+      /* Look for the end of this chunk of data so that we can report
+         it all in one go */
+      for (end = pos + 1;
+           end < tbuf->buf_length
+             && tbuf->buf[end] < TAPE_BUFFER_CMD_FIRST;
+           end++);
+
+      if (!callback (TAPE_BUFFER_CALLBACK_TYPE_DATA,
+                     end - pos,
+                     tbuf->buf + pos,
+                     data))
+        return FALSE;
+
+      pos = end;
+    }
+    else if (tbuf->buf[pos] == TAPE_BUFFER_CMD_QUOTE)
+    {
+      if (!callback (TAPE_BUFFER_CALLBACK_TYPE_DATA,
+                     1, tbuf->buf + pos + 1,
+                     data))
+        return FALSE;
+
+      pos += 2;
+    }
+    else if (tbuf->buf[pos] == TAPE_BUFFER_CMD_SILENCE)
+    {
+      int count = 1;
+
+      /* Collapse consecutive silences into one call */
+      while (++pos < tbuf->buf_length
+             && tbuf->buf[pos] == TAPE_BUFFER_CMD_SILENCE)
+        count++;
+
+      if (!callback (TAPE_BUFFER_CALLBACK_TYPE_SILENCE,
+                     count, NULL, data))
+        return FALSE;
+    }
+    else if (tbuf->buf[pos] == TAPE_BUFFER_CMD_HIGH_TONE)
+    {
+      int count = 1;
+
+      /* Collapse consecutive high tones into one call */
+      while (++pos < tbuf->buf_length
+             && tbuf->buf[pos] == TAPE_BUFFER_CMD_HIGH_TONE)
+        count++;
+
+      if (!callback (TAPE_BUFFER_CALLBACK_TYPE_HIGH_TONE,
+                     count, NULL, data))
+        return FALSE;
+    }
+    else
+      g_assert_not_reached ();
+  }
+
+  return TRUE;
+}
