@@ -53,6 +53,9 @@ main (int argc, char **argv)
   mainwin = main_window_new_with_electron (eman);
   g_signal_connect (G_OBJECT (mainwin), "destroy", G_CALLBACK (main_window_on_destroy), NULL);
 
+  if (argc > 1)
+    main_window_open_tape (MAIN_WINDOW (mainwin), argv[1]);
+
   electron_manager_update_all_roms (eman);
   cpu_restart (&eman->data->cpu);
   /* Set the emulation to start when the main loop is entered */
