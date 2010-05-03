@@ -1,11 +1,20 @@
 ## Process this file with automake to produce Makefile.in
 
-INCLUDES = @EEK_DEP_CFLAGS@ \
+INCLUDES = \
+	@GLADE_CFLAGS@ \
+	@GTK_CFLAGS@ \
+	@GCONF_CFLAGS@ \
+	@GLIB_CFLAGS@ \
 	-DEEK_GLADE_DIR=\""$(datadir)/eek/glade/"\"
 
 bin_PROGRAMS = eek
 
-eek_LDADD = @EEK_DEP_LIBS@
+eek_LDADD = \
+	@GLADE_LIBS@ \
+	@GTK_LIBS@ \
+	@GCONF_LIBS@ \
+	@GLIB_LIBS@
+
 eek_SOURCES = \
 	main.c \
 	cpu.h cpu.c \
