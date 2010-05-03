@@ -7,7 +7,7 @@ INCLUDES = \
 	@GLIB_CFLAGS@ \
 	-DEEK_GLADE_DIR=\""$(datadir)/eek/glade/"\"
 
-bin_PROGRAMS = eek
+bin_PROGRAMS = eek eek-uef2wav
 
 eek_LDADD = \
 	@GLADE_LIBS@ \
@@ -39,6 +39,14 @@ eek_SOURCES = \
 	preferencesdialog.h preferencesdialog.c \
 	gladeutil.h gladeutil.c \
 	intl.h
+
+eek_uef2wav_LDADD = \
+	@GLIB_LIBS@
+
+eek_uef2wav_SOURCES = \
+	uef2wav.c \
+	tapebufer.h tapebuffer.c \
+	tapeuef.h tapeuef.c
 
 EXTRA_DIST = eekmarshalers.list
 

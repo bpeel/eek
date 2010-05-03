@@ -19,6 +19,7 @@
 /src/eek
 /src/eekmarshalers.c
 /src/eekmarshalers.h
+/src/eek-uef2wav
 /stamp-h1
 *.o
 .deps
