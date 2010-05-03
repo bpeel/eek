@@ -556,7 +556,9 @@ tape_uef_do_load_from_stream (TapeUEFStream *stream, GError **error)
                 float time_f = tape_uef_extract_float (time_a);
                 tape_buffer_store_repeated_silence (ret, time_f
                                                     * TAPE_UEF_TIME_UNITS_PER_SECOND);
-                if (!tape_uef_skip_bytes (stream, chunk_len - sizeof (guint16), error))
+                if (!tape_uef_skip_bytes (stream,
+                                          chunk_len - TAPE_UEF_FLOAT_SIZE,
+                                          error))
                 {
                   tape_buffer_free (ret);
                   ret = NULL;
