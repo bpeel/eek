@@ -19,7 +19,7 @@
 #ifndef _CPU_H
 #define _CPU_H
 
-#include <glib/gtypes.h>
+#include <glib.h>
 
 typedef struct _Cpu Cpu;
 

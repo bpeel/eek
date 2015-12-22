@@ -22,7 +22,6 @@
 
 #include <glib.h>
 #include <glib-object.h>
-#include <glib/gprintf.h>
 #include <gtk/gtktreemodel.h>
 #include <pango/pango-font.h>
 #include <string.h>

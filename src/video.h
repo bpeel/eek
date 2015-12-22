@@ -19,7 +19,7 @@
 #ifndef _VIDEO_H
 #define _VIDEO_H
 
-#include <glib/gtypes.h>
+#include <glib.h>
 
 #define VIDEO_YSCALE       2
 #define VIDEO_WIDTH        640

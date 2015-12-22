@@ -19,7 +19,7 @@
 #ifndef _TAPE_BUFFER_H
 #define _TAPE_BUFFER_H
 
-#include <glib/gtypes.h>
+#include <glib.h>
 
 typedef struct _TapeBuffer TapeBuffer;
 

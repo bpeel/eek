@@ -19,7 +19,7 @@
 #ifndef _DISASSEMBLE_H
 #define _DISASSEMBLE_H
 
-#include <glib/gtypes.h>
+#include <glib.h>
 
 #define DISASSEMBLE_MAX_BYTES    3
 #define DISASSEMBLE_MAX_MNEMONIC 3

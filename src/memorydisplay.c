@@ -21,7 +21,7 @@
 #endif
 
 #include <gtk/gtkwidget.h>
-#include <glib/gprintf.h>
+#include <glib.h>
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtkbindings.h>
 
