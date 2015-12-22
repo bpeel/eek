@@ -49,6 +49,7 @@ eek_uef2wav_SOURCES = \
 	tapeuef.h tapeuef.c
 
 EXTRA_DIST = eekmarshalers.list
+BUILT_SOURCES = eekmarshalers.c eekmarshalers.h
 
 eekmarshalers.h : eekmarshalers.list
 	glib-genmarshal --header --prefix=eek_marshal $< > $@
