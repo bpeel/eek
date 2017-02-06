@@ -22,5 +22,6 @@
 /src/eek-uef2wav
 /stamp-h1
 /compile
+/INSTALL
 *.o
 .deps
