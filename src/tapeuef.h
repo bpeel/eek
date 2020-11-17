@@ -35,7 +35,7 @@ typedef enum
 GQuark tape_uef_error_quark ();
 
 TapeBuffer *tape_uef_load (FILE *infile, GError **error);
-int tape_uef_save (TapeBuffer *buf, gboolean compress,
-                   FILE *outfile, GError **error);
+gboolean tape_uef_save (TapeBuffer *buf, gboolean compress,
+                        FILE *outfile, GError **error);
 
 #endif /* _TAPE_UEF_H */
