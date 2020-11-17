@@ -20,6 +20,7 @@
 /src/eekmarshalers.c
 /src/eekmarshalers.h
 /src/eek-uef2wav
+/src/eek-file2uef
 /stamp-h1
 /compile
 /INSTALL
