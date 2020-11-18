@@ -157,7 +157,7 @@ video_draw_scanline (Video *video, int line)
     case 5:
       /* 0x140 bytes per 8 lines */
       a = (line / 8) * 0x140 + (line % 8) + (video->start_address ? video->start_address : 0x5800);
-      for (i = 0; i < 80; i++)
+      for (i = 0; i < 40; i++)
       {
         if (a >= 0x8000)
           a = (a + 0x5800) & 0x7fff;
