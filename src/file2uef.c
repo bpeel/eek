@@ -28,8 +28,6 @@
 #include "tapebuffer.h"
 #include "tapeuef.h"
 
-#define TAPE_FILENAME "FILE"
-
 /* The start of each file has 5.1 seconds of high tone */
 #define FILE_START_TONE_LENGTH ((51 * 1200 / 10) / 10)
 /* The start of each subsequent block has has 0.9 seconds of high tone */
@@ -41,6 +39,7 @@ static char *option_output_file = NULL;
 static int option_load_address = 0x0e00;
 static int option_exec_address = 0x0000;
 static GList *option_files = NULL;
+static char *option_tapename = NULL;
 
 typedef struct
 {
@@ -51,6 +50,7 @@ typedef struct
 typedef struct
 {
   char *filename;
+  char *tapename;
   int load_address;
   int exec_address;
 } File;
@@ -148,8 +148,8 @@ add_file_to_tape_buffer (const File *file,
     writer.crc = 0;
 
     add_bytes (&writer,
-               strlen (TAPE_FILENAME) + 1,
-               (const guint8 *) TAPE_FILENAME);
+               strlen (file->tapename) + 1,
+               (const guint8 *) file->tapename);
     add_uint32 (&writer, file->load_address);
     add_uint32 (&writer, file->exec_address);
     add_uint16 (&writer, block_num);
@@ -194,6 +194,9 @@ option_filename_cb(const gchar *option_name,
   file->filename = g_strdup (value);
   file->load_address = option_load_address;
   file->exec_address = option_exec_address;
+  file->tapename = g_strdup (option_tapename ? option_tapename : value);
+
+  option_tapename = NULL;
 
   option_files = g_list_prepend (option_files, file);
 
@@ -205,6 +208,7 @@ free_file(gpointer data, gpointer user_data)
 {
   File *file = data;
 
+  g_free (file->tapename);
   g_free (file->filename);
   g_free (file);
 }
@@ -223,6 +227,10 @@ options[] =
     {
       "exec", 'e', 0, G_OPTION_ARG_INT, &option_exec_address,
       "Exec address of subsequent files", "address"
+    },
+    {
+      "name", 'n', 0, G_OPTION_ARG_STRING, &option_tapename,
+      "Internal filename of next file", "name"
     },
     {
       "output", 'o', 0, G_OPTION_ARG_FILENAME, &option_output_file,
