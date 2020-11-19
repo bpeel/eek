@@ -29,8 +29,6 @@
 #include "tapeuef.h"
 
 #define TAPE_FILENAME "FILE"
-#define TAPE_LOAD_ADDRESS 0x0e00
-#define TAPE_EXEC_ADDRESS 0x0000
 
 /* The start of each file has 5.1 seconds of high tone */
 #define FILE_START_TONE_LENGTH ((51 * 1200 / 10) / 10)
@@ -39,11 +37,23 @@
 /* The end of the file has a 5.3-second tone */
 #define FILE_END_TONE_LENGTH ((53 * 1200 / 10) / 10)
 
+static char *option_output_file = NULL;
+static int option_load_address = 0x0e00;
+static int option_exec_address = 0x0000;
+static GList *option_files = NULL;
+
 typedef struct
 {
   TapeBuffer *tbuf;
   guint16 crc;
 } Writer;
+
+typedef struct
+{
+  char *filename;
+  int load_address;
+  int exec_address;
+} File;
 
 static void
 add_bytes (Writer *writer,
@@ -99,14 +109,27 @@ add_crc (Writer *writer)
   add_bytes (writer, sizeof value, (const guint8 *) &value);
 }
 
-static TapeBuffer *
-file_to_tape_buffer (FILE *infile, GError **error)
+static gboolean
+add_file_to_tape_buffer (const File *file,
+                         TapeBuffer *tbuf,
+                         GError **error)
 {
-  Writer writer = { .tbuf = tape_buffer_new (), .crc = 0 };
+  Writer writer = { .tbuf = tbuf, .crc = 0 };
   size_t got;
   guint8 buf[256];
   int block_num = 0;
   guint8 block_flags;
+  FILE *infile;
+
+  infile = fopen (file->filename, "rb");
+  if (infile == NULL)
+  {
+    g_set_error_literal (error,
+                         G_FILE_ERROR,
+                         g_file_error_from_errno (errno),
+                         strerror (errno));
+    return FALSE;
+  }
 
   tape_buffer_store_repeated_high_tone (writer.tbuf, FILE_START_TONE_LENGTH);
 
@@ -127,8 +150,8 @@ file_to_tape_buffer (FILE *infile, GError **error)
     add_bytes (&writer,
                strlen (TAPE_FILENAME) + 1,
                (const guint8 *) TAPE_FILENAME);
-    add_uint32 (&writer, TAPE_LOAD_ADDRESS);
-    add_uint32 (&writer, TAPE_EXEC_ADDRESS);
+    add_uint32 (&writer, file->load_address);
+    add_uint32 (&writer, file->exec_address);
     add_uint16 (&writer, block_num);
     add_uint16 (&writer, got);
 
@@ -155,59 +178,147 @@ file_to_tape_buffer (FILE *infile, GError **error)
     block_num++;
   } while (got >= sizeof buf);
 
-  return writer.tbuf;
+  fclose (infile);
+
+  return TRUE;
+}
+
+static gboolean
+option_filename_cb(const gchar *option_name,
+                   const gchar *value,
+                   gpointer data,
+                   GError **error)
+{
+  File *file = g_malloc (sizeof *file);
+
+  file->filename = g_strdup (value);
+  file->load_address = option_load_address;
+  file->exec_address = option_exec_address;
+
+  option_files = g_list_prepend (option_files, file);
+
+  return TRUE;
+}
+
+static void
+free_file(gpointer data, gpointer user_data)
+{
+  File *file = data;
+
+  g_free (file->filename);
+  g_free (file);
+}
+
+static GOptionEntry
+options[] =
+  {
+    {
+      G_OPTION_REMAINING, 0, G_OPTION_FLAG_FILENAME, G_OPTION_ARG_CALLBACK,
+      &option_filename_cb, "File to add", "file"
+    },
+    {
+      "load", 'l', 0, G_OPTION_ARG_INT, &option_load_address,
+      "Load address of subsequent files", "address"
+    },
+    {
+      "exec", 'e', 0, G_OPTION_ARG_INT, &option_exec_address,
+      "Exec address of subsequent files", "address"
+    },
+    {
+      "output", 'o', 0, G_OPTION_ARG_FILENAME, &option_output_file,
+      "UEF file to output", "file"
+    },
+    { NULL, 0, 0, 0, NULL, NULL, NULL }
+  };
+
+static gboolean
+process_arguments (int *argc, char ***argv,
+                   GError **error)
+{
+  GOptionContext *context;
+  gboolean ret;
+  GOptionGroup *group;
+
+  group = g_option_group_new (NULL, /* name */
+                              NULL, /* description */
+                              NULL, /* help_description */
+                              NULL, /* user_data */
+                              NULL /* destroy notify */);
+  g_option_group_add_entries (group, options);
+  context = g_option_context_new ("- Combine files into a UEF cassette");
+  g_option_context_set_main_group (context, group);
+  ret = g_option_context_parse (context, argc, argv, error);
+  g_option_context_free (context);
+
+  if (ret && *argc > 1)
+    {
+      g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_UNKNOWN_OPTION,
+                   "Unknown option '%s'", (* argv)[1]);
+      ret = FALSE;
+    }
+
+  return ret;
 }
 
 int
 main (int argc, char **argv)
 {
-  FILE *infile;
   int ret = 0;
+  GError *error = NULL;
 
-  if (argc != 3)
+  if (!process_arguments (&argc, &argv, &error))
   {
-    fprintf (stderr, "usage: %s <input> <output.uef>\n", argv[0]);
+    fprintf (stderr, "%s\n", error->message);
+    g_error_free (error);
     ret = 1;
   }
-  else if ((infile = fopen (argv[1], "rb")) == NULL)
+  else if (option_files == NULL || option_output_file == NULL)
   {
-    fprintf (stderr, "%s: %s\n", argv[1], strerror (errno));
+    fprintf (stderr, "usage: %s -o <output.uef> <input>..\n", argv[0]);
     ret = 1;
   }
   else
   {
-    GError *error = NULL;
-    TapeBuffer *tbuf;
+    TapeBuffer *tbuf = tape_buffer_new ();
+    GList *l;
     FILE *outfile;
 
-    tbuf = tape_buffer_new ();
+    option_files = g_list_reverse (option_files);
 
-    if ((tbuf = file_to_tape_buffer (infile, &error)) == NULL)
+    for (l = option_files; l; l = l->next)
     {
-      fprintf (stderr, "%s: %s\n", argv[1], error->message);
-      g_error_free (error);
-      ret = 1;
+      const File *file = l->data;
+
+      if (!add_file_to_tape_buffer (file, tbuf, &error))
+      {
+        fprintf (stderr, "%s: %s\n", file->filename, error->message);
+        g_error_free (error);
+        ret = 1;
+        goto skip_save;
+      }
     }
-    else if ((outfile = fopen (argv[2], "wb")) == NULL)
+
+    if ((outfile = fopen (option_output_file, "wb")) == NULL)
     {
-      fprintf (stderr, "%s: %s\n", argv[2], strerror (errno));
+      fprintf (stderr, "%s: %s\n", option_output_file, strerror (errno));
       ret = 1;
     }
     else
     {
       if (!tape_uef_save (tbuf, TRUE /* compress */, outfile, &error))
       {
-        fprintf (stderr, "%s: %s\n", argv[2], strerror (errno));
+        fprintf (stderr, "%s: %s\n", option_output_file, strerror (errno));
         ret = 1;
       }
 
       fclose (outfile);
     }
 
+  skip_save:
     tape_buffer_free (tbuf);
-
-    fclose (infile);
   }
+
+  g_list_foreach (option_files, free_file, NULL);
 
   return ret;
 }
