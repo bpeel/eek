@@ -233,7 +233,11 @@ electron_type_string (Electron *electron,
   for (; *str; str = g_utf8_next_char (str))
   {
     gunichar ch = g_utf8_get_char (str);
+    gboolean caps_lock = !!(electron->sheila[0x7] & 0x80);
     int i;
+
+    if (caps_lock && ch < 0x80 && g_ascii_isalpha (ch))
+      ch ^= 32;
 
     for (i = 0; key_map[i].ch; i++)
     {
