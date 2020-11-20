@@ -72,6 +72,8 @@ static void main_window_on_save (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_save_as (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_rewind (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_quit (GtkAction *action, MainWindow *mainwin);
+static void main_window_on_paste (GtkAction *action,
+                                  MainWindow *mainwin);
 static void main_window_on_toggle_full_speed (GtkAction *action,
                                               MainWindow *mainwin);
 static void main_window_on_preferences (GtkAction *action, MainWindow *mainwin);
@@ -121,6 +123,9 @@ static const MainWindowAction main_window_actions[] =
       N_("Rewind the tape"), FALSE, G_CALLBACK (main_window_on_rewind) },
     { "ActionQuit", GTK_STOCK_QUIT, N_("MenuTape|_Quit"), NULL,
       NULL, N_("Quit the program"), FALSE, G_CALLBACK (main_window_on_quit) },
+    { "ActionPaste", NULL, N_("MenuView|_Paste"), NULL, "<Control>V",
+      N_("Type some text from the clipboard on the Electron’s keyboard."),
+      FALSE, G_CALLBACK (main_window_on_paste) },
     { "ActionToggleFullSpeed", NULL, N_("MenuView|Run _full speed"), NULL,
       NULL, N_("When enabled, run full speed otherwise "
                "sync to an accurate speed"), TRUE,
@@ -167,6 +172,8 @@ static const char main_window_ui_definition[] =
 "   <menuitem name=\"Quit\" action=\"ActionQuit\" />\n"
 "  </menu>\n"
 "  <menu name=\"EditMenu\" action=\"ActionEditMenu\">\n"
+"   <menuitem name=\"Paste\" action=\"ActionPaste\" />\n"
+"   <separator />\n"
 "   <menuitem name=\"ToggleFullSpeed\" action=\"ActionToggleFullSpeed\" />\n"
 "   <menuitem name=\"Preferences\" action=\"ActionPreferences\" />\n"
 "  </menu>\n"
@@ -753,6 +760,29 @@ main_window_on_quit (GtkAction *action, MainWindow *mainwin)
   g_return_if_fail (IS_MAIN_WINDOW (mainwin));
 
   gtk_main_quit ();
+}
+
+static void
+main_window_on_clipboard_text (GtkClipboard *clipboard,
+                               const gchar *text,
+                               gpointer data)
+{
+  MainWindow *mainwin = MAIN_WINDOW (data);
+
+  if (text && mainwin->electron)
+    electron_type_string (mainwin->electron->data, text);
+}
+
+static void
+main_window_on_paste (GtkAction *action,
+                      MainWindow *mainwin)
+{
+  GdkDisplay *display = gtk_widget_get_display (GTK_WIDGET (mainwin));
+  GtkClipboard *clipboard =
+    gtk_clipboard_get_for_display (display, GDK_SELECTION_CLIPBOARD);
+  gtk_clipboard_request_text (clipboard,
+                              main_window_on_clipboard_text,
+                              mainwin);
 }
 
 static void
