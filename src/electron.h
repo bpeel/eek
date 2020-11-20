@@ -90,7 +90,18 @@ struct _Electron
   guint8 cassette_scanline_counter;
   /* Buffer for the tape data */
   TapeBuffer *tape_buffer;
+
+  GArray *queued_keys;
+  size_t queued_keys_pos;
+  int queued_keys_scan_count;
 };
+
+typedef struct
+{
+  guint16 line : 4;
+  guint16 bit : 3;
+  guint16 modifiers : 4;
+} ElectronQueuedKey;
 
 /* Which address page represents the sheila */
 #define ELECTRON_SHEILA_PAGE 0xFE
@@ -108,6 +119,11 @@ void electron_step (Electron *electron);
 void electron_rewind_cassette (Electron *electron);
 void electron_set_tape_buffer (Electron *electron,
                                TapeBuffer *tbuf);
+void electron_add_queued_keys (Electron *electron,
+                               size_t n_keys,
+                               const ElectronQueuedKey *keys);
+void electron_type_string (Electron *electron,
+                           const char *str);
 
 #define electron_press_key(electron, line, bit) \
 do { (electron)->keyboard[(line)] |= 1 << (bit); } while (0)

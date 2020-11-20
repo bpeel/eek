@@ -50,8 +50,125 @@
 #define ELECTRON_MODE_OF_BYTE(byte) (((byte) >> 3) & 7)
 #define ELECTRON_MODE(electron) ELECTRON_MODE_OF_BYTE((electron)->sheila[0x7])
 
+/* Number of times to scan a queued key before moving on to the next state */
+#define ELECTRON_QUEUED_KEYS_SCAN_COUNT 4
+
 guint8 electron_read_from_location (Electron *electron, guint16 address);
 void electron_write_to_location (Electron *electron, guint16 address, guint8 val);
+
+typedef struct
+{
+  gunichar ch;
+  ElectronQueuedKey key;
+} ElectronKeyMap;
+
+static const ElectronKeyMap
+key_map[] =
+  {
+#define S (1 << ELECTRON_SHIFT_BIT)
+#define C (1 << ELECTRON_CONTROL_BIT)
+   { 0x1b, { .line = 13, .bit = 0, .modifiers = 0 } },
+   { '1', { .line = 12, .bit = 0, .modifiers = 0 } },
+   { '!', { .line = 12, .bit = 0, .modifiers = S } },
+   { '2', { .line = 11, .bit = 0, .modifiers = 0 } },
+   { '"', { .line = 11, .bit = 0, .modifiers = S } },
+   { '3', { .line = 10, .bit = 0, .modifiers = 0 } },
+   { '#', { .line = 10, .bit = 0, .modifiers = S } },
+   { '4', { .line = 9, .bit = 0, .modifiers = 0 } },
+   { '$', { .line = 9, .bit = 0, .modifiers = S } },
+   { '5', { .line = 8, .bit = 0, .modifiers = 0 } },
+   { '%', { .line = 8, .bit = 0, .modifiers = S } },
+   { '6', { .line = 7, .bit = 0, .modifiers = 0 } },
+   { '&', { .line = 7, .bit = 0, .modifiers = S } },
+   { '7', { .line = 6, .bit = 0, .modifiers = 0 } },
+   { '\'', { .line = 6, .bit = 0, .modifiers = S } },
+   { '8', { .line = 5, .bit = 0, .modifiers = 0 } },
+   { '(', { .line = 5, .bit = 0, .modifiers = S } },
+   { '9', { .line = 4, .bit = 0, .modifiers = 0 } },
+   { ')', { .line = 4, .bit = 0, .modifiers = S } },
+   { '0', { .line = 3, .bit = 0, .modifiers = 0 } },
+   { '@', { .line = 3, .bit = 0, .modifiers = S } },
+   { '-', { .line = 2, .bit = 0, .modifiers = 0 } },
+   { '=', { .line = 2, .bit = 0, .modifiers = S } },
+   { '^', { .line = 1, .bit = 0, .modifiers = S } },
+   { '~', { .line = 1, .bit = 0, .modifiers =C } },
+   { '|', { .line = 0, .bit = 0, .modifiers = S } },
+   { '\\', { .line = 0, .bit = 0, .modifiers = C } },
+   { 'q', { .line = 12, .bit = 1, .modifiers = 0 } },
+   { 'Q', { .line = 12, .bit = 1, .modifiers = S } },
+   { 'w', { .line = 11, .bit = 1, .modifiers = 0 } },
+   { 'W', { .line = 11, .bit = 1, .modifiers = S } },
+   { 'e', { .line = 10, .bit = 1, .modifiers = 0 } },
+   { 'E', { .line = 10, .bit = 1, .modifiers = S } },
+   { 'r', { .line = 9, .bit = 1, .modifiers = 0 } },
+   { 'R', { .line = 9, .bit = 1, .modifiers = S } },
+   { 't', { .line = 8, .bit = 1, .modifiers = 0 } },
+   { 'T', { .line = 8, .bit = 1, .modifiers = S } },
+   { 'y', { .line = 7, .bit = 1, .modifiers = 0 } },
+   { 'Y', { .line = 7, .bit = 1, .modifiers = S } },
+   { 'u', { .line = 6, .bit = 1, .modifiers = 0 } },
+   { 'U', { .line = 6, .bit = 1, .modifiers = S } },
+   { 'i', { .line = 5, .bit = 1, .modifiers = 0 } },
+   { 'I', { .line = 5, .bit = 1, .modifiers = S } },
+   { 'o', { .line = 4, .bit = 1, .modifiers = 0 } },
+   { 'O', { .line = 4, .bit = 1, .modifiers = S } },
+   { 'p', { .line = 3, .bit = 1, .modifiers = 0 } },
+   { 'P', { .line = 3, .bit = 1, .modifiers = S } },
+   { 0xa3, { .line = 2, .bit = 1, .modifiers = S } },
+   { '{', { .line = 2, .bit = 1, .modifiers = C } },
+   { '_', { .line = 1, .bit = 1, .modifiers = S } },
+   { '}', { .line = 1, .bit = 1, .modifiers = C } },
+   { '\t', { .line = 0, .bit = 1, .modifiers = 0 } },
+   { '[', { .line = 0, .bit = 1, .modifiers = S } },
+   { ']', { .line = 0, .bit = 1, .modifiers = C } },
+   { 'a', { .line = 12, .bit = 2, .modifiers = 0 } },
+   { 'A', { .line = 12, .bit = 2, .modifiers = S } },
+   { 's', { .line = 11, .bit = 2, .modifiers = 0 } },
+   { 'S', { .line = 11, .bit = 2, .modifiers = S } },
+   { 'd', { .line = 10, .bit = 2, .modifiers = 0 } },
+   { 'D', { .line = 10, .bit = 2, .modifiers = S } },
+   { 'f', { .line = 9, .bit = 2, .modifiers = 0 } },
+   { 'F', { .line = 9, .bit = 2, .modifiers = S } },
+   { 'g', { .line = 8, .bit = 2, .modifiers = 0 } },
+   { 'G', { .line = 8, .bit = 2, .modifiers = S } },
+   { 'h', { .line = 7, .bit = 2, .modifiers = 0 } },
+   { 'H', { .line = 7, .bit = 2, .modifiers = S } },
+   { 'j', { .line = 6, .bit = 2, .modifiers = 0 } },
+   { 'J', { .line = 6, .bit = 2, .modifiers = S } },
+   { 'k', { .line = 5, .bit = 2, .modifiers = 0 } },
+   { 'K', { .line = 5, .bit = 2, .modifiers = S } },
+   { 'l', { .line = 4, .bit = 2, .modifiers = 0 } },
+   { 'L', { .line = 4, .bit = 2, .modifiers = S } },
+   { ';', { .line = 3, .bit = 2, .modifiers = 0 } },
+   { '+', { .line = 3, .bit = 2, .modifiers = S } },
+   { ':', { .line = 2, .bit = 2, .modifiers = 0 } },
+   { '*', { .line = 2, .bit = 2, .modifiers = S } },
+   { '\n', { .line = 1, .bit = 2, .modifiers = 0 } },
+   { 'z', { .line = 12, .bit = 3, .modifiers = 0 } },
+   { 'Z', { .line = 12, .bit = 3, .modifiers = S } },
+   { 'x', { .line = 11, .bit = 3, .modifiers = 0 } },
+   { 'X', { .line = 11, .bit = 3, .modifiers = S } },
+   { 'c', { .line = 10, .bit = 3, .modifiers = 0 } },
+   { 'C', { .line = 10, .bit = 3, .modifiers = S } },
+   { 'v', { .line = 9, .bit = 3, .modifiers = 0 } },
+   { 'V', { .line = 9, .bit = 3, .modifiers = S } },
+   { 'b', { .line = 8, .bit = 3, .modifiers = 0 } },
+   { 'B', { .line = 8, .bit = 3, .modifiers = S } },
+   { 'n', { .line = 7, .bit = 3, .modifiers = 0 } },
+   { 'N', { .line = 7, .bit = 3, .modifiers = S } },
+   { 'm', { .line = 6, .bit = 3, .modifiers = 0 } },
+   { 'M', { .line = 6, .bit = 3, .modifiers = S } },
+   { ',', { .line = 5, .bit = 3, .modifiers = 0 } },
+   { '<', { .line = 5, .bit = 3, .modifiers = S } },
+   { '.', { .line = 4, .bit = 3, .modifiers = 0 } },
+   { '>', { .line = 4, .bit = 3, .modifiers = S } },
+   { '/', { .line = 3, .bit = 3, .modifiers = 0 } },
+   { '?', { .line = 3, .bit = 3, .modifiers = S } },
+   { ' ', { .line = 0, .bit = 3, .modifiers = 0 } },
+   { 0 },
+#undef S
+#undef C
+  };
 
 Electron *
 electron_new ()
@@ -77,6 +194,10 @@ electron_new ()
   /* No keys are being pressed */
   memset (electron->keyboard, '\0', 14);
 
+  electron->queued_keys = g_array_new (FALSE, FALSE,
+                                       sizeof (ElectronQueuedKey));
+  electron->queued_keys_pos = 0;
+
   /* Allocate tape buffer */
   electron->tape_buffer = tape_buffer_new ();
   electron->cassette_scanline_counter = 0;
@@ -91,9 +212,43 @@ electron_new ()
 }
 
 void
+electron_add_queued_keys (Electron *electron,
+                          size_t n_keys,
+                          const ElectronQueuedKey *keys)
+{
+  if (electron->queued_keys_pos >= electron->queued_keys->len)
+  {
+    g_array_set_size (electron->queued_keys, 0);
+    electron->queued_keys_pos = 0;
+    electron->queued_keys_scan_count = 0;
+  }
+
+  g_array_append_vals (electron->queued_keys, keys, n_keys);
+}
+
+void
+electron_type_string (Electron *electron,
+                      const char *str)
+{
+  for (; *str; str = g_utf8_next_char (str))
+  {
+    gunichar ch = g_utf8_get_char (str);
+    int i;
+
+    for (i = 0; key_map[i].ch; i++)
+    {
+      if (key_map[i].ch == ch)
+        electron_add_queued_keys (electron, 1, &key_map[i].key);
+    }
+  }
+}
+
+void
 electron_free (Electron *electron)
 {
   int i;
+
+  g_array_free (electron->queued_keys, TRUE);
 
   /* Free all of the paged rom data */
   for (i = 0; i < ELECTRON_PAGED_ROM_COUNT; i++)
@@ -327,6 +482,40 @@ electron_update_palette (Electron *electron)
   }
 }
 
+static guint8
+read_queued_key (Electron *electron, guint16 location)
+{
+  const ElectronQueuedKey *key =
+    &g_array_index (electron->queued_keys,
+                    ElectronQueuedKey,
+                    electron->queued_keys_pos);
+  guint8 value = 0;
+  const int all_lines = (1 << 14) - 1;
+  guint16 scanning = ~location & all_lines;
+
+  if (electron->queued_keys_scan_count < ELECTRON_QUEUED_KEYS_SCAN_COUNT)
+  {
+    if (scanning & (1 << key->line))
+      value |= 1 << key->bit;
+    if (scanning & (1 << ELECTRON_MODIFIERS_LINE))
+      value |= key->modifiers;
+
+    if (scanning == (1 << key->line))
+      electron->queued_keys_scan_count++;
+  }
+  else if (scanning & (1 << key->line))
+  {
+    if (++electron->queued_keys_scan_count >=
+        ELECTRON_QUEUED_KEYS_SCAN_COUNT * 2)
+    {
+      electron->queued_keys_pos++;
+      electron->queued_keys_scan_count = 0;
+    }
+  }
+
+  return value;
+}
+
 guint8
 electron_read_from_location (Electron *electron, guint16 location)
 {
@@ -341,6 +530,9 @@ electron_read_from_location (Electron *electron, guint16 location)
     if (page == ELECTRON_KEYBOARD_PAGE)
     {
       int i, value = 0;
+
+      if (electron->queued_keys_pos < electron->queued_keys->len)
+        return read_queued_key (electron, location);
 
       /* or together all of the locations of the keyboard memory which
          have a '0' in the corresponding address bit */
