@@ -351,8 +351,6 @@ electron_read_from_location (Electron *electron, guint16 location)
         location >>= 1;
       }
 
-      fflush (stdout);
-
       return value;
     }
     else if (electron->paged_roms[page])
