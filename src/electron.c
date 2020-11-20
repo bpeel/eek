@@ -67,7 +67,6 @@ key_map[] =
   {
 #define S (1 << ELECTRON_SHIFT_BIT)
 #define C (1 << ELECTRON_CONTROL_BIT)
-   { 0x1b, { .line = 13, .bit = 0, .modifiers = 0 } },
    { '1', { .line = 12, .bit = 0, .modifiers = 0 } },
    { '!', { .line = 12, .bit = 0, .modifiers = S } },
    { '2', { .line = 11, .bit = 0, .modifiers = 0 } },
@@ -536,7 +535,13 @@ electron_read_from_location (Electron *electron, guint16 location)
       int i, value = 0;
 
       if (electron->queued_keys_pos < electron->queued_keys->len)
-        return read_queued_key (electron, location);
+      {
+        /* If the escape key is pressed then abandon the queued keys */
+        if ((electron->keyboard[13] & 1))
+          g_array_set_size (electron->queued_keys, 0);
+        else
+          return read_queued_key (electron, location);
+      }
 
       /* or together all of the locations of the keyboard memory which
          have a '0' in the corresponding address bit */
