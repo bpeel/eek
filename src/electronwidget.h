@@ -43,9 +43,6 @@ struct _ElectronWidget
 
   ElectronManager *electron;
 
-  unsigned char shift_state, control_state, alt_state;
-  int key_override, override_keycode;
-
   int frame_end_handler;
 
   /* Position of the main video display. Gets re-centered in the

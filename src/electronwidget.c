@@ -54,121 +54,6 @@ static GdkRgbCmap electron_widget_color_map =
     }, 8
   };
 
-typedef struct _ElectronWidgetKey ElectronWidgetKey;
-
-struct _ElectronWidgetKey
-{
-  int keysym, line, bit, modifiers;
-};
-
-static const ElectronWidgetKey electron_widget_keymap[] =
-  {
-    { GDK_Escape, 13, 0, 0 },
-    { GDK_1, 12, 0, 0 },
-    { GDK_exclam, 12, 0, 1 },
-    { GDK_2, 11, 0, 0 },
-    { GDK_quotedbl, 11, 0, 1 },
-    { GDK_3, 10, 0, 0 },
-    { GDK_numbersign, 10, 0, 1 },
-    { GDK_4, 9, 0, 0 },
-    { GDK_dollar, 9, 0, 1 },
-    { GDK_5, 8, 0, 0 },
-    { GDK_percent, 8, 0, 1 },
-    { GDK_6, 7, 0, 0 },
-    { GDK_ampersand, 7, 0, 1 },
-    { GDK_7, 6, 0, 0 },
-    { GDK_apostrophe, 6, 0, 1 },
-    { GDK_8, 5, 0, 0 },
-    { GDK_parenleft, 5, 0, 1 },
-    { GDK_9, 4, 0, 0 },
-    { GDK_parenright, 4, 0, 1 },
-    { GDK_0, 3, 0, 0 },
-    { GDK_at, 3, 0, 1 },
-    { GDK_minus, 2, 0, 0 },
-    { GDK_equal, 2, 0, 1 },
-    { GDK_Left, 1, 0, 0 },
-    { GDK_asciicircum, 1, 0, 1 },
-    { GDK_asciitilde, 1, 0, 2 },
-    { GDK_Right, 0, 0, 0 },
-    { GDK_bar, 0, 0, 1 },
-    { GDK_backslash, 0, 0, 2 },
-    { GDK_q, 12, 1, 0 },
-    { GDK_Q, 12, 1, 1 },
-    { GDK_w, 11, 1, 0 },
-    { GDK_W, 11, 1, 1 },
-    { GDK_e, 10, 1, 0 },
-    { GDK_E, 10, 1, 1 },
-    { GDK_r, 9, 1, 0 },
-    { GDK_R, 9, 1, 1 },
-    { GDK_t, 8, 1, 0 },
-    { GDK_T, 8, 1, 1 },
-    { GDK_y, 7, 1, 0 },
-    { GDK_Y, 7, 1, 1 },
-    { GDK_u, 6, 1, 0 },
-    { GDK_U, 6, 1, 1 },
-    { GDK_i, 5, 1, 0 },
-    { GDK_I, 5, 1, 1 },
-    { GDK_o, 4, 1, 0 },
-    { GDK_O, 4, 1, 1 },
-    { GDK_p, 3, 1, 0 },
-    { GDK_P, 3, 1, 1 },
-    { GDK_Up, 2, 1, 0 },
-    { GDK_sterling, 2, 1, 1 },
-    { GDK_braceleft, 2, 1, 2 },
-    { GDK_Down, 1, 1, 0 },
-    { GDK_underscore, 1, 1, 1 },
-    { GDK_braceright, 1, 1, 2 },
-    { GDK_Tab, 0, 1, 0 },
-    { GDK_bracketleft, 0, 1, 1 },
-    { GDK_bracketright, 0, 1, 2 },
-    { GDK_a, 12, 2, 0 },
-    { GDK_A, 12, 2, 1 },
-    { GDK_s, 11, 2, 0 },
-    { GDK_S, 11, 2, 1 },
-    { GDK_d, 10, 2, 0 },
-    { GDK_D, 10, 2, 1 },
-    { GDK_f, 9, 2, 0 },
-    { GDK_F, 9, 2, 1 },
-    { GDK_g, 8, 2, 0 },
-    { GDK_G, 8, 2, 1 },
-    { GDK_h, 7, 2, 0 },
-    { GDK_H, 7, 2, 1 },
-    { GDK_j, 6, 2, 0 },
-    { GDK_J, 6, 2, 1 },
-    { GDK_k, 5, 2, 0 },
-    { GDK_K, 5, 2, 1 },
-    { GDK_l, 4, 2, 0 },
-    { GDK_L, 4, 2, 1 },
-    { GDK_semicolon, 3, 2, 0 },
-    { GDK_plus, 3, 2, 1 },
-    { GDK_colon, 2, 2, 0 },
-    { GDK_asterisk, 2, 2, 1 },
-    { GDK_Return, 1, 2, 0 },
-    { GDK_z, 12, 3, 0 },
-    { GDK_Z, 12, 3, 1 },
-    { GDK_x, 11, 3, 0 },
-    { GDK_X, 11, 3, 1 },
-    { GDK_c, 10, 3, 0 },
-    { GDK_C, 10, 3, 1 },
-    { GDK_v, 9, 3, 0 },
-    { GDK_V, 9, 3, 1 },
-    { GDK_b, 8, 3, 0 },
-    { GDK_B, 8, 3, 1 },
-    { GDK_n, 7, 3, 0 },
-    { GDK_N, 7, 3, 1 },
-    { GDK_m, 6, 3, 0 },
-    { GDK_M, 6, 3, 1 },
-    { GDK_comma, 5, 3, 0 },
-    { GDK_less, 5, 3, 1 },
-    { GDK_period, 4, 3, 0 },
-    { GDK_greater, 4, 3, 1 },
-    { GDK_slash, 3, 3, 0 },
-    { GDK_question, 3, 3, 1 },
-    { GDK_BackSpace, 1, 3, 0 },
-    { GDK_space, 0, 3, 0 },
-    { -1, -1, -1, -1 }
-  };
-
 GType
 electron_widget_get_type ()
 {
@@ -220,11 +105,6 @@ static void
 electron_widget_init (ElectronWidget *ewidget)
 {
   GTK_WIDGET_SET_FLAGS (GTK_WIDGET (ewidget), GTK_CAN_FOCUS);
-
-  ewidget->shift_state = 0;
-  ewidget->control_state = 0;
-  ewidget->alt_state = 0;
-  ewidget->key_override = -1;
 }
 
 GtkWidget *
@@ -378,137 +258,115 @@ electron_widget_size_allocate (GtkWidget *widget, GtkAllocation *allocation)
 }
 
 static gboolean
+keycode_to_line_and_bit (guint16 code, int *line, int *bit)
+{
+  if (code >= 9 && code <= 20)
+  {
+    *line = 20 - code + 2;
+    *bit = 0;
+    return TRUE;
+  }
+  if (code >= 24 && code <= 33)
+  {
+    *line = 33 - code + 3;
+    *bit = 1;
+    return TRUE;
+  }
+  if (code >= 38 && code <= 48)
+  {
+    *line = 48 - code + 2;
+    *bit = 2;
+    return TRUE;
+  }
+  if (code >= 52 && code <= 61)
+  {
+    *line = 61 - code + 3;
+    *bit = 3;
+    return TRUE;
+  }
+  if (code == 113 || code == 114)
+  {
+    *line = code & 1;
+    *bit = 0;
+    return TRUE;
+  }
+  if (code == 23)
+  {
+    *line = 0;
+    *bit = 1;
+    return TRUE;
+  }
+  if (code == 111)
+  {
+    *line = 2;
+    *bit = 1;
+    return TRUE;
+  }
+  if (code == 116)
+  {
+    *line = 1;
+    *bit = 1;
+    return TRUE;
+  }
+  if (code == 66)
+  {
+    *line = 0xd;
+    *bit = 1;
+    return TRUE;
+  }
+  if (code == 36)
+  {
+    *line = 1;
+    *bit = 2;
+    return TRUE;
+  }
+  if (code == 37 || code == 105)
+  {
+    *line = 1;
+    *bit = 0xd;
+    return TRUE;
+  }
+  if (code == 65)
+  {
+    *line = 0;
+    *bit = 3;
+    return TRUE;
+  }
+  if (code == 22)
+  {
+    *line = 1;
+    *bit = 3;
+    return TRUE;
+  }
+  if (code == 50 || code == 62)
+  {
+    *line = 0xd;
+    *bit = 3;
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+static gboolean
 electron_widget_key_event (GtkWidget *widget, GdkEventKey *event)
 {
   ElectronWidget *ewidget;
-  int i;
-  gboolean ret = TRUE;
+  int line, bit;
 
   g_return_val_if_fail (IS_ELECTRON_WIDGET (widget), TRUE);
 
   ewidget = ELECTRON_WIDGET (widget);
 
-  if (event->keyval == GDK_Shift_L)
-  {
-    if (event->type == GDK_KEY_PRESS)
-      ewidget->shift_state |= 1;
-    else
-      ewidget->shift_state &= ~1;
-  }
-  else if (event->keyval == GDK_Shift_R)
-  {
-    if (event->type == GDK_KEY_PRESS)
-      ewidget->shift_state |= 2;
-    else
-      ewidget->shift_state &= ~2;
-  }
-  else if (event->keyval == GDK_Control_L)
-  {
-    if (event->type == GDK_KEY_PRESS)
-      ewidget->control_state |= 1;
-    else
-      ewidget->control_state &= ~1;
-  }
-  else if (event->keyval == GDK_Control_R)
-  {
-    if (event->type == GDK_KEY_PRESS)
-      ewidget->control_state |= 2;
-    else
-      ewidget->control_state &= ~2;
-  }
-  else if (event->keyval == GDK_Alt_L)
-  {
-    if (event->type == GDK_KEY_PRESS)
-      ewidget->alt_state |= 1;
-    else
-      ewidget->alt_state &= ~1;
-  }
-  else if (event->keyval == GDK_Alt_R)
-  {
-    if (event->type == GDK_KEY_PRESS)
-      ewidget->alt_state |= 2;
-    else
-      ewidget->alt_state &= ~2;
-  }
-  else if (event->type == GDK_KEY_RELEASE)
-  {
-    /* The released key may have a different keyval if the shift key
-       state has changed since the key was pressed so we should
-       compare by the hardware keycode instead */
-    if (ewidget->key_override != -1 && ewidget->override_keycode == event->hardware_keycode)
-    {
-      if (ewidget->electron)
-        electron_manager_release_key (ewidget->electron,
-                                      electron_widget_keymap[ewidget->key_override].line,
-                                      electron_widget_keymap[ewidget->key_override].bit);
-      ewidget->key_override = -1;
-    }
-    else
-      /* If it wasn't the key we are waiting for then pass it on */
-      ret = FALSE;
-  }
+  if (!keycode_to_line_and_bit (event->hardware_keycode, &line, &bit))
+    return FALSE;
+
+  if (event->type == GDK_KEY_RELEASE)
+    electron_manager_release_key (ewidget->electron, line, bit);
   else
-  {
-    for (i = 0; electron_widget_keymap[i].keysym != -1; i++)
-      if (electron_widget_keymap[i].keysym == event->keyval)
-      {
-        if (ewidget->electron)
-        {
-          if (ewidget->key_override != i && ewidget->key_override != -1)
-            electron_manager_release_key (ewidget->electron,
-                                          electron_widget_keymap[ewidget->key_override].line,
-                                          electron_widget_keymap[ewidget->key_override].bit);
-          electron_manager_press_key (ewidget->electron,
-                                      electron_widget_keymap[i].line,
-                                      electron_widget_keymap[i].bit);
-        }
+    electron_manager_press_key (ewidget->electron, line, bit);
 
-        ewidget->key_override = i;
-        ewidget->override_keycode = event->hardware_keycode;
-
-        break;
-      }
-
-    /* If we don't understand the key event then let it propagate further */
-    if (electron_widget_keymap[i].keysym == -1)
-      ret = FALSE;
-  }
-
-  if (ewidget->electron)
-  {
-    if (ewidget->key_override != -1)
-    {
-      if (electron_widget_keymap[ewidget->key_override].modifiers & 4)
-        electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
-      else
-        electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
-      if (electron_widget_keymap[ewidget->key_override].modifiers & 2)
-        electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
-      else
-        electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
-      if (electron_widget_keymap[ewidget->key_override].modifiers & 1)
-        electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
-      else
-        electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
-    }
-    else
-    {
-      if (ewidget->control_state)
-        electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
-      else
-        electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_CONTROL_BIT);
-      if (ewidget->shift_state)
-        electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
-      else
-        electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_SHIFT_BIT);
-      if (ewidget->alt_state)
-        electron_manager_press_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
-      else
-        electron_manager_release_key (ewidget->electron, ELECTRON_MODIFIERS_LINE, ELECTRON_FUNC_BIT);
-    }
-  }
-
-  return ret;
+  return TRUE;
 }
 
 void
