@@ -88,7 +88,7 @@ dis_model_init (DisModel *model)
   model->address = 0;
   model->iter_stamp = 0;
   model->electron = NULL;
-  memset (model->rows, sizeof (DisModelRowData) * DIS_MODEL_ROW_COUNT, 0);
+  memset (model->rows, 0, sizeof model->rows);
 }
 
 DisModel *
