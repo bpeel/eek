@@ -105,6 +105,8 @@ static void
 electron_widget_init (ElectronWidget *ewidget)
 {
   GTK_WIDGET_SET_FLAGS (GTK_WIDGET (ewidget), GTK_CAN_FOCUS);
+
+  ewidget->keyboard_type = ELECTRON_WIDGET_KEYBOARD_TYPE_TEXT;
 }
 
 GtkWidget *
@@ -349,6 +351,38 @@ keycode_to_line_and_bit (guint16 code, int *line, int *bit)
 }
 
 static gboolean
+queue_keysym (Electron *electron, guint keyval)
+{
+  static const struct
+  {
+    guint sym;
+    ElectronQueuedKey key;
+  } keys[] =
+      {
+       { GDK_KEY_Return, { 1, 2 } },
+       { GDK_KEY_Escape, { 0xd, 0 } },
+       { GDK_KEY_Tab, { 0, 1 } },
+       { GDK_KEY_BackSpace, { 1, 3 } },
+       { GDK_KEY_Up, { 2, 1 } },
+       { GDK_KEY_Down, { 1, 1 } },
+       { GDK_KEY_Left, { 1, 0 } },
+       { GDK_KEY_Right, { 0, 0 } },
+      };
+  int i;
+
+  for (i = 0; i < G_N_ELEMENTS (keys); i++)
+  {
+    if (keys[i].sym == keyval)
+    {
+      electron_add_queued_keys (electron, 1, &keys[i].key);
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+static gboolean
 electron_widget_key_event (GtkWidget *widget, GdkEventKey *event)
 {
   ElectronWidget *ewidget;
@@ -358,13 +392,25 @@ electron_widget_key_event (GtkWidget *widget, GdkEventKey *event)
 
   ewidget = ELECTRON_WIDGET (widget);
 
-  if (!keycode_to_line_and_bit (event->hardware_keycode, &line, &bit))
-    return FALSE;
+  switch (ewidget->keyboard_type)
+  {
+    case ELECTRON_WIDGET_KEYBOARD_TYPE_TEXT:
+      if (event->type == GDK_KEY_PRESS)
+      {
+        if (!queue_keysym (ewidget->electron->data, event->keyval))
+          electron_type_string (ewidget->electron->data, event->string);
+      }
+      break;
+    case ELECTRON_WIDGET_KEYBOARD_TYPE_PHYSICAL:
+      if (!keycode_to_line_and_bit (event->hardware_keycode, &line, &bit))
+        return FALSE;
 
-  if (event->type == GDK_KEY_RELEASE)
-    electron_manager_release_key (ewidget->electron, line, bit);
-  else
-    electron_manager_press_key (ewidget->electron, line, bit);
+      if (event->type == GDK_KEY_RELEASE)
+        electron_manager_release_key (ewidget->electron, line, bit);
+      else
+        electron_manager_press_key (ewidget->electron, line, bit);
+      break;
+  }
 
   return TRUE;
 }
@@ -411,4 +457,14 @@ electron_widget_on_frame_end (ElectronManager *electron, gpointer user_data)
 
   if (GTK_WIDGET_REALIZED (GTK_WIDGET (ewidget)))
     electron_widget_paint_video (ewidget);
+}
+
+void
+electron_widget_set_keyboard_type (ElectronWidget *ewidget,
+                                   ElectronWidgetKeyboardType type)
+{
+  if (type == ELECTRON_WIDGET_KEYBOARD_TYPE_TEXT)
+    electron_manager_release_all_keys (ewidget->electron);
+
+  ewidget->keyboard_type = type;
 }

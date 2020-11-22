@@ -37,6 +37,12 @@
 typedef struct _ElectronWidget ElectronWidget;
 typedef struct _ElectronWidgetClass ElectronWidgetClass;
 
+typedef enum
+{
+ ELECTRON_WIDGET_KEYBOARD_TYPE_TEXT,
+ ELECTRON_WIDGET_KEYBOARD_TYPE_PHYSICAL,
+} ElectronWidgetKeyboardType;
+
 struct _ElectronWidget
 {
   GtkWidget parent_object;
@@ -48,6 +54,8 @@ struct _ElectronWidget
   /* Position of the main video display. Gets re-centered in the
      widget whenever the widget's size changes */
   int xpos, ypos;
+
+  ElectronWidgetKeyboardType keyboard_type;
 };
 
 struct _ElectronWidgetClass
@@ -59,5 +67,7 @@ GType electron_widget_get_type ();
 GtkWidget *electron_widget_new ();
 GtkWidget *electron_widget_new_with_electron (ElectronManager *electron);
 void electron_widget_set_electron (ElectronWidget *ewidget, ElectronManager *electron);
+void electron_widget_set_keyboard_type (ElectronWidget *ewidget,
+                                        ElectronWidgetKeyboardType type);
 
 #endif /* _ELECTRON_WIDGET_H */
