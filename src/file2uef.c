@@ -27,6 +27,7 @@
 
 #include "tapebuffer.h"
 #include "tapeuef.h"
+#include "tokenizer.h"
 
 /* The start of each file has 5.1 seconds of high tone */
 #define FILE_START_TONE_LENGTH ((51 * 1200 / 10) / 10)
@@ -40,6 +41,7 @@ static int option_load_address = 0x0e00;
 static int option_exec_address = 0x0000;
 static GList *option_files = NULL;
 static char *option_tapename = NULL;
+static gboolean option_tokenize = FALSE;
 
 typedef struct
 {
@@ -53,6 +55,7 @@ typedef struct
   char *tapename;
   int load_address;
   int exec_address;
+  gboolean tokenize;
 } File;
 
 static void
@@ -109,76 +112,121 @@ add_crc (Writer *writer)
   add_bytes (writer, sizeof value, (const guint8 *) &value);
 }
 
+static void
+write_block (Writer *writer,
+             const File *file,
+             int block_num,
+             size_t size,
+             const guint8 *buf)
+{
+  guint8 block_flags;
+
+  if (block_num > 0)
+  {
+    tape_buffer_store_repeated_high_tone (writer->tbuf,
+                                          BLOCK_START_TONE_LENGTH);
+  }
+
+  /* Synchronisation byte */
+  add_uint8 (writer, 0x2a);
+
+  writer->crc = 0;
+
+  add_bytes (writer,
+             strlen (file->tapename) + 1,
+             (const guint8 *) file->tapename);
+  add_uint32 (writer, file->load_address);
+  add_uint32 (writer, file->exec_address);
+  add_uint16 (writer, block_num);
+  add_uint16 (writer, size);
+
+  block_flags = 0;
+
+  if (size < 256)
+    block_flags |= 0x80;
+  if (size == 0)
+    block_flags |= 0x40;
+
+  add_uint8 (writer, block_flags);
+
+  /* Address of next file */
+  add_uint32 (writer, 0);
+
+  add_crc (writer);
+
+  writer->crc = 0;
+
+  add_bytes (writer, size, buf);
+
+  add_crc (writer);
+}
+
 static gboolean
 add_file_to_tape_buffer (const File *file,
                          TapeBuffer *tbuf,
                          GError **error)
 {
   Writer writer = { .tbuf = tbuf, .crc = 0 };
-  size_t got;
-  guint8 buf[256];
   int block_num = 0;
-  guint8 block_flags;
-  FILE *infile;
-
-  infile = fopen (file->filename, "rb");
-  if (infile == NULL)
-  {
-    g_set_error_literal (error,
-                         G_FILE_ERROR,
-                         g_file_error_from_errno (errno),
-                         strerror (errno));
-    return FALSE;
-  }
 
   tape_buffer_store_repeated_high_tone (writer.tbuf, FILE_START_TONE_LENGTH);
 
-  do {
-    got = fread(buf, 1, sizeof buf, infile);
+  if (file->tokenize)
+  {
+    gchar *contents;
+    size_t length;
+    GString *tokens;
+    size_t pos;
 
-    if (block_num > 0)
+    if (!g_file_get_contents (file->filename, &contents, &length, error))
+      return FALSE;
+
+    tokens = tokenize_program (contents);
+
+    g_free (contents);
+
+    while (pos < tokens->len)
     {
-      tape_buffer_store_repeated_high_tone (writer.tbuf,
-                                            BLOCK_START_TONE_LENGTH);
+      size_t to_write = MIN (256, tokens->len - pos);
+
+      write_block (&writer,
+                   file,
+                   block_num++,
+                   to_write,
+                   (guint8 *) tokens->str + pos);
+
+      pos += to_write;
     }
 
-    /* Synchronisation byte */
-    add_uint8 (&writer, 0x2a);
+    if (tokens->len % 256 == 0)
+      write_block (&writer, file, block_num++, 0, NULL);
 
-    writer.crc = 0;
+    g_string_free (tokens, TRUE);
+  }
+  else
+  {
+    size_t got;
+    guint8 buf[256];
+    FILE *infile;
 
-    add_bytes (&writer,
-               strlen (file->tapename) + 1,
-               (const guint8 *) file->tapename);
-    add_uint32 (&writer, file->load_address);
-    add_uint32 (&writer, file->exec_address);
-    add_uint16 (&writer, block_num);
-    add_uint16 (&writer, got);
+    infile = fopen (file->filename, "rb");
+    if (infile == NULL)
+    {
+      g_set_error_literal (error,
+                           G_FILE_ERROR,
+                           g_file_error_from_errno (errno),
+                           strerror (errno));
+      return FALSE;
+    }
 
-    block_flags = 0;
+    do {
+      got = fread(buf, 1, sizeof buf, infile);
 
-    if (got < sizeof buf)
-      block_flags |= 0x80;
-    if (got == 0)
-      block_flags |= 0x40;
+      write_block (&writer, file, block_num++, got, buf);
+    } while (got >= sizeof buf);
 
-    add_uint8 (&writer, block_flags);
-
-    /* Address of next file */
-    add_uint32 (&writer, 0);
-
-    add_crc (&writer);
-
-    writer.crc = 0;
-
-    add_bytes (&writer, got, buf);
-
-    add_crc (&writer);
-
-    block_num++;
-  } while (got >= sizeof buf);
-
-  fclose (infile);
+    fclose (infile);
+  }
 
   return TRUE;
 }
@@ -195,8 +243,10 @@ option_filename_cb(const gchar *option_name,
   file->load_address = option_load_address;
   file->exec_address = option_exec_address;
   file->tapename = g_strdup (option_tapename ? option_tapename : value);
+  file->tokenize = option_tokenize;
 
   option_tapename = NULL;
+  option_tokenize = FALSE;
 
   option_files = g_list_prepend (option_files, file);
 
@@ -231,6 +281,10 @@ options[] =
     {
       "name", 'n', 0, G_OPTION_ARG_STRING, &option_tapename,
       "Internal filename of next file", "name"
+    },
+    {
+     "tokenize", 't', 0, G_OPTION_ARG_NONE, &option_tokenize,
+     "Tokenize the next file BASIC", NULL
     },
     {
       "output", 'o', 0, G_OPTION_ARG_FILENAME, &option_output_file,

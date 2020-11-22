@@ -54,7 +54,8 @@ eek_file2uef_LDADD = \
 eek_file2uef_SOURCES = \
 	file2uef.c \
 	tapebufer.h tapebuffer.c \
-	tapeuef.h tapeuef.c
+	tapeuef.h tapeuef.c \
+	tokenizer.h tokenizer.c
 
 EXTRA_DIST = eekmarshalers.list
 BUILT_SOURCES = eekmarshalers.c eekmarshalers.h
