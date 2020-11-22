@@ -24,6 +24,7 @@
 #include <gtk/gtkwindow.h>
 #include <gtk/gtkactiongroup.h>
 #include <gtk/gtktoggleaction.h>
+#include <gtk/gtkradioaction.h>
 #include <gtk/gtkstock.h>
 #include <gtk/gtkuimanager.h>
 #include <gtk/gtkhbox.h>
@@ -48,13 +49,20 @@
 
 typedef struct _MainWindowAction MainWindowAction;
 
+typedef enum
+{
+  ACTION_NORMAL = 0, ACTION_TOGGLE, ACTION_RADIO
+} MainWindowActionType;
+
 /* Replacement for GtkActionEntry because there doesn't seem to be a
    nice way to set the short label in it */
 struct _MainWindowAction
 {
   const gchar *name, *stock_id, *label, *short_label, *accelerator, *tooltip;
-  gboolean toggle;
+  MainWindowActionType type;
   GCallback callback;
+  /* For radio actions */
+  int value;
 };
 
 static void main_window_class_init (MainWindowClass *klass);
@@ -74,6 +82,9 @@ static void main_window_on_rewind (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_quit (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_paste (GtkAction *action,
                                   MainWindow *mainwin);
+static void main_window_on_keyboard_type (GtkRadioAction *action,
+                                          GtkRadioAction *current,
+                                          MainWindow *mainwin);
 static void main_window_on_toggle_full_speed (GtkAction *action,
                                               MainWindow *mainwin);
 static void main_window_on_preferences (GtkAction *action, MainWindow *mainwin);
@@ -99,62 +110,79 @@ static gpointer parent_class;
 static const MainWindowAction main_window_actions[] =
   {
     { "ActionTapeMenu", NULL, N_("Menu|_Tape"), NULL, NULL,
-      NULL, FALSE, NULL },
+      NULL, ACTION_NORMAL, NULL },
     { "ActionEditMenu", NULL, N_("Menu|_Edit"), NULL, NULL,
-      NULL, FALSE, NULL },
+      NULL, ACTION_NORMAL, NULL },
     { "ActionViewMenu", NULL, N_("Menu|_View"), NULL, NULL,
-      NULL, FALSE, NULL },
+      NULL, ACTION_NORMAL, NULL },
     { "ActionDebugMenu", NULL, N_("Menu|_Debug"), NULL, NULL,
-      NULL, FALSE, NULL },
+      NULL, ACTION_NORMAL, NULL },
     { "ActionHelpMenu", NULL, N_("Menu|_Help"), NULL, NULL,
-      NULL, FALSE, NULL },
+      NULL, ACTION_NORMAL, NULL },
     { "ActionNew", GTK_STOCK_NEW, N_("MenuTape|_New"), NULL,
-      NULL, N_("Clear the tape data"), FALSE, G_CALLBACK (main_window_on_new) },
+      NULL, N_("Clear the tape data"), ACTION_NORMAL,
+      G_CALLBACK (main_window_on_new) },
     { "ActionOpen", GTK_STOCK_OPEN, N_("MenuTape|_Open"), NULL,
-      NULL, N_("Open the tape data from a file"), FALSE,
+      NULL, N_("Open the tape data from a file"), ACTION_NORMAL,
       G_CALLBACK (main_window_on_open) },
     { "ActionSave", GTK_STOCK_SAVE, N_("MenuTape|_Save"), NULL,
-      NULL, N_("Save the tape data to a file"), FALSE,
+      NULL, N_("Save the tape data to a file"), ACTION_NORMAL,
       G_CALLBACK (main_window_on_save) },
     { "ActionSaveAs", GTK_STOCK_SAVE_AS, N_("MenuTape|Save _As..."), NULL,
-      NULL, N_("Save the tape data to a different file"), FALSE,
+      NULL, N_("Save the tape data to a different file"), ACTION_NORMAL,
       G_CALLBACK (main_window_on_save_as) },
     { "ActionRewind", NULL, N_("MenuTape|Rewind"), NULL, "<Control>R",
-      N_("Rewind the tape"), FALSE, G_CALLBACK (main_window_on_rewind) },
+      N_("Rewind the tape"), ACTION_NORMAL,
+      G_CALLBACK (main_window_on_rewind) },
     { "ActionQuit", GTK_STOCK_QUIT, N_("MenuTape|_Quit"), NULL,
-      NULL, N_("Quit the program"), FALSE, G_CALLBACK (main_window_on_quit) },
+      NULL, N_("Quit the program"), ACTION_NORMAL,
+      G_CALLBACK (main_window_on_quit) },
     { "ActionPaste", NULL, N_("MenuView|_Paste"), NULL, "<Control>V",
       N_("Type some text from the clipboard on the Electron’s keyboard."),
-      FALSE, G_CALLBACK (main_window_on_paste) },
+      ACTION_NORMAL, G_CALLBACK (main_window_on_paste) },
     { "ActionToggleFullSpeed", NULL, N_("MenuView|Run _full speed"), NULL,
       NULL, N_("When enabled, run full speed otherwise "
-               "sync to an accurate speed"), TRUE,
+               "sync to an accurate speed"), ACTION_TOGGLE,
       G_CALLBACK (main_window_on_toggle_full_speed) },
-    { "ActionPreferences", GTK_STOCK_PREFERENCES, N_("MenuEdit|_Preferences"), NULL,
-      NULL, N_("Configure the application"), FALSE, G_CALLBACK (main_window_on_preferences) },
+    { "ActionKeyboardText", NULL, N_("MenuEdit|_Text keyboard"),
+      NULL, NULL, N_("Emulate a keyboard that is easier for typing text"),
+      ACTION_RADIO, G_CALLBACK (main_window_on_keyboard_type),
+      ELECTRON_WIDGET_KEYBOARD_TYPE_TEXT },
+    { "ActionKeyboardPhysical", NULL, N_("MenuEdit|Ph_ysical keyboard"),
+      NULL, NULL, N_("Use a keyboard layout with similar positions to a "
+                     "real Electron"),
+      ACTION_RADIO, NULL,
+      ELECTRON_WIDGET_KEYBOARD_TYPE_PHYSICAL },
+    { "ActionPreferences", GTK_STOCK_PREFERENCES, N_("MenuEdit|_Preferences"),
+      NULL, NULL, N_("Configure the application"), ACTION_NORMAL,
+      G_CALLBACK (main_window_on_preferences) },
     { "ActionToggleToolbar", NULL, N_("MenuView|_Toolbar"), NULL,
-      NULL, N_("Display or hide the toolbar"), TRUE,
+      NULL, N_("Display or hide the toolbar"), ACTION_TOGGLE,
       G_CALLBACK (main_window_on_toggle_toolbar) },
     { "ActionToggleDebugger", NULL, N_("MenuView|_Debugger"), NULL,
-      NULL, N_("Display or hide the debugger controls"), TRUE,
+      NULL, N_("Display or hide the debugger controls"), ACTION_TOGGLE,
       G_CALLBACK (main_window_on_toggle_debugger) },
     { "ActionRun", NULL, N_("MenuDebug|_Run"), NULL,
-      "F5", N_("Start the emulator"), FALSE, G_CALLBACK (main_window_on_run) },
+      "F5", N_("Start the emulator"), ACTION_NORMAL,
+      G_CALLBACK (main_window_on_run) },
     { "ActionStep", NULL, N_("MenuDebug|_Step"), NULL,
-      "F11", N_("Single-step one instruction"), FALSE, G_CALLBACK (main_window_on_step) },
+      "F11", N_("Single-step one instruction"), ACTION_NORMAL,
+      G_CALLBACK (main_window_on_step) },
     { "ActionBreak", NULL, N_("MenuDebug|_Break"), NULL,
-      "F9", N_("Stop the emulator"), FALSE, G_CALLBACK (main_window_on_break) },
+      "F9", N_("Stop the emulator"), ACTION_NORMAL,
+      G_CALLBACK (main_window_on_break) },
     { "ActionReset", NULL, N_("MenuDebug|R_eset"), NULL,
-      NULL, N_("Reset the emulator to location in the vector at $FFFC"), FALSE,
-      G_CALLBACK (main_window_on_reset) },
+      NULL, N_("Reset the emulator to location in the vector at $FFFC"),
+      ACTION_NORMAL, G_CALLBACK (main_window_on_reset) },
     { "ActionEditBreakpoint", NULL, N_("MenuDebug|Edit brea_kpoint..."), NULL,
-      NULL, N_("Set or remove a breakpoint"), FALSE,
+      NULL, N_("Set or remove a breakpoint"), ACTION_NORMAL,
       G_CALLBACK (main_window_on_edit_breakpoint) },
     { "ActionDisassembler", NULL, N_("MenuDebug|_Disassembler..."), NULL,
-      NULL, N_("Show the diassembler dialog"), FALSE,
+      NULL, N_("Show the diassembler dialog"), ACTION_NORMAL,
       G_CALLBACK (main_window_on_disassembler) },
     { "ActionAbout", GTK_STOCK_ABOUT, N_("MenuHelp|_About"), NULL,
-      NULL, N_("Display the about box"), FALSE, G_CALLBACK (main_window_on_about) }
+      NULL, N_("Display the about box"), ACTION_NORMAL,
+      G_CALLBACK (main_window_on_about) }
   };
 
 static const char main_window_ui_definition[] =
@@ -173,6 +201,9 @@ static const char main_window_ui_definition[] =
 "  </menu>\n"
 "  <menu name=\"EditMenu\" action=\"ActionEditMenu\">\n"
 "   <menuitem name=\"Paste\" action=\"ActionPaste\" />\n"
+"   <separator />\n"
+"   <menuitem name=\"TextKeyboard\" action=\"ActionKeyboardText\"/>\n"
+"   <menuitem name=\"PhysicalKeyboard\" action=\"ActionKeyboardPhysical\"/>\n"
 "   <separator />\n"
 "   <menuitem name=\"ToggleFullSpeed\" action=\"ActionToggleFullSpeed\" />\n"
 "   <menuitem name=\"Preferences\" action=\"ActionPreferences\" />\n"
@@ -252,6 +283,7 @@ main_window_init (MainWindow *mainwin)
   GError *ui_error = NULL;
   int i;
   const MainWindowAction *a;
+  GSList *group = NULL;
 
   mainwin->electron = NULL;
 
@@ -267,37 +299,64 @@ main_window_init (MainWindow *mainwin)
        i < sizeof (main_window_actions) / sizeof (MainWindowAction);
        i++, a++)
   {
-    GtkAction *action;
+    GtkAction *action = NULL;
 
-    if (main_window_actions[i].toggle)
+    if (main_window_actions[i].type != ACTION_RADIO)
+      group = NULL;
+
+    switch (main_window_actions[i].type)
     {
-      action = GTK_ACTION (gtk_toggle_action_new
-                           (a->name,
-                            a->label
-                            ? g_strip_context (a->label, gettext (a->label))
-                            : NULL,
-                            a->tooltip
-                            ? g_strip_context (a->tooltip, gettext (a->tooltip))
-                            : NULL,
-                            main_window_actions[i].stock_id));
-      if (main_window_actions[i].callback)
-        g_signal_connect (G_OBJECT (action), "toggled",
-                          main_window_actions[i].callback, mainwin);
+      case ACTION_TOGGLE:
+        action = GTK_ACTION (gtk_toggle_action_new
+                             (a->name,
+                              a->label
+                              ? g_strip_context (a->label, gettext (a->label))
+                              : NULL,
+                              a->tooltip
+                              ? g_strip_context (a->tooltip,
+                                                 gettext (a->tooltip))
+                              : NULL,
+                              main_window_actions[i].stock_id));
+
+        if (main_window_actions[i].callback)
+          g_signal_connect (G_OBJECT (action), "toggled",
+                            main_window_actions[i].callback, mainwin);
+        break;
+      case ACTION_RADIO:
+        action = GTK_ACTION (gtk_radio_action_new
+                             (a->name,
+                              a->label
+                              ? g_strip_context (a->label, gettext (a->label))
+                              : NULL,
+                              a->tooltip
+                              ? g_strip_context (a->tooltip,
+                                                 gettext (a->tooltip))
+                              : NULL,
+                              main_window_actions[i].stock_id,
+                              a->value));
+        if (main_window_actions[i].callback && group == NULL)
+          g_signal_connect (G_OBJECT (action), "changed",
+                            main_window_actions[i].callback, mainwin);
+
+        gtk_radio_action_set_group (GTK_RADIO_ACTION (action), group);
+        group = gtk_radio_action_get_group (GTK_RADIO_ACTION (action));
+        break;
+      case ACTION_NORMAL:
+        action = gtk_action_new (a->name,
+                                 a->label
+                                 ? g_strip_context (a->label,
+                                                    gettext (a->label))
+                                 : NULL,
+                                 a->tooltip
+                                 ? g_strip_context (a->tooltip,
+                                                    gettext (a->tooltip))
+                                 : NULL,
+                                 main_window_actions[i].stock_id);
+        if (main_window_actions[i].callback)
+          g_signal_connect (G_OBJECT (action), "activate",
+                            main_window_actions[i].callback, mainwin);
     }
-    else
-    {
-      action = gtk_action_new (a->name,
-                               a->label
-                               ? g_strip_context (a->label, gettext (a->label))
-                               : NULL,
-                               a->tooltip
-                               ? g_strip_context (a->tooltip, gettext (a->tooltip))
-                               : NULL,
-                               main_window_actions[i].stock_id);
-      if (main_window_actions[i].callback)
-        g_signal_connect (G_OBJECT (action), "activate",
-                          main_window_actions[i].callback, mainwin);
-    }
+
     if (main_window_actions[i].short_label)
       g_object_set (G_OBJECT (action), "short-label",
                     g_strip_context (a->short_label, gettext (a->short_label)), NULL);
@@ -783,6 +842,19 @@ main_window_on_paste (GtkAction *action,
   gtk_clipboard_request_text (clipboard,
                               main_window_on_clipboard_text,
                               mainwin);
+}
+
+static void
+main_window_on_keyboard_type (GtkRadioAction *action,
+                              GtkRadioAction *current,
+                              MainWindow *mainwin)
+{
+  ElectronWidgetKeyboardType type;
+  g_return_if_fail (IS_MAIN_WINDOW (mainwin));
+  g_return_if_fail (mainwin->ewidget != NULL);
+
+  type = gtk_radio_action_get_current_value (current);
+  electron_widget_set_keyboard_type (ELECTRON_WIDGET (mainwin->ewidget), type);
 }
 
 static void
