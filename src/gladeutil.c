@@ -23,6 +23,7 @@
 #include <glade/glade-xml.h>
 #include <gtk/gtklabel.h>
 #include <glib.h>
+#include <glib/gstdio.h>
 #include <stdarg.h>
 #include <unistd.h>
 
