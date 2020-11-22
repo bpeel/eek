@@ -20,6 +20,7 @@
 #define _ELECTRON_H
 
 #include <stdio.h>
+#include <string.h>
 
 #include "cpu.h"
 #include "video.h"
@@ -129,5 +130,9 @@ void electron_type_string (Electron *electron,
 do { (electron)->keyboard[(line)] |= 1 << (bit); } while (0)
 #define electron_release_key(electron, line, bit) \
 do { (electron)->keyboard[(line)] &= ~(1 << (bit)); } while (0)
+#define electron_release_all_keys(electron)                        \
+do {                                                               \
+  memset ((electron)->keyboard, 0, sizeof ((electron)->keyboard)); \
+} while (0)
 
 #endif /* _ELECTRON_H */

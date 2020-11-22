@@ -80,5 +80,7 @@ void electron_manager_set_full_speed (ElectronManager *eman,
 do { electron_press_key ((eman)->data, line, bit); } while (0)
 #define electron_manager_release_key(eman, line, bit) \
 do { electron_release_key ((eman)->data, line, bit); } while (0)
+#define electron_manager_release_all_keys(eman) \
+do { electron_release_all_keys ((eman)->data); } while (0)
 
 #endif /* _ELECTRON_MANAGER_H */
