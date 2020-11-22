@@ -94,7 +94,7 @@ struct _Electron
 
   GArray *queued_keys;
   size_t queued_keys_pos;
-  int queued_keys_scan_count;
+  unsigned queued_key_time;
 };
 
 typedef struct

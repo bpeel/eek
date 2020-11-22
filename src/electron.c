@@ -50,8 +50,13 @@
 #define ELECTRON_MODE_OF_BYTE(byte) (((byte) >> 3) & 7)
 #define ELECTRON_MODE(electron) ELECTRON_MODE_OF_BYTE((electron)->sheila[0x7])
 
-/* Number of times to scan a queued key before moving on to the next state */
-#define ELECTRON_QUEUED_KEYS_SCAN_COUNT 4
+/* Number of frames to hold a queued key before releasing it */
+#define ELECTRON_QUEUED_KEYS_HOLD_TIME 2
+/* Number of frames to leave a queued key released before pressing the
+ * next one */
+#define ELECTRON_QUEUED_KEYS_RELEASE_TIME 1
+#define ELECTRON_QUEUED_KEYS_TOTAL_TIME (ELECTRON_QUEUED_KEYS_HOLD_TIME + \
+                                         ELECTRON_QUEUED_KEYS_RELEASE_TIME)
 
 guint8 electron_read_from_location (Electron *electron, guint16 address);
 void electron_write_to_location (Electron *electron, guint16 address, guint8 val);
@@ -219,7 +224,7 @@ electron_add_queued_keys (Electron *electron,
   {
     g_array_set_size (electron->queued_keys, 0);
     electron->queued_keys_pos = 0;
-    electron->queued_keys_scan_count = 0;
+    electron->queued_key_time = 0;
   }
 
   g_array_append_vals (electron->queued_keys, keys, n_keys);
@@ -290,7 +295,10 @@ electron_next_scanline (Electron *electron)
   electron->cpu.time -= ELECTRON_CYCLES_PER_SCANLINE;
 
   if (++electron->scanline > ELECTRON_SCANLINES_PER_FRAME)
+  {
     electron->scanline = 0;
+    electron->queued_key_time++;
+  }
 
   if (electron->scanline < ELECTRON_END_SCANLINE)
   {
@@ -488,35 +496,44 @@ electron_update_palette (Electron *electron)
 static guint8
 read_queued_key (Electron *electron, guint16 location)
 {
-  const ElectronQueuedKey *key =
-    &g_array_index (electron->queued_keys,
-                    ElectronQueuedKey,
-                    electron->queued_keys_pos);
-  guint8 value = 0;
-  const int all_lines = (1 << 14) - 1;
-  guint16 scanning = ~location & all_lines;
-
-  if (electron->queued_keys_scan_count < ELECTRON_QUEUED_KEYS_SCAN_COUNT)
+  if (electron->queued_key_time < ELECTRON_QUEUED_KEYS_HOLD_TIME)
   {
+    const ElectronQueuedKey *key =
+      &g_array_index (electron->queued_keys,
+                      ElectronQueuedKey,
+                      electron->queued_keys_pos);
+    const int all_lines = (1 << 14) - 1;
+    guint16 scanning = ~location & all_lines;
+    guint8 value = 0;
+
     if (scanning & (1 << key->line))
       value |= 1 << key->bit;
     if (scanning & (1 << ELECTRON_MODIFIERS_LINE))
       value |= key->modifiers;
 
-    if (scanning == (1 << key->line))
-      electron->queued_keys_scan_count++;
-  }
-  else if (scanning & (1 << key->line))
-  {
-    if (++electron->queued_keys_scan_count >=
-        ELECTRON_QUEUED_KEYS_SCAN_COUNT * 2)
-    {
-      electron->queued_keys_pos++;
-      electron->queued_keys_scan_count = 0;
-    }
+    return value;
   }
 
-  return value;
+  return 0;
+}
+
+static gboolean
+is_key_queued (Electron *electron)
+{
+  /* If the escape key is pressed then abandon the queued keys */
+  if ((electron->keyboard[13] & 1))
+  {
+    g_array_set_size (electron->queued_keys, 0);
+    electron->queued_keys_pos = 0;
+    return FALSE;
+  }
+
+  /* Skip any keys that weren’t noticed in time */
+  electron->queued_keys_pos += (electron->queued_key_time /
+                                ELECTRON_QUEUED_KEYS_TOTAL_TIME);
+  electron->queued_key_time %= ELECTRON_QUEUED_KEYS_TOTAL_TIME;
+
+  return electron->queued_keys_pos < electron->queued_keys->len;
 }
 
 guint8
@@ -534,14 +551,8 @@ electron_read_from_location (Electron *electron, guint16 location)
     {
       int i, value = 0;
 
-      if (electron->queued_keys_pos < electron->queued_keys->len)
-      {
-        /* If the escape key is pressed then abandon the queued keys */
-        if ((electron->keyboard[13] & 1))
-          g_array_set_size (electron->queued_keys, 0);
-        else
-          return read_queued_key (electron, location);
-      }
+      if (is_key_queued (electron))
+         return read_queued_key (electron, location);
 
       /* or together all of the locations of the keyboard memory which
          have a '0' in the corresponding address bit */
