@@ -46,6 +46,7 @@
 #include "disdialog.h"
 #include "preferencesdialog.h"
 #include "tapeuef.h"
+#include "tokenizer.h"
 
 typedef struct _MainWindowAction MainWindowAction;
 
@@ -82,6 +83,8 @@ static void main_window_on_rewind (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_quit (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_paste (GtkAction *action,
                                   MainWindow *mainwin);
+static void main_window_on_inject_clipboard (GtkAction *action,
+                                             MainWindow *mainwin);
 static void main_window_on_keyboard_type (GtkRadioAction *action,
                                           GtkRadioAction *current,
                                           MainWindow *mainwin);
@@ -140,6 +143,10 @@ static const MainWindowAction main_window_actions[] =
     { "ActionPaste", NULL, N_("MenuView|_Paste"), NULL, "<Control>V",
       N_("Type some text from the clipboard on the Electron’s keyboard."),
       ACTION_NORMAL, G_CALLBACK (main_window_on_paste) },
+    { "ActionInject", NULL, N_("MenuView|_Inject clipboard"), NULL,
+      "<Control><Shift>V",
+      N_("Inject the clipboard directly into the Electron’s memory as BASIC"),
+      ACTION_NORMAL, G_CALLBACK (main_window_on_inject_clipboard) },
     { "ActionToggleFullSpeed", NULL, N_("MenuView|Run _full speed"), NULL,
       NULL, N_("When enabled, run full speed otherwise "
                "sync to an accurate speed"), ACTION_TOGGLE,
@@ -201,6 +208,7 @@ static const char main_window_ui_definition[] =
 "  </menu>\n"
 "  <menu name=\"EditMenu\" action=\"ActionEditMenu\">\n"
 "   <menuitem name=\"Paste\" action=\"ActionPaste\" />\n"
+"   <menuitem name=\"Inject\" action=\"ActionInject\" />\n"
 "   <separator />\n"
 "   <menuitem name=\"TextKeyboard\" action=\"ActionKeyboardText\"/>\n"
 "   <menuitem name=\"PhysicalKeyboard\" action=\"ActionKeyboardPhysical\"/>\n"
@@ -841,6 +849,37 @@ main_window_on_paste (GtkAction *action,
     gtk_clipboard_get_for_display (display, GDK_SELECTION_CLIPBOARD);
   gtk_clipboard_request_text (clipboard,
                               main_window_on_clipboard_text,
+                              mainwin);
+}
+
+static void
+main_window_on_inject_clipboard_text (GtkClipboard *clipboard,
+                                      const gchar *text,
+                                      gpointer data)
+{
+  MainWindow *mainwin = MAIN_WINDOW (data);
+  GString *prog;
+  size_t len;
+
+  if (text == NULL || mainwin->electron == NULL)
+    return;
+
+  prog = tokenize_program (text);
+  len = MIN (CPU_RAM_SIZE - 0x0e00, prog->len);
+  memcpy (mainwin->electron->data->memory + 0x0e00, prog->str, len);
+
+  g_string_free (prog, TRUE);
+}
+
+static void
+main_window_on_inject_clipboard (GtkAction *action,
+                                 MainWindow *mainwin)
+{
+  GdkDisplay *display = gtk_widget_get_display (GTK_WIDGET (mainwin));
+  GtkClipboard *clipboard =
+    gtk_clipboard_get_for_display (display, GDK_SELECTION_CLIPBOARD);
+  gtk_clipboard_request_text (clipboard,
+                              main_window_on_inject_clipboard_text,
                               mainwin);
 }
 
