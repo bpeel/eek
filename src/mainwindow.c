@@ -81,6 +81,8 @@ static void main_window_on_save (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_save_as (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_rewind (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_quit (GtkAction *action, MainWindow *mainwin);
+static void main_window_on_copy_program (GtkAction *action,
+                                         MainWindow *mainwin);
 static void main_window_on_paste (GtkAction *action,
                                   MainWindow *mainwin);
 static void main_window_on_inject_clipboard (GtkAction *action,
@@ -140,6 +142,10 @@ static const MainWindowAction main_window_actions[] =
     { "ActionQuit", GTK_STOCK_QUIT, N_("MenuTape|_Quit"), NULL,
       NULL, N_("Quit the program"), ACTION_NORMAL,
       G_CALLBACK (main_window_on_quit) },
+    { "ActionCopyProgram", NULL, N_("MenuView|_Copy program"), NULL,
+      "<Control><Shift>C",
+      N_("Copy the BASIC program in the Electron’s memory as text"),
+      ACTION_NORMAL, G_CALLBACK (main_window_on_copy_program) },
     { "ActionPaste", NULL, N_("MenuView|_Paste"), NULL, "<Control>V",
       N_("Type some text from the clipboard on the Electron’s keyboard."),
       ACTION_NORMAL, G_CALLBACK (main_window_on_paste) },
@@ -207,6 +213,7 @@ static const char main_window_ui_definition[] =
 "   <menuitem name=\"Quit\" action=\"ActionQuit\" />\n"
 "  </menu>\n"
 "  <menu name=\"EditMenu\" action=\"ActionEditMenu\">\n"
+"   <menuitem name=\"CopyProgram\" action=\"ActionCopyProgram\" />\n"
 "   <menuitem name=\"Paste\" action=\"ActionPaste\" />\n"
 "   <menuitem name=\"Inject\" action=\"ActionInject\" />\n"
 "   <separator />\n"
@@ -827,6 +834,20 @@ main_window_on_quit (GtkAction *action, MainWindow *mainwin)
   g_return_if_fail (IS_MAIN_WINDOW (mainwin));
 
   gtk_main_quit ();
+}
+
+static void
+main_window_on_copy_program (GtkAction *action,
+                             MainWindow *mainwin)
+{
+  GdkDisplay *display = gtk_widget_get_display (GTK_WIDGET (mainwin));
+  GtkClipboard *clipboard =
+    gtk_clipboard_get_for_display (display, GDK_SELECTION_CLIPBOARD);
+  GString *source =
+    detokenize_program (CPU_RAM_SIZE - 0x0e00,
+                        mainwin->electron->data->memory + 0x0e00);
+  gtk_clipboard_set_text (clipboard, source->str, source->len);
+  g_string_free (source, TRUE);
 }
 
 static void
