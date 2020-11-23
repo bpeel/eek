@@ -467,3 +467,88 @@ tokenize_program (const char *program)
 
   return out;
 }
+
+static const Token *
+find_token_by_value (guint8 value)
+{
+  int i;
+
+  for (i = 0; i < G_N_ELEMENTS (tokens); i++)
+  {
+    if (tokens[i].value == value)
+      return tokens + i;
+  }
+
+  return NULL;
+}
+
+static void
+detokenize_line (size_t length,
+                 const guint8 *line,
+                 GString *source)
+{
+  const guint8 *end = line + length;
+  int byte1, line_num;
+
+  for (; line < end; line++)
+  {
+    if (*line == 0x8d)
+    {
+      if (line + 4 > end)
+        break;
+
+      byte1 = line[1] ^ 0x14;
+      line_num = (((byte1 & 0x30) << 2)
+                  | ((byte1 & 0x0c) << 12)
+                  | (line[2] & 0x3f)
+                  | ((line[3] & 0x3f) << 8));
+      g_string_append_printf (source, "%i", line_num);
+
+      line += 3;
+
+      continue;
+    }
+
+    if (*line >= 0x80)
+    {
+      const Token *token = find_token_by_value (*line);
+
+      if (token)
+      {
+        g_string_append (source, token->name);
+        continue;
+      }
+    }
+
+    g_string_append_c (source, *line);
+  }
+}
+
+GString *
+detokenize_program (size_t length,
+                    const guint8 *program)
+{
+  GString *source = g_string_new (NULL);
+  const guint8 *end = program + length;
+
+  while (program + 4 <= end
+         && program[0] == 0x0d
+         && program[1] != 0xff)
+  {
+    guint8 length = program[3];
+    int line_num = (program[1] << 8) | program[2];
+
+    if (length < 4 || program + length > end)
+      break;
+
+    g_string_append_printf (source, "%i", line_num);
+
+    detokenize_line (length - 4, program + 4, source);
+
+    g_string_append_c (source, '\n');
+
+    program += length;
+  }
+
+  return source;
+}

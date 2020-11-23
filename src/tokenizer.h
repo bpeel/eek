@@ -23,5 +23,6 @@
 
 void tokenize_line (const char *src, GString *out);
 GString *tokenize_program (const char *program);
+GString *detokenize_program (size_t length, const guint8 *program);
 
 #endif /* _TOKENIZER_H */
