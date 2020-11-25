@@ -109,10 +109,20 @@ streamer_start_process (Streamer *streamer,
                              "-video_size %ix%i "
                              "-framerate %i "
                              "-i - "
-                             "-c:v libvpx "
+                             "-vcodec libx264 "
+                             "-g %i "
+                             "-keyint_min %i "
+                             "-pix_fmt yuv420p "
+                             "-preset ultrafast "
+                             "-tune film "
+                             "-threads 2 "
+                             "-strict normal "
                              "-y "
-                             "recording.webm",
+                             "-f flv "
+                             "recording.flv",
                              VIDEO_WIDTH, VIDEO_HEIGHT,
+                             STREAMER_FPS,
+                             STREAMER_FPS * 2,
                              STREAMER_FPS);
 
   ret = g_spawn_async_with_pipes (NULL, /* working directory */
