@@ -125,7 +125,9 @@ streamer_start_process (Streamer *streamer,
                              "-strict normal "
                              "-y "
                              "-f flv "
-                             "recording.flv",
+                             "rtmp://live-cdg.twitch.tv/app/"
+                             "<<YOUR_KEY_HERE>>"
+                             "?bandwidthtest=true",
                              VIDEO_WIDTH, VIDEO_HEIGHT,
                              STREAMER_FPS,
                              STREAMER_FPS * 2,
