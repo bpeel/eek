@@ -37,9 +37,8 @@ struct _Streamer
   /* The video buffer that we are currently in the process of sending,
    * expanded to RGB. This is only expanded just before writing. */
   guint8 *video_buffer;
-  /* Whether we’ve hand a frame end signal since the last time
-   * video_buffer was filled. */
-  gboolean frame_pending;
+  /* Number of frames queued in the buffer since the last one was sent */
+  gboolean frame_count;
   /* The amount of video_buffer that has been sent to the streaming
    * process */
   size_t bytes_sent;
@@ -64,6 +63,9 @@ streamer_color_map[] =
   };
 
 #define STREAMER_VIDEO_BUFFER_SIZE (VIDEO_WIDTH * VIDEO_HEIGHT * 3)
+#define STREAMER_FRAME_DIVISION 2
+#define STREAMER_FPS (1000 / (ELECTRON_TICKS_PER_FRAME * \
+                              STREAMER_FRAME_DIVISION))
 
 G_DEFINE_TYPE (Streamer, streamer, G_TYPE_OBJECT);
 
@@ -111,7 +113,7 @@ streamer_start_process (Streamer *streamer,
                              "-y "
                              "recording.webm",
                              VIDEO_WIDTH, VIDEO_HEIGHT,
-                             1000 / ELECTRON_TICKS_PER_FRAME);
+                             STREAMER_FPS);
 
   ret = g_spawn_async_with_pipes (NULL, /* working directory */
                                   argv,
@@ -137,7 +139,7 @@ streamer_start_process (Streamer *streamer,
   g_io_channel_set_flags (streamer->write_channel, G_IO_FLAG_NONBLOCK, NULL);
 
   streamer->bytes_sent = 0;
-  streamer->frame_pending = FALSE;
+  streamer->frame_count = 0;
 
   return TRUE;
 }
@@ -152,7 +154,7 @@ streamer_expand_frame (Streamer *streamer)
   for (i = 0; i < VIDEO_WIDTH * VIDEO_HEIGHT; i++)
     memcpy (dst + i * 3, streamer_color_map + (src[i] & 7) * 3, 3);
 
-  streamer->frame_pending = FALSE;
+  streamer->frame_count = 0;
 }
 
 static gboolean
@@ -176,7 +178,7 @@ streamer_on_write_watch (GIOChannel *source,
 
   if (streamer->bytes_sent == 0)
   {
-    if (!streamer->frame_pending)
+    if (streamer->frame_count < STREAMER_FRAME_DIVISION)
     {
       streamer->write_watch = 0;
       return FALSE;
@@ -209,7 +211,7 @@ streamer_on_write_watch (GIOChannel *source,
         {
           /* If we didn’t write anything then start the frame again or
            * bytes_sent will still be zero and it won’t work */
-          streamer->frame_pending = TRUE;
+          streamer->frame_count = STREAMER_FRAME_DIVISION;
         }
 
         return TRUE;
@@ -224,7 +226,7 @@ streamer_on_write_watch (GIOChannel *source,
   {
     streamer->bytes_sent = 0;
 
-    if (!streamer->frame_pending)
+    if (streamer->frame_count < STREAMER_FRAME_DIVISION)
     {
       streamer->write_watch = 0;
       return FALSE;
@@ -245,9 +247,10 @@ streamer_on_frame_end (ElectronManager *electron, gpointer user_data)
   if (streamer->write_channel == NULL)
     return;
 
-  streamer->frame_pending = TRUE;
+  streamer->frame_count++;
 
-  if (streamer->write_watch == 0)
+  if (streamer->frame_count >= STREAMER_FRAME_DIVISION
+      && streamer->write_watch == 0)
   {
     streamer->write_watch = g_io_add_watch (streamer->write_channel,
                                             G_IO_OUT,
