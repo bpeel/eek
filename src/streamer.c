@@ -24,6 +24,7 @@
 
 #include <glib.h>
 #include <glib-object.h>
+#include <signal.h>
 
 #include "electronmanager.h"
 #include "electron.h"
@@ -45,6 +46,7 @@ struct _Streamer
   /* Source for getting notified when the write fd is ready for writing */
   guint write_watch;
   GIOChannel *write_channel;
+  GPid pid;
 
   gulong frame_end_handler;
 };
@@ -82,6 +84,12 @@ streamer_stop_process (Streamer *streamer)
   {
     g_io_channel_unref (streamer->write_channel);
     streamer->write_channel = NULL;
+  }
+
+  if (streamer->pid)
+  {
+    kill (streamer->pid, SIGTERM);
+    streamer->pid = 0;
   }
 }
 
@@ -155,6 +163,8 @@ streamer_start_process (Streamer *streamer,
   g_io_channel_set_buffered (streamer->write_channel, FALSE);
   g_io_channel_set_close_on_unref (streamer->write_channel, TRUE);
   g_io_channel_set_flags (streamer->write_channel, G_IO_FLAG_NONBLOCK, NULL);
+
+  streamer->pid = pid;
 
   streamer->bytes_sent = 0;
   streamer->frame_count = 0;
