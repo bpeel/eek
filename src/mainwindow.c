@@ -45,6 +45,7 @@
 #include "breakpointeditdialog.h"
 #include "disdialog.h"
 #include "preferencesdialog.h"
+#include "streamdialog.h"
 #include "tapeuef.h"
 #include "tokenizer.h"
 
@@ -100,6 +101,7 @@ static void main_window_on_break (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_reset (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_edit_breakpoint (GtkAction *action, MainWindow *mainwin);
 static void main_window_on_disassembler (GtkAction *action, MainWindow *mainwin);
+static void main_window_on_stream (GtkAction *action, MainWindow *mainwin);
 
 static void main_window_update_debug_actions (MainWindow *mainwin);
 static void main_window_on_rom_error (MainWindow *mainwin, GList *errors,
@@ -109,6 +111,7 @@ static void main_window_on_toggle_toolbar (GtkAction *action, MainWindow *mainwi
 static void main_window_on_toggle_debugger (GtkAction *action, MainWindow *mainwin);
 
 static void main_window_forget_dis_dialog (MainWindow *mainwin);
+static void main_window_forget_stream_dialog (MainWindow *mainwin);
 
 static gpointer parent_class;
 
@@ -193,6 +196,9 @@ static const MainWindowAction main_window_actions[] =
     { "ActionDisassembler", NULL, N_("MenuDebug|_Disassembler..."), NULL,
       NULL, N_("Show the diassembler dialog"), ACTION_NORMAL,
       G_CALLBACK (main_window_on_disassembler) },
+    { "ActionStream", NULL, N_("MenuView|_Streaming..."), NULL,
+      NULL, N_("Show the streaming dialog"), ACTION_NORMAL,
+      G_CALLBACK (main_window_on_stream) },
     { "ActionAbout", GTK_STOCK_ABOUT, N_("MenuHelp|_About"), NULL,
       NULL, N_("Display the about box"), ACTION_NORMAL,
       G_CALLBACK (main_window_on_about) }
@@ -226,6 +232,8 @@ static const char main_window_ui_definition[] =
 "  <menu name=\"ViewMenu\" action=\"ActionViewMenu\">\n"
 "   <menuitem name=\"ToggleToolbar\" action=\"ActionToggleToolbar\" />\n"
 "   <menuitem name=\"ToggleDebugger\" action=\"ActionToggleDebugger\" />\n"
+"   <separator />\n"
+"   <menuitem name=\"Stream\" action=\"ActionStream\" />\n"
 "  </menu>\n"
 "  <menu name=\"DebugMenu\" action=\"ActionDebugMenu\">\n"
 "   <menuitem name=\"Run\" action=\"ActionRun\" />\n"
@@ -302,6 +310,8 @@ main_window_init (MainWindow *mainwin)
 
   /* We haven't created a disassembler dialog yet */
   mainwin->disdialog = NULL;
+  /* nor the streaming dialog */
+  mainwin->stream_dialog = NULL;
 
   /* Create the main electron display. This needs to be done before
    * creating the menus because changing the menu values tries to
@@ -1050,6 +1060,46 @@ main_window_forget_dis_dialog (MainWindow *mainwin)
 }
 
 static void
+main_window_on_stream (GtkAction *action, MainWindow *mainwin)
+{
+  g_return_if_fail (IS_MAIN_WINDOW (mainwin));
+
+  if (mainwin->stream_dialog == NULL)
+  {
+    mainwin->stream_dialog =
+      stream_dialog_new_with_electron (mainwin->electron);
+    g_object_ref_sink (mainwin->stream_dialog);
+    g_signal_connect (G_OBJECT (mainwin->stream_dialog), "response",
+                      G_CALLBACK (gtk_widget_destroy), mainwin);
+    mainwin->stream_dialog_destroy
+      = g_signal_connect_swapped (G_OBJECT (mainwin->stream_dialog), "destroy",
+                                  G_CALLBACK (main_window_forget_stream_dialog),
+                                  mainwin);
+    gtk_window_set_transient_for (GTK_WINDOW (mainwin->stream_dialog),
+                                  GTK_WINDOW (mainwin));
+    gtk_window_set_position (GTK_WINDOW (mainwin->stream_dialog),
+                             GTK_WIN_POS_CENTER_ON_PARENT);
+    gtk_window_set_default_size (GTK_WINDOW (mainwin->stream_dialog), 600, 300);
+  }
+
+  gtk_window_present (GTK_WINDOW (mainwin->stream_dialog));
+}
+
+static void
+main_window_forget_stream_dialog (MainWindow *mainwin)
+{
+  g_return_if_fail (IS_MAIN_WINDOW (mainwin));
+
+  if (mainwin->stream_dialog)
+  {
+    g_signal_handler_disconnect (G_OBJECT (mainwin->stream_dialog),
+                                 mainwin->stream_dialog_destroy);
+    g_object_unref (mainwin->stream_dialog);
+    mainwin->stream_dialog = NULL;
+  }
+}
+
+static void
 main_window_update_debug_actions (MainWindow *mainwin)
 {
   GtkAction *action;
@@ -1145,6 +1195,7 @@ main_window_dispose (GObject *obj)
   main_window_forget_save_dialog (mainwin);
 
   main_window_forget_dis_dialog (mainwin);
+  main_window_forget_stream_dialog (mainwin);
 
   main_window_set_electron (mainwin, NULL);
 

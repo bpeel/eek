@@ -42,10 +42,11 @@ struct _MainWindow
   ElectronManager *electron;
 
   GtkWidget *debugger, *ewidget, *disdialog, *open_dialog, *save_dialog;
+  GtkWidget *stream_dialog;
   GtkActionGroup *action_group;
   GtkUIManager *ui_manager;
 
-  guint started, stopped, rom_error, disdialog_destroy;
+  guint started, stopped, rom_error, disdialog_destroy, stream_dialog_destroy;
   guint open_response_handler, save_response_handler;
 
   gchar *tape_filename;
