@@ -39,6 +39,7 @@ eek_SOURCES = \
 	preferencesdialog.h preferencesdialog.c \
 	gladeutil.h gladeutil.c \
 	tokenizer.h tokenizer.c \
+	streamer.h streamer.c \
 	intl.h
 
 eek_uef2wav_LDADD = \
