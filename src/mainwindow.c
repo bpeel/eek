@@ -225,8 +225,6 @@ static const char main_window_ui_definition[] =
 "  </menu>\n"
 "  <menu name=\"ViewMenu\" action=\"ActionViewMenu\">\n"
 "   <menuitem name=\"ToggleToolbar\" action=\"ActionToggleToolbar\" />\n"
-"  </menu>\n"
-"  <menu name=\"ViewMenu\" action=\"ActionViewMenu\">\n"
 "   <menuitem name=\"ToggleDebugger\" action=\"ActionToggleDebugger\" />\n"
 "  </menu>\n"
 "  <menu name=\"DebugMenu\" action=\"ActionDebugMenu\">\n"
