@@ -1179,7 +1179,7 @@ main_window_on_rom_error (MainWindow *mainwin, GList *errors,
                           ElectronManager *eman)
 {
   int error_count;
-  gchar *note;
+  const gchar *note;
   GString *message;
   GtkWidget *dialog;
 
@@ -1188,9 +1188,10 @@ main_window_on_rom_error (MainWindow *mainwin, GList *errors,
   g_return_if_fail (eman == mainwin->electron);
 
   error_count = g_list_length (errors);
-  note = g_strdup_printf (ngettext ("An error occurred while loading a ROM",
-                                    "Some errors occurred while loading the ROMs",
-                                    error_count), error_count);
+  if (error_count == 1)
+    note = _("An error occurred while loading a ROM");
+  else
+    note = _("Some errors occurred while loading the ROMs");
 
   message = g_string_new ("");
   for (; errors; errors = errors->next)
@@ -1213,7 +1214,6 @@ main_window_on_rom_error (MainWindow *mainwin, GList *errors,
   gtk_widget_show (dialog);
 
   g_string_free (message, TRUE);
-  g_free (note);
 }
 
 static gboolean
