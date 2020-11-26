@@ -254,13 +254,9 @@ streamer_on_frame_end (ElectronManager *electron, gpointer user_data)
 }
 
 Streamer *
-streamer_new (ElectronManager *electron)
+streamer_new (void)
 {
-  Streamer *streamer = g_object_new (TYPE_STREAMER, NULL);
-
-  streamer_set_electron (streamer, electron);
-
-  return streamer;
+  return g_object_new (TYPE_STREAMER, NULL);
 }
 
 void
