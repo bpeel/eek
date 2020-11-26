@@ -65,9 +65,6 @@ streamer_color_map[] =
   };
 
 #define STREAMER_VIDEO_BUFFER_SIZE (VIDEO_WIDTH * VIDEO_HEIGHT * 3)
-#define STREAMER_FRAME_DIVISION 2
-#define STREAMER_FPS (1000 / (ELECTRON_TICKS_PER_FRAME * \
-                              STREAMER_FRAME_DIVISION))
 
 G_DEFINE_TYPE (Streamer, streamer, G_TYPE_OBJECT);
 

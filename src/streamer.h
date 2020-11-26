@@ -31,6 +31,10 @@
 
 G_DECLARE_FINAL_TYPE (Streamer, streamer, streamer, STREAMER, GObject);
 
+#define STREAMER_FRAME_DIVISION 2
+#define STREAMER_FPS (1000 / (ELECTRON_TICKS_PER_FRAME * \
+                              STREAMER_FRAME_DIVISION))
+
 Streamer *streamer_new (ElectronManager *emanager);
 void streamer_set_electron (Streamer *streamer,
                             ElectronManager *emanager);
