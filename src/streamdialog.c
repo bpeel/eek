@@ -36,6 +36,8 @@ struct _StreamDialog
   Streamer *streamer;
   GtkTextBuffer *command_buffer;
   GtkWidget *start_stop_button;
+
+  guint stream_error_handler;
 };
 
 struct _StreamDialogClass
@@ -56,6 +58,37 @@ stream_dialog_update_start_stop_button (StreamDialog *streamdialog)
     label = "Start";
 
   gtk_button_set_label (GTK_BUTTON (streamdialog->start_stop_button), label);
+}
+
+static void
+stream_dialog_show_error (StreamDialog *streamdialog,
+                          const char *error_message)
+{
+  GtkWidget *dialog =
+    gtk_message_dialog_new (GTK_WINDOW (streamdialog),
+                            GTK_DIALOG_DESTROY_WITH_PARENT,
+                            GTK_MESSAGE_ERROR,
+                            GTK_BUTTONS_CLOSE,
+                            _("Streaming failed"));
+  gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog),
+                                            "%s",
+                                            error_message);
+  g_signal_connect_swapped (dialog, "response",
+                            G_CALLBACK (gtk_widget_destroy),
+                            dialog);
+  gtk_widget_show (dialog);
+}
+
+static void
+stream_dialog_on_stream_error (Streamer *streamer,
+                               const char *message,
+                               StreamDialog *streamdialog)
+{
+  g_return_if_fail (IS_STREAM_DIALOG (streamdialog));
+
+  stream_dialog_show_error (streamdialog, message);
+
+  stream_dialog_update_start_stop_button (streamdialog);
 }
 
 void
@@ -81,19 +114,7 @@ stream_dialog_on_start_stop (GtkButton *button,
 
     if (!streamer_start_process (streamdialog->streamer, command, &error))
     {
-      GtkWidget *dialog =
-        gtk_message_dialog_new (GTK_WINDOW (streamdialog),
-                                GTK_DIALOG_DESTROY_WITH_PARENT,
-                                GTK_MESSAGE_ERROR,
-                                GTK_BUTTONS_CLOSE,
-                                _("Streaming failed"));
-      gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog),
-                                                "%s",
-                                                error->message);
-      g_signal_connect_swapped (dialog, "response",
-                                G_CALLBACK (gtk_widget_destroy),
-                                dialog);
-      gtk_widget_show (dialog);
+      stream_dialog_show_error (streamdialog, error->message);
       g_error_free (error);
     }
 
@@ -110,6 +131,12 @@ stream_dialog_init (StreamDialog *streamdialog)
   char *command;
 
   streamdialog->streamer = streamer_new ();
+
+  streamdialog->stream_error_handler =
+    g_signal_connect (streamdialog->streamer,
+                      "stream-error",
+                      G_CALLBACK (stream_dialog_on_stream_error),
+                      streamdialog);
 
   gtk_window_set_title (GTK_WINDOW (streamdialog), _("Streaming"));
 
@@ -218,6 +245,8 @@ stream_dialog_dispose (GObject *obj)
 
   if (streamdialog->streamer)
   {
+    g_signal_handler_disconnect (streamdialog->streamer,
+                                 streamdialog->stream_error_handler);
     g_object_unref (streamdialog->streamer);
     streamdialog->streamer = NULL;
   }

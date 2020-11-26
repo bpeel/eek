@@ -68,6 +68,25 @@ streamer_color_map[] =
 
 G_DEFINE_TYPE (Streamer, streamer, G_TYPE_OBJECT);
 
+enum
+  {
+   STREAM_ERROR,
+   LAST_SIGNAL
+  };
+
+static guint signals[LAST_SIGNAL] = { 0 };
+
+static void
+streamer_report_error (Streamer *streamer,
+                       const char *message)
+{
+  streamer_stop_process (streamer);
+  g_signal_emit (streamer,
+                 signals[STREAM_ERROR],
+                 0, /* detail */
+                 message);
+}
+
 void
 streamer_stop_process (Streamer *streamer)
 {
@@ -166,7 +185,7 @@ streamer_on_write_watch (GIOChannel *source,
   if ((condition & (G_IO_ERR | G_IO_HUP)))
   {
     streamer->write_watch = 0;
-    streamer_stop_process (streamer);
+    streamer_report_error (streamer, "Error writing to the streamer process");
     return FALSE;
   }
 
@@ -193,7 +212,7 @@ streamer_on_write_watch (GIOChannel *source,
     case G_IO_STATUS_ERROR:
     case G_IO_STATUS_EOF:
       streamer->write_watch = 0;
-      streamer_stop_process (streamer);
+      streamer_report_error (streamer, "Error writing to the streamer process");
       return FALSE;
 
     case G_IO_STATUS_AGAIN:
@@ -299,6 +318,17 @@ streamer_class_init (StreamerClass *klass)
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
   object_class->finalize = streamer_finalize;
+
+  signals[STREAM_ERROR] =
+    g_signal_new ("stream-error",
+                  G_TYPE_FROM_CLASS (object_class),
+                  G_SIGNAL_RUN_LAST,
+                  0, /* class_offset */
+                  NULL, /* accumulator */
+                  NULL, /* accu_data */
+                  g_cclosure_marshal_VOID__STRING, /* c_marshaller */
+                  G_TYPE_NONE,
+                  1, G_TYPE_STRING);
 }
 
 static void
