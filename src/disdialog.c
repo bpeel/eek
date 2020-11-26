@@ -37,17 +37,6 @@
 #include "disassemble.h"
 #include "intl.h"
 
-typedef struct _DisDialogAction DisDialogAction;
-
-/* Replacement for GtkActionEntry because there doesn't seem to be a
-   nice way to set the short label in it */
-struct _DisDialogAction
-{
-  const gchar *name, *stock_id, *label, *short_label, *accelerator, *tooltip;
-  gboolean toggle;
-  GCallback callback;
-};
-
 static void dis_dialog_class_init (DisDialogClass *klass);
 static void dis_dialog_init (DisDialog *disdialog);
 static void dis_dialog_dispose (GObject *obj);
