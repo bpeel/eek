@@ -306,3 +306,9 @@ streamer_init (Streamer *streamer)
 {
   streamer->video_buffer = g_malloc (STREAMER_VIDEO_BUFFER_SIZE);
 }
+
+gboolean
+streamer_is_running (Streamer *streamer)
+{
+  return streamer->write_channel != NULL;
+}

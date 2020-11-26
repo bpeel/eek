@@ -42,5 +42,6 @@ gboolean streamer_start_process (Streamer *streamer,
                                  const char *command,
                                  GError **error);
 void streamer_stop_process (Streamer *streamer);
+gboolean streamer_is_running (Streamer *streamer);
 
 #endif /* _STREAMER_H */
