@@ -92,54 +92,25 @@ streamer_stop_process (Streamer *streamer)
 
 gboolean
 streamer_start_process (Streamer *streamer,
+                        const char *command,
                         GError **error)
 {
   gboolean ret;
   GPid pid;
   int write_fd;
-  char *argv[] =
+  const char *argv[] =
     {
      "/bin/sh",
      "-c",
-     NULL,
+     command,
      NULL
     };
 
   if (streamer->write_channel)
     return TRUE;
 
-  argv[2] = g_strdup_printf ("ffmpeg "
-                             "-f rawvideo "
-                             "-pixel_format rgb24 "
-                             "-video_size %ix%i "
-                             "-framerate %i "
-                             "-i - "
-                             "-f pulse -i default "
-                             "-filter_complex \"[1]highpass=f=200,"
-                             "lowpass=f=3000[a]\" "
-                             "-map 0:v -map \"[a]\" "
-                             "-ac 1 -ar 44100 "
-                             "-vcodec libx264 "
-                             "-acodec aac "
-                             "-g %i "
-                             "-keyint_min %i "
-                             "-pix_fmt yuv420p "
-                             "-preset ultrafast "
-                             "-tune film "
-                             "-threads 2 "
-                             "-strict normal "
-                             "-y "
-                             "-f flv "
-                             "rtmp://live-cdg.twitch.tv/app/"
-                             "<<YOUR_KEY_HERE>>"
-                             "?bandwidthtest=true",
-                             VIDEO_WIDTH, VIDEO_HEIGHT,
-                             STREAMER_FPS,
-                             STREAMER_FPS * 2,
-                             STREAMER_FPS);
-
   ret = g_spawn_async_with_pipes (NULL, /* working directory */
-                                  argv,
+                                  (char **) argv,
                                   NULL, /* envp */
                                   G_SPAWN_DEFAULT,
                                   NULL, /* child_setup */
@@ -149,8 +120,6 @@ streamer_start_process (Streamer *streamer,
                                   NULL, /* stdout */
                                   NULL, /* stderr */
                                   error);
-
-  g_free (argv[2]);
 
   if (!ret)
     return FALSE;

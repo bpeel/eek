@@ -39,6 +39,7 @@ Streamer *streamer_new (ElectronManager *emanager);
 void streamer_set_electron (Streamer *streamer,
                             ElectronManager *emanager);
 gboolean streamer_start_process (Streamer *streamer,
+                                 const char *command,
                                  GError **error);
 void streamer_stop_process (Streamer *streamer);
 
