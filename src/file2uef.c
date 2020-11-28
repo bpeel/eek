@@ -176,7 +176,7 @@ add_file_to_tape_buffer (const File *file,
     gchar *contents;
     size_t length;
     GString *tokens;
-    size_t pos;
+    size_t pos = 0;
 
     if (!g_file_get_contents (file->filename, &contents, &length, error))
       return FALSE;
