@@ -31,6 +31,10 @@
 
 /* Time in microseconds between frames */
 #define STREAMER_FRAME_TIME (1000000 / STREAMER_FPS)
+/* Number of frames to store in the ring buffer */
+#define STREAMER_RING_BUFFER_SIZE (STREAMER_FPS * 2)
+/* Number of bytes in a frame */
+#define STREAMER_FRAME_BYTES (VIDEO_WIDTH * VIDEO_HEIGHT * 3)
 
 struct _Streamer
 {
@@ -38,22 +42,26 @@ struct _Streamer
 
   ElectronManager *electron;
 
-  /* The video buffer that we are currently in the process of sending,
-   * expanded to RGB. This is only expanded just before writing. */
-  guint8 *video_buffer;
-  /* The amount of video_buffer that has been sent to the streaming
-   * process */
-  size_t bytes_sent;
+  /* A ring buffer of frames queued for writing */
+  guint8 *ring_buffer;
+  /* The amount of bytes of the first frame in the ring buffer that
+   * have been written to the process */
+  size_t first_frame_bytes_written;
   GIOChannel *write_channel;
   GPid pid;
-  /* The last monotonic clock time that we started to send a frame */
+  /* The last monotonic clock time that we added a frame to the ring
+   * buffer */
   guint64 last_frame_time;
+  /* The frame number of the start of the ring */
+  unsigned ring_start_pos;
+  /* Number of frames in the ring buffer */
+  unsigned ring_size;
 
-  /* While the process is running, we will either be waiting for the
-   * write fd to be ready or waiting for the timeout. One of these
-   * sources will be set to make that happen.
-   */
+  /* If there is something in the ring buffer, this will be set to
+   * wait for the pipe to be ready for writing */
   guint write_watch;
+  /* If the ring buffer is not full, this will be set to wait for the
+   * time to add another buffer */
   guint timeout_handler;
 };
 
@@ -70,8 +78,6 @@ streamer_color_map[] =
    0x00, 0x00, 0x00, /* black */
   };
 
-#define STREAMER_VIDEO_BUFFER_SIZE (VIDEO_WIDTH * VIDEO_HEIGHT * 3)
-
 G_DEFINE_TYPE (Streamer, streamer, G_TYPE_OBJECT);
 
 enum
@@ -82,7 +88,8 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
-static void streamer_update_sources (Streamer *streamer);
+static void streamer_update_write_watch (Streamer *streamer);
+static void streamer_update_timeout_handler (Streamer *streamer);
 
 static void
 streamer_report_error (Streamer *streamer,
@@ -121,6 +128,28 @@ streamer_stop_process (Streamer *streamer)
     kill (streamer->pid, SIGTERM);
     streamer->pid = 0;
   }
+}
+
+static void
+streamer_add_frame (Streamer *streamer)
+{
+  const guint8 *src = streamer->electron->data->video.screen_memory;
+  guint8 *dst;
+  int i;
+
+  if (streamer->ring_size == 0)
+    streamer->ring_start_pos = 0;
+
+  dst = (streamer->ring_buffer +
+         (streamer->ring_start_pos + streamer->ring_size) %
+         STREAMER_RING_BUFFER_SIZE *
+         STREAMER_FRAME_BYTES);
+
+  for (i = 0; i < VIDEO_WIDTH * VIDEO_HEIGHT; i++)
+    memcpy (dst + i * 3, streamer_color_map + (src[i] & 7) * 3, 3);
+
+  streamer->ring_size++;
+  streamer->last_frame_time += STREAMER_FRAME_TIME;
 }
 
 gboolean
@@ -165,23 +194,14 @@ streamer_start_process (Streamer *streamer,
 
   streamer->pid = pid;
 
-  streamer->bytes_sent = 0;
+  streamer->first_frame_bytes_written = 0;
   streamer->last_frame_time = g_get_monotonic_time () - STREAMER_FRAME_TIME;
+  streamer->ring_start_pos = 0;
+  streamer->ring_size = 0;
 
-  streamer_update_sources (streamer);
+  streamer_update_timeout_handler (streamer);
 
   return TRUE;
-}
-
-static void
-streamer_expand_frame (Streamer *streamer)
-{
-  const guint8 *src = streamer->electron->data->video.screen_memory;
-  guint8 *dst = streamer->video_buffer;
-  int i;
-
-  for (i = 0; i < VIDEO_WIDTH * VIDEO_HEIGHT; i++)
-    memcpy (dst + i * 3, streamer_color_map + (src[i] & 7) * 3, 3);
 }
 
 static gboolean
@@ -191,10 +211,14 @@ streamer_on_write_watch (GIOChannel *source,
 {
   Streamer *streamer = STREAMER (user_data);
   gsize bytes_written;
+  int frames_to_write;
+  gsize start_pos, bytes_to_write, total_bytes_written;
+  int frames_written;
   GIOStatus status;
 
   g_return_val_if_fail (IS_STREAMER (user_data), FALSE);
   g_return_val_if_fail (source == streamer->write_channel, FALSE);
+  g_return_val_if_fail (streamer->ring_size > 0, FALSE);
 
   if ((condition & (G_IO_ERR | G_IO_HUP)))
   {
@@ -203,14 +227,17 @@ streamer_on_write_watch (GIOChannel *source,
     return FALSE;
   }
 
-  if (streamer->bytes_sent == 0)
-    streamer_expand_frame (streamer);
+  frames_to_write = MIN (STREAMER_RING_BUFFER_SIZE - streamer->ring_start_pos,
+                         streamer->ring_size);
+  start_pos = (streamer->ring_start_pos * STREAMER_FRAME_BYTES
+               + streamer->first_frame_bytes_written);
+  bytes_to_write = (frames_to_write * STREAMER_FRAME_BYTES
+                    - streamer->first_frame_bytes_written);
 
   status = g_io_channel_write_chars (streamer->write_channel,
-                                     (const char *) streamer->video_buffer +
-                                     streamer->bytes_sent,
-                                     STREAMER_VIDEO_BUFFER_SIZE -
-                                     streamer->bytes_sent,
+                                     (const char *) streamer->ring_buffer +
+                                     start_pos,
+                                     bytes_to_write,
                                      &bytes_written,
                                      NULL);
   switch (status)
@@ -223,21 +250,22 @@ streamer_on_write_watch (GIOChannel *source,
 
     case G_IO_STATUS_AGAIN:
     case G_IO_STATUS_NORMAL:
-      if (bytes_written == 0)
-        return TRUE;
-
-      if (streamer->bytes_sent == 0)
-        streamer->last_frame_time += STREAMER_FRAME_TIME;
-
-      streamer->bytes_sent += bytes_written;
+      total_bytes_written = streamer->first_frame_bytes_written + bytes_written;
+      frames_written = total_bytes_written / STREAMER_FRAME_BYTES;
+      streamer->ring_start_pos = ((streamer->ring_start_pos + frames_written) %
+                                  STREAMER_RING_BUFFER_SIZE);
+      streamer->ring_size -= frames_written;
+      streamer->first_frame_bytes_written = (total_bytes_written %
+                                             STREAMER_FRAME_BYTES);
 
       break;
   }
 
-  if (streamer->bytes_sent >= STREAMER_VIDEO_BUFFER_SIZE)
-    streamer->bytes_sent = 0;
-
-  streamer_update_sources (streamer);
+  if (streamer->timeout_handler == 0
+      && streamer->ring_size < STREAMER_RING_BUFFER_SIZE)
+    streamer_update_timeout_handler (streamer);
+  else
+    streamer_update_write_watch (streamer);
 
   return TRUE;
 }
@@ -245,7 +273,7 @@ streamer_on_write_watch (GIOChannel *source,
 static gboolean
 streamer_on_timeout (void *user_data)
 {
-  streamer_update_sources (user_data);
+  streamer_update_timeout_handler (user_data);
 
   return G_SOURCE_CONTINUE;
 }
@@ -278,7 +306,7 @@ streamer_finalize (GObject *obj)
   streamer_stop_process (streamer);
   streamer_set_electron (streamer, NULL);
 
-  g_free (streamer->video_buffer);
+  g_free (streamer->ring_buffer);
 
   G_OBJECT_CLASS (streamer_parent_class)->finalize (obj);
 }
@@ -305,7 +333,8 @@ streamer_class_init (StreamerClass *klass)
 static void
 streamer_init (Streamer *streamer)
 {
-  streamer->video_buffer = g_malloc (STREAMER_VIDEO_BUFFER_SIZE);
+  streamer->ring_buffer =
+    g_malloc (STREAMER_RING_BUFFER_SIZE * STREAMER_FRAME_BYTES);
 }
 
 gboolean
@@ -315,19 +344,10 @@ streamer_is_running (Streamer *streamer)
 }
 
 static void
-streamer_update_sources (Streamer *streamer)
+streamer_update_write_watch (Streamer *streamer)
 {
-  guint64 now = g_get_monotonic_time ();
-
-  if (streamer->bytes_sent > 0 ||
-      now - streamer->last_frame_time >= STREAMER_FRAME_TIME)
+  if (streamer->ring_size > 0)
   {
-    if (streamer->timeout_handler)
-    {
-      g_source_remove (streamer->timeout_handler);
-      streamer->timeout_handler = 0;
-    }
-
     if (streamer->write_watch == 0)
     {
       streamer->write_watch = g_io_add_watch (streamer->write_channel,
@@ -336,22 +356,37 @@ streamer_update_sources (Streamer *streamer)
                                               streamer);
     }
   }
-  else
+  else if (streamer->write_watch)
   {
-    if (streamer->write_watch)
-    {
-      g_source_remove (streamer->write_watch);
-      streamer->write_watch = 0;
-    }
-
-    if (streamer->timeout_handler == 0)
-    {
-      guint64 delay = ((STREAMER_FRAME_TIME +
-                        streamer->last_frame_time -
-                        now) / 1000 + 1);
-      streamer->timeout_handler = g_timeout_add (delay,
-                                                 streamer_on_timeout,
-                                                 streamer);
-    }
+    g_source_remove (streamer->write_watch);
+    streamer->write_watch = 0;
   }
+}
+
+static void
+streamer_update_timeout_handler (Streamer *streamer)
+{
+  guint64 now = g_get_monotonic_time ();
+
+  while (now - streamer->last_frame_time >= STREAMER_FRAME_TIME &&
+         streamer->ring_size < STREAMER_RING_BUFFER_SIZE)
+    streamer_add_frame (streamer);
+
+  if (streamer->timeout_handler)
+  {
+    g_source_remove (streamer->timeout_handler);
+    streamer->timeout_handler = 0;
+  }
+
+  if (streamer->ring_size < STREAMER_RING_BUFFER_SIZE)
+  {
+    guint64 delay = ((STREAMER_FRAME_TIME +
+                      streamer->last_frame_time -
+                      now) / 1000 + 1);
+    streamer->timeout_handler = g_timeout_add (delay,
+                                               streamer_on_timeout,
+                                               streamer);
+  }
+
+  streamer_update_write_watch (streamer);
 }
