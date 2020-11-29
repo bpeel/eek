@@ -303,6 +303,14 @@ main_window_init (MainWindow *mainwin)
   /* We haven't created a disassembler dialog yet */
   mainwin->disdialog = NULL;
 
+  /* Create the main electron display. This needs to be done before
+   * creating the menus because changing the menu values tries to
+   * update state on the widget. */
+  mainwin->ewidget = electron_widget_new ();
+  g_object_weak_ref (G_OBJECT (mainwin->ewidget),
+                     main_window_electron_widget_notify, mainwin);
+  gtk_widget_show (mainwin->ewidget);
+
   /* Create a GtkVBox to hold the menu and the main display widget */
   vbox = gtk_vbox_new (FALSE, 0);
 
@@ -409,10 +417,7 @@ main_window_init (MainWindow *mainwin)
   /* Create an hbox for the main widgets */
   hbox = gtk_hbox_new (FALSE, 0);
 
-  /* Create the main electron display */
-  mainwin->ewidget = electron_widget_new ();
-  g_object_weak_ref (G_OBJECT (mainwin->ewidget), main_window_electron_widget_notify, mainwin);
-  gtk_widget_show (mainwin->ewidget);
+  /* Add the main electron display */
   gtk_box_pack_start (GTK_BOX (hbox), mainwin->ewidget, TRUE, TRUE, 0);
 
   /* Create a debugger widget */
