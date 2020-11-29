@@ -463,7 +463,8 @@ void
 electron_widget_set_keyboard_type (ElectronWidget *ewidget,
                                    ElectronWidgetKeyboardType type)
 {
-  if (type == ELECTRON_WIDGET_KEYBOARD_TYPE_TEXT)
+  if (type == ELECTRON_WIDGET_KEYBOARD_TYPE_TEXT
+      && ewidget->electron)
     electron_manager_release_all_keys (ewidget->electron);
 
   ewidget->keyboard_type = type;
