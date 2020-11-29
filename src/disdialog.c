@@ -94,10 +94,10 @@ dis_dialog_init (DisDialog *disdialog)
   gtk_dialog_add_button (GTK_DIALOG (disdialog), GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE);
 
   disdialog->address_adj = GTK_ADJUSTMENT (gtk_adjustment_new (0.0, 0.0, 65535.0,
-                                                               1.0, 16.0, 16.0));
+                                                               1.0, 16.0, 0.0));
   g_object_ref_sink (disdialog->address_adj);
   disdialog->lines_adj = GTK_ADJUSTMENT (gtk_adjustment_new (64.0, 0.0, 65535.0,
-                                                             1.0, 16.0, 16.0));
+                                                             1.0, 16.0, 0.0));
   g_object_ref_sink (disdialog->lines_adj);
 
   table = gtk_table_new (2, 5, FALSE);

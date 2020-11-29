@@ -165,7 +165,7 @@ debugger_init (Debugger *debugger)
 
   /* Add a hex scroll button to display the address for the memory
      display widget */
-  addr_adj = GTK_ADJUSTMENT (gtk_adjustment_new (0.0, 0.0, 65535.0, 1.0, 10.0, 10.0));
+  addr_adj = GTK_ADJUSTMENT (gtk_adjustment_new (0.0, 0.0, 65535.0, 1.0, 10.0, 0.0));
   hexspin = hex_spin_button_new ();
   g_object_set (hexspin, "numeric", TRUE, "adjustment", addr_adj, "hex", TRUE,
                 "digits", 4, NULL);

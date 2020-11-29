@@ -800,7 +800,7 @@ memory_display_update_cursor_adjustment (MemoryDisplay *memdisplay)
       memdisplay->cur_adjustment->upper = -1;
     memdisplay->cur_adjustment->step_increment = 1;
     memdisplay->cur_adjustment->page_increment = 1;
-    memdisplay->cur_adjustment->page_size = 1;
+    memdisplay->cur_adjustment->page_size = 0;
 
     gtk_adjustment_changed (memdisplay->cur_adjustment);
   }

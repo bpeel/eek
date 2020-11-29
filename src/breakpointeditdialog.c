@@ -124,7 +124,7 @@ breakpoint_edit_dialog_run (GtkWindow *parent, ElectronManager *electron)
   address_adj = GTK_ADJUSTMENT (gtk_adjustment_new
                                 (electron->data->cpu.break_type == CPU_BREAK_NONE ? 0.0
                                  : (gdouble) electron->data->cpu.break_address,
-                                 0.0, 65535.0, 1.0, 16.0, 16.0));
+                                 0.0, 65535.0, 1.0, 16.0, 0.0));
   /* Reference it so that it won't go away after the dialog is destroyed */
   g_object_ref_sink (address_adj);
 
