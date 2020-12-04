@@ -1002,7 +1002,7 @@ main_window_on_reset (GtkAction *action, MainWindow *mainwin)
   g_return_if_fail (IS_MAIN_WINDOW (mainwin));
 
   if (mainwin->electron)
-    cpu_restart (&mainwin->electron->data->cpu);
+    electron_restart (mainwin->electron->data);
 }
 
 static void
