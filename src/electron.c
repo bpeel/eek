@@ -179,6 +179,27 @@ electron_new ()
 {
   Electron *electron = g_malloc (sizeof (Electron));
 
+  /* We haven't got any paged roms yet */
+  memset (electron->paged_roms, 0, sizeof (electron->paged_roms));
+
+  electron->queued_keys = g_array_new (FALSE, FALSE,
+                                       sizeof (ElectronQueuedKey));
+  /* Allocate tape buffer */
+  electron->tape_buffer = tape_buffer_new ();
+
+  /* Initialise the cpu */
+  cpu_init (&electron->cpu, electron->memory,
+            (CpuMemReadFunc) electron_read_from_location,
+            (CpuMemWriteFunc) electron_write_to_location, electron);
+
+  electron_restart (electron);
+
+  return electron;
+}
+
+void
+electron_restart (Electron *electron)
+{
   /* Clear the RAM */
   memset (electron->memory, 0, sizeof electron->memory);
 
@@ -187,9 +208,6 @@ electron_new ()
 
   /* Set the power on transient bit */
   electron->sheila[0x0] |= ELECTRON_I_POWERON;
-
-  /* We haven't got any paged roms yet */
-  memset (electron->paged_roms, 0, sizeof (electron->paged_roms));
 
   electron->scanline = 0;
   electron->ienabled = 0;
@@ -201,21 +219,14 @@ electron_new ()
   /* No keys are being pressed */
   memset (electron->keyboard, '\0', 14);
 
-  electron->queued_keys = g_array_new (FALSE, FALSE,
-                                       sizeof (ElectronQueuedKey));
+  /* Clear any queued keys */
   electron->queued_keys_pos = 0;
+  g_array_set_size (electron->queued_keys, 0);
 
-  /* Allocate tape buffer */
-  electron->tape_buffer = tape_buffer_new ();
   electron->cassette_scanline_counter = 0;
   electron->data_shift_has_data = FALSE;
 
-  /* Initialise the cpu */
-  cpu_init (&electron->cpu, electron->memory,
-            (CpuMemReadFunc) electron_read_from_location,
-            (CpuMemWriteFunc) electron_write_to_location, electron);
-
-  return electron;
+  cpu_restart (&electron->cpu);
 }
 
 void

@@ -108,6 +108,7 @@ typedef struct
 #define ELECTRON_SHEILA_PAGE 0xFE
 
 Electron *electron_new ();
+void electron_restart (Electron *electron);
 void electron_free (Electron *electron);
 void electron_clear_os_rom (Electron *electron);
 int electron_load_os_rom (Electron *electron, FILE *in);
