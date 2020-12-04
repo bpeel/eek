@@ -179,6 +179,9 @@ electron_new ()
 {
   Electron *electron = g_malloc (sizeof (Electron));
 
+  /* Clear the RAM */
+  memset (electron->memory, 0, sizeof electron->memory);
+
   /* Initialise the sheila to zeros */
   memset (electron->sheila, 0, sizeof (electron->sheila));
 
