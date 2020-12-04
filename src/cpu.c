@@ -878,9 +878,8 @@ void
 cpu_op_txs (void)
 {
   cpu_state.time += 2;
-  /* Copy x to s and set z flag */
-  CPU_SET_Z (!(cpu_state.s = cpu_state.x));
-  CPU_SET_N (cpu_state.s & 0x80);
+  /* According to the data sheet this doesn’t affect any flags */
+  cpu_state.s = cpu_state.x;
 }
 
 void
