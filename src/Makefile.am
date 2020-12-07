@@ -9,6 +9,8 @@ INCLUDES = \
 
 bin_PROGRAMS = eek eek-uef2wav eek-wav2uef eek-file2uef
 
+check_PROGRAMS = testarith
+
 eek_LDADD = \
 	@GLADE_LIBS@ \
 	@GTK_LIBS@ \
@@ -66,7 +68,16 @@ eek_file2uef_SOURCES = \
 	tapeuef.h tapeuef.c \
 	tokenizer.h tokenizer.c
 
-EXTRA_DIST = eekmarshalers.list
+testarith_LDADD = \
+	@GLIB_LIBS@
+
+testarith_SOURCES = \
+	cpu.c \
+	testarith.c
+
+TESTS = testarith
+
+EXTRA_DIST = eekmarshalers.list testarith
 BUILT_SOURCES = eekmarshalers.c eekmarshalers.h
 
 eekmarshalers.h : eekmarshalers.list
