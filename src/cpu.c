@@ -292,9 +292,9 @@ static void
 cpu_op_arithmetic (guint8 ov)
 {
   guint8 oa = cpu_state.a;
-  int v = ov + oa;
-  if (CPU_IS_C ())
-    v++;
+  int c = !!CPU_IS_C ();
+  int v = ov + oa + c;
+
   if (CPU_IS_D ())
   {
     if ((v & 0xf0) >= 0xa0)
@@ -306,7 +306,9 @@ cpu_op_arithmetic (guint8 ov)
   CPU_SET_C (v > 255);
   CPU_SET_Z (!cpu_state.a); /* a could be different from v */
   CPU_SET_N (cpu_state.a & 128);
-  CPU_SET_V (((oa & 0x7f) + (ov & 0x7f)) & 128);
+  /* Overflow is set if the carry from bit 6->7 is different from the
+   * output carry */
+  CPU_SET_V ((((oa & 0x7f) + (ov & 0x7f) + c) & 0x80) ^ ((v & 0x100) >> 1));
 }
 
 void
