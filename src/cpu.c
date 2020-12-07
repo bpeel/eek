@@ -288,10 +288,10 @@ cpu_op_undefined (void)
   fprintf (stderr, "Undefined instruction %02X\n", cpu_state.instruction);
 }
 
-void
-cpu_op_adc (void)
+static void
+cpu_op_arithmetic (guint8 ov)
 {
-  guint8 oa = cpu_state.a, ov = CPU_DATA_FOR_OP (cpu_state.instruction);
+  guint8 oa = cpu_state.a;
   int v = ov + oa;
   if (CPU_IS_C ())
     v++;
@@ -310,24 +310,19 @@ cpu_op_adc (void)
 }
 
 void
+cpu_op_adc (void)
+{
+  cpu_op_arithmetic (CPU_DATA_FOR_OP (cpu_state.instruction));
+}
+
+void
 cpu_op_sbc (void)
 {
-  guint8 oa = cpu_state.a, ov = CPU_DATA_FOR_OP (cpu_state.instruction);
-  int v = oa - ov;
-  if (!CPU_IS_C ())
-    v--;
-  if (CPU_IS_D ())
-  {
-    if ((v & 0xf0) >= 0xa0)
-      v -= 0x60;
-    if ((v & 0x0f) >= 0x0a)
-      v -= 0x06;
-  }
-  cpu_state.a = v;
-  CPU_SET_C (v >= 0);
-  CPU_SET_Z (!cpu_state.a); /* a could be different from v */
-  CPU_SET_N (cpu_state.a & 128);
-  CPU_SET_V (((oa & 0x7f) - (ov & 0x7f)) & 128);
+  /* A subtraction is the same as doing an addition with the one’s
+   * complement of the operand. The inverted meaning of the carry
+   * effectively means that it will normally add an extra one so it
+   * ends up being like a two’s complement. */
+  cpu_op_arithmetic (~CPU_DATA_FOR_OP (cpu_state.instruction));
 }
 
 void
