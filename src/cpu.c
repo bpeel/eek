@@ -289,42 +289,76 @@ cpu_op_undefined (void)
 }
 
 static void
-cpu_op_arithmetic (guint8 ov)
+cpu_op_arithmetic (void)
 {
-  guint8 oa = cpu_state.a;
+  gboolean subtract = !!(cpu_state.instruction & 0x80);
+  guint8 oa = cpu_state.a, ov = CPU_DATA_FOR_OP (cpu_state.instruction);
   int c = !!CPU_IS_C ();
-  int v = ov + oa + c;
+  int bl, l, h, lhc, vc;
 
-  if (CPU_IS_D ())
-  {
-    if ((v & 0xf0) >= 0xa0)
-      v += 0x60;
-    if ((v & 0x0f) >= 0x0a)
-      v += 0x06;
-  }
-  cpu_state.a = v;
-  CPU_SET_C (v > 255);
-  CPU_SET_Z (!cpu_state.a); /* a could be different from v */
-  CPU_SET_N (cpu_state.a & 128);
-  /* Overflow is set if the carry from bit 6->7 is different from the
-   * output carry */
-  CPU_SET_V ((((oa & 0x7f) + (ov & 0x7f) + c) & 0x80) ^ ((v & 0x100) >> 1));
-}
-
-void
-cpu_op_adc (void)
-{
-  cpu_op_arithmetic (CPU_DATA_FOR_OP (cpu_state.instruction));
-}
-
-void
-cpu_op_sbc (void)
-{
   /* A subtraction is the same as doing an addition with the one’s
    * complement of the operand. The inverted meaning of the carry
    * effectively means that it will normally add an extra one so it
    * ends up being like a two’s complement. */
-  cpu_op_arithmetic (~CPU_DATA_FOR_OP (cpu_state.instruction));
+  if (subtract)
+    ov = ~ov;
+
+  /* Add the lower nibbles */
+  l = bl = (oa & 0x0f) + (ov & 0x0f) + c;
+  /* Correct for BCD */
+  if (CPU_IS_D ())
+  {
+    if (subtract)
+    {
+      if (bl < 0x10)
+        l = (bl - 6) & 0x0f;
+    }
+    else if (bl >= 0xa)
+    {
+      l = bl + 0x6;
+    }
+  }
+  /* Calculate the carry into the next nibble. l can be >= 32, but the
+   * 6502 still only carries over one */
+  if (l >= 0x10)
+  {
+    lhc = 0x10;
+    l &= 0xf;
+  }
+  else
+  {
+    lhc = 0;
+  }
+
+  /* Add the next 3 bits */
+  h = (oa & 0x70) + (ov & 0x70) + lhc;
+  /* Calculate the carry into bit 7 */
+  vc = h & 0x80;
+  /* Add in the sum of the bit-7’s */
+  h += (oa & 0x80) + (ov & 0x80);
+  /* Negative, zero and overflow flags don’t take into account the BCD
+   * correction */
+  CPU_SET_N (h & 128);
+  CPU_SET_Z (((h | (bl & 0x0f)) & 0xff) == 0);
+  /* Overflow is set if the carry from bit 6->7 is different from the
+   * output carry */
+  CPU_SET_V ((vc << 1) ^ (h & 0x100));
+  /* Correct for BCD */
+  if (CPU_IS_D ())
+  {
+    if (subtract)
+    {
+      if (h < 256)
+        h -= 0x60;
+    }
+    else if (h >= 0xa0)
+    {
+      h += 0x60;
+    }
+  }
+
+  cpu_state.a = h | l;
+  CPU_SET_C (h > 255);
 }
 
 void
@@ -1250,35 +1284,35 @@ static const CpuOpcodeFunc cpu_jumpblock[256] =
     cpu_op_lsr,           /* 5E */
     cpu_op_undefined,     /* 5F */
     cpu_op_rts,           /* 60 */
-    cpu_op_adc,           /* 61 */
+    cpu_op_arithmetic,    /* 61 */
     cpu_op_undefined,     /* 62 */
     cpu_op_undefined,     /* 63 */
     cpu_op_undefined,     /* 64 */
-    cpu_op_adc,           /* 65 */
+    cpu_op_arithmetic,    /* 65 */
     cpu_op_ror,           /* 66 */
     cpu_op_undefined,     /* 67 */
     cpu_op_pla,           /* 68 */
-    cpu_op_adc,           /* 69 */
+    cpu_op_arithmetic,    /* 69 */
     cpu_op_ror_a,         /* 6A */
     cpu_op_undefined,     /* 6B */
     cpu_op_jmp_ind,       /* 6C */
-    cpu_op_adc,           /* 6D */
+    cpu_op_arithmetic,    /* 6D */
     cpu_op_ror,           /* 6E */
     cpu_op_undefined,     /* 6F */
     cpu_op_branch,        /* 70 */
-    cpu_op_adc,           /* 71 */
+    cpu_op_arithmetic,    /* 71 */
     cpu_op_undefined,     /* 72 */
     cpu_op_undefined,     /* 73 */
     cpu_op_undefined,     /* 74 */
-    cpu_op_adc,           /* 75 */
+    cpu_op_arithmetic,    /* 75 */
     cpu_op_ror,           /* 76 */
     cpu_op_undefined,     /* 77 */
     cpu_op_sei,           /* 78 */
-    cpu_op_adc,           /* 79 */
+    cpu_op_arithmetic,    /* 79 */
     cpu_op_undefined,     /* 7A */
     cpu_op_undefined,     /* 7B */
     cpu_op_undefined,     /* 7C */
-    cpu_op_adc,           /* 7D */
+    cpu_op_arithmetic,    /* 7D */
     cpu_op_ror,           /* 7E */
     cpu_op_undefined,     /* 7F */
     cpu_op_undefined,     /* 80 */
@@ -1378,35 +1412,35 @@ static const CpuOpcodeFunc cpu_jumpblock[256] =
     cpu_op_dec,           /* DE */
     cpu_op_undefined,     /* DF */
     cpu_op_cpx_immediate, /* E0 */
-    cpu_op_sbc,           /* E1 */
+    cpu_op_arithmetic,    /* E1 */
     cpu_op_undefined,     /* E2 */
     cpu_op_undefined,     /* E3 */
     cpu_op_cpx,           /* E4 */
-    cpu_op_sbc,           /* E5 */
+    cpu_op_arithmetic,    /* E5 */
     cpu_op_inc,           /* E6 */
     cpu_op_undefined,     /* E7 */
     cpu_op_inx,           /* E8 */
-    cpu_op_sbc,           /* E9 */
+    cpu_op_arithmetic,    /* E9 */
     cpu_op_nop,           /* EA */
     cpu_op_undefined,     /* EB */
     cpu_op_cpx,           /* EC */
-    cpu_op_sbc,           /* ED */
+    cpu_op_arithmetic,    /* ED */
     cpu_op_inc,           /* EE */
     cpu_op_undefined,     /* EF */
     cpu_op_branch,        /* F0 */
-    cpu_op_sbc,           /* F1 */
+    cpu_op_arithmetic,    /* F1 */
     cpu_op_undefined,     /* F2 */
     cpu_op_undefined,     /* F3 */
     cpu_op_undefined,     /* F4 */
-    cpu_op_sbc,           /* F5 */
+    cpu_op_arithmetic,    /* F5 */
     cpu_op_inc,           /* F6 */
     cpu_op_undefined,     /* F7 */
     cpu_op_sed,           /* F8 */
-    cpu_op_sbc,           /* F9 */
+    cpu_op_arithmetic,    /* F9 */
     cpu_op_undefined,     /* FA */
     cpu_op_undefined,     /* FB */
     cpu_op_undefined,     /* FC */
-    cpu_op_sbc,           /* FD */
+    cpu_op_arithmetic,    /* FD */
     cpu_op_inc,           /* FE */
     cpu_op_undefined,     /* FF */
   };
